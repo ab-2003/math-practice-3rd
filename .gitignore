@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.shots/
+.wrangler/
+.openai-key
+*.log
+.DS_Store
