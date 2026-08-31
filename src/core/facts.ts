@@ -59,6 +59,16 @@ const mulTier = (a: number, b: number): number => {
 const fact = (f: Fact): Fact => f;
 
 /**
+ * Identity facts (+0, x0, x1, and their inverses) sort to the BACK of their
+ * own tier. They are worth having in the deck: they are genuine free wins and
+ * they master in three days. But the first problem the app ever shows must
+ * not be 0 + 0. He can derive 11 - 8 in his head; opening on 0 + 0 tells him
+ * the app has not met him.
+ */
+const TRIVIAL = 10_000;
+const addTrivial = (a: number, b: number): number => (a === 0 || b === 0 ? TRIVIAL : 0);
+
+/**
  * Build the whole deck. Pure, deterministic, and the same every load: fact
  * ids are stable strings so a progress file survives any change to this
  * function's ordering.
@@ -74,7 +84,8 @@ export const buildDeck = (): Deck => {
     for (let b = a; b <= 10; b++) {
       put(fact({
         id: `add:${a}+${b}`, kind: "add", a, b, answer: a + b,
-        tier: addTier(a, b), order: (a + b) * 100 + a, bridge: isBridgeAdd(a, b),
+        tier: addTier(a, b), order: addTrivial(a, b) + (a + b) * 100 + a,
+        bridge: isBridgeAdd(a, b),
       }));
     }
   }
@@ -86,7 +97,8 @@ export const buildDeck = (): Deck => {
       const m = s + d;
       put(fact({
         id: `sub:${m}-${s}`, kind: "sub", a: m, b: s, answer: d,
-        tier: subTier(m, s, d), order: m * 100 + s, bridge: isBridgeSub(m, s),
+        tier: subTier(m, s, d), order: addTrivial(s, d) + m * 100 + s,
+        bridge: isBridgeSub(m, s),
       }));
     }
   }
@@ -96,7 +108,8 @@ export const buildDeck = (): Deck => {
     for (let b = a; b <= 10; b++) {
       put(fact({
         id: `mul:${a}x${b}`, kind: "mul", a, b, answer: a * b,
-        tier: mulTier(a, b), order: a * b * 100 + a, bridge: false,
+        tier: mulTier(a, b), order: (a <= 1 || b <= 1 ? TRIVIAL : 0) + a * b * 100 + a,
+        bridge: false,
       }));
     }
   }
@@ -112,7 +125,7 @@ export const buildDeck = (): Deck => {
         // gate in the scheduler is what actually holds it back; the tier only
         // says where it belongs in the queue.
         tier: mulTier(Math.min(a, b), Math.max(a, b)) + 3,
-        order: c * 100 + b, bridge: false,
+        order: (a <= 1 || b <= 1 ? TRIVIAL : 0) + c * 100 + b, bridge: false,
       }));
     }
   }

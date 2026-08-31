@@ -104,3 +104,30 @@ export const SESSION_TARGET_ITEMS = 40;
  * which is the shape we wanted anyway.
  */
 export const TOPUP_MAX_BOX = 5;
+
+// ---------------------------------------------------------------------------
+// ATTENTION AND TOLERANCE
+//
+// A boy who has already rapid-guessed his way out of one standardised test
+// does not need a longer session, he needs a session he can see the end of.
+// So a session is not a list of forty questions, it is a run of LINES.
+// ---------------------------------------------------------------------------
+
+/** Tricks in one line. The line is the unit he actually experiences. */
+export const LINE_LENGTH = 5;
+
+/** Coins banked the moment a trick lands. Never taken back. */
+export const COIN_PER_TRICK = 1;
+
+/** Bonus for landing a whole line clean. */
+export const COIN_PER_LINE = 5;
+
+/** Coins for a correct bonus-round elapsed-time problem. */
+export const COIN_PER_BONUS = 3;
+
+/**
+ * After this many items he is offered a genuine, celebrated exit at the end
+ * of every line. Stopping is his call from here on, and taking it is not
+ * logged as quitting. The struggle detector can still end it sooner.
+ */
+export const OFFER_EXIT_AFTER_ITEMS = 20;

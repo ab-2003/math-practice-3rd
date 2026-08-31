@@ -5,7 +5,7 @@ still driving him toward automaticity.**
 
 Design document and development handbook. Started 2026-08-31.
 
-Target `https://math-practice-3rd.pages.dev`, single production channel.
+LIVE at `https://math-practice-3rd.pages.dev`, single production channel.
 Repo `~/code/math-practice-3rd`, GitHub `ab-2003/math-practice-3rd`, private.
 
 ---
@@ -57,6 +57,26 @@ Three corollaries:
 ---
 
 # PART I - THE LEARNER, AND WHY EVERY MECHANIC EXISTS
+
+## 0. The year's job, in Virginia's own words
+
+Loudoun County follows the **Virginia Standards of Learning**, not Common Core,
+and two standards define this year. They are not from the same year:
+
+| | | |
+|---|---|---|
+| **2.CE.1** | grade **2** | recall with automaticity addition and subtraction facts within 20 |
+| **3.CE.2** | grade **3** | recall with automaticity multiplication facts through 10 x 10 and the corresponding division facts |
+
+He is at the beginning of third grade carrying the second grade standard as an
+open gap. So the year has to **close a prior-year gap and hit a current-year
+standard at the same time**, and 3.CE.2 is not an end in itself: it is the
+direct prerequisite for fourth grade multi-digit multiplication and long
+division, which is exactly where a boy who derives every fact will run out of
+working memory.
+
+That pair of numbers is what the parent dashboard reports, because it is what
+his teacher actually needs to see.
 
 ## 1. Who is holding the iPad
 
@@ -360,19 +380,38 @@ Done at the close of milestone 1 for the three load-bearing rules:
 during milestone 1 the suite was green over a `session.ts` that failed `tsc`
 on a missing type import. The gate runs both, always.
 
-## The senses (milestone 3 onward)
+## The senses
 
-Ported from the mortgage analyser: `probe-loop`, `human-eye` (iPad portrait
-and landscape are first-class shapes), `tap-audit` (a synthesised touch at
-every element's centre, asserting *that* handler fired and nothing else ate
-it, plus 44x44 minimums), `legible-check`, `offline-check`, `live-smoke`.
+All six run in parallel against a fresh preview, so the gate costs what the
+slowest sense costs rather than the sum.
 
-New to this app: **`answer-eye`**, the analogue of `number-eye`. Drives real
-sessions through the real UI and asserts that every graded answer matches an
-independently re-derived expected value, that every dashboard figure matches a
-recomputation from the raw response log, and that no retry response appears in
-the retrieval percentage. A tool that grades wrong is the defining failure
-here, and this is the only instrument that catches it.
+**`answer-eye`** is the core instrument, the analogue of the mortgage
+analyser's `number-eye`. It drives real sessions through the real UI and
+derives every expected answer with a SECOND implementation that never imports
+the app's code (`lib/drive.mjs` parses the fact id). Two implementations that
+agree is evidence; one agreeing with itself is not. It also parses the clock
+times out of each elapsed-time bonus problem and works the minutes out
+itself, checks that every stored response's classification matches its own raw
+milliseconds, and proves no fact ever gained mastery credit from a forced
+re-entry. A tool that grades wrong is this app's defining failure, and this is
+the only instrument that catches it.
+
+**`probe-loop`** is the functional playtest: real taps, real keystrokes. It
+asserts there is no native text input anywhere in a session, that the scaffold
+never contains the words "wrong", "incorrect" or "failed", that a wrong PIN
+does not open the dashboard, and that the CSV carries its measurement
+definition.
+
+**`human-eye`** walks five states across four shapes, iPad portrait and
+landscape first. It judges vertical overflow by SCROLLING and re-measuring:
+below the fold is not the same as unreachable, and the first version of this
+check reported a long dashboard as broken.
+
+**`tap-audit`** synthesises a real touch at every element's centre and asserts
+that element receives it, plus a 44px floor. **`legible-check`** measures
+contrast and font size. **`offline-check`** cuts the network and proves a full
+question is asked, answered and graded, and that the creatures still draw with
+zero image requests.
 
 ## Laws inherited by scar
 
@@ -396,15 +435,38 @@ here, and this is the only instrument that catches it.
       classification, session assembly with requeue, closer cascade and
       struggle detector. 51 unit tests, three proven mutations, and the
       seventy-day simulation that found three configuration defects.
-- [ ] **M2 - the loop.** Keypad, timing capture, grading, the wrong-answer
-      scaffold with the bridge-through-ten visual, forced re-entry.
-- [ ] **M3 - the shell.** PWA, service worker, offline, IndexedDB, export and
-      import, the flight recorder.
-- [ ] **M4 - Trick Line.** Chained tricks in inline SVG, banked currency,
-      the cheerful bail.
-- [ ] **M5 - the collection.** Original creatures, naming, levelling.
-- [ ] **M6 - the parent dashboard.** PIN gate, retrieval-vs-derivation trend,
-      fact heat map, regressions, session log, CSV export carrying its own
-      measurement definition.
-- [ ] **M7 - sound and the device pass.** WebAudio kit, mute, and the real
-      iPad, which is the only thing that closes the loop.
+- [x] **M2 - the loop.** Custom keypad (no native input anywhere in a
+      session), two-clock timing capture, grading, the bridge-through-ten
+      scaffold, forced re-entry.
+- [x] **M3 - the shell.** PWA, hand-written service worker with a generated
+      precache, offline proved by instrument, IndexedDB with a rejected-not-
+      coerced schema version, JSON backup and restore, prompted backup nudge,
+      flight recorder.
+- [x] **M4 - Trick Line.** Five-trick lines in inline SVG, coins banked per
+      trick, the cheerful bail, the celebrated exit at every line break.
+- [x] **M5 - the collection.** Twelve original creatures as parameter sets
+      through one renderer, naming, levelling.
+- [x] **M6 - the parent dashboard.** PIN gate, retrieval-vs-derivation trend,
+      per-operation heat maps, regressions, session log with the
+      ended-early distinction, CSV export carrying its own measurement
+      definition, and the two SOL standards.
+- [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
+      first-gesture unlock.
+- [ ] **The real iPad.** Everything above is machine-verified and eyeballed in
+      an emulator. An emulation is evidence; his actual iPad is proof, and
+      that loop is the one still open.
+
+## What the harness found that reading the code did not
+
+- **The keypad kept its own buffer through a bail.** The scaffold blanked the
+  answer slot's TEXT but never reset the keypad, so the wrong answer stayed
+  buffered and his forced re-entry got silently prepended with it and
+  rejected. `probe-loop` caught it; a person would have hit it on the first
+  wrong answer of the first session.
+- **The app opened on `0 + 0`.** The intro order sorted identity facts first,
+  so the very first thing a boy who can derive 11 - 8 would have seen was
+  `0 + 0`. Identity facts now sort to the back of their own tier.
+- **Text below the 13px floor.** Trick names at 10px and creature levels at
+  12px. `legible-check` measured it; both were raised.
+- **The breather button fell off a phone.** The trick strip pushed it past the
+  right edge at 390px. The strip yields now; the way out never does.

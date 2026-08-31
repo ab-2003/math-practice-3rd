@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover puts us under the notch and home indicator, which is
+         why every edge anchored element uses env(safe-area-inset-*).
+         user-scalable=no plus the tap synthesiser in main.ts is what stops
+         Safari's double tap zoom on a keypad whose buttons redraw themselves. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Trick Line</title>
+    <meta name="description" content="Math fact practice that keeps score of what you know by heart, and never rushes you." />
+    <meta name="theme-color" content="#0B0D10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Trick Line" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!-- iOS ignores the manifest icons entirely and uses this one. -->
+    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <style>
+      /* Only what stops a flash of the wrong colour before the bundle's
+         stylesheet arrives. Everything else is in src/ui/styles.css so Vite
+         hashes it and the service worker caches it immutably. */
+      html, body { margin: 0; padding: 0; background: #0B0D10; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <p style="color:#F2F5F8;font-family:system-ui;padding:24px">
+        Trick Line runs entirely on this device, so it needs JavaScript switched on.
+        Nothing anyone types is ever sent anywhere.
+      </p>
+    </noscript>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
