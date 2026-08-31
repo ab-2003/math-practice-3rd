@@ -52,5 +52,17 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${OUT}collection.png`, fullPage: true });
+
+// The settings card, which is the new surface.
+await page.goto(BASE, { waitUntil: "networkidle" });
+await page.waitForSelector('[data-probe="start"]');
+await page.click(".topbar .btn.ghost:last-of-type");
+await page.waitForSelector(".pinpad");
+for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+await page.waitForSelector('[data-strand="add"]', { timeout: 6000 });
+const toggles = await page.$(".toggles");
+const card = await toggles.evaluateHandle((e) => e.closest(".card"));
+await card.asElement().screenshot({ path: `${OUT}settings.png` });
+
 await browser.close();
 console.log("shots written");

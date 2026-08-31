@@ -61,7 +61,7 @@ export const sessionScreen = (app: App): HTMLElement => {
   root.append(wrap);
 
   // ---- session state -----------------------------------------------------
-  let session: SessionState = startSession(app.deck, app.states, app.day);
+  let session: SessionState = startSession(app.deck, app.states, app.day, app.meta.strands);
   const startedAt = Date.now();
   const collected: Response[] = [];
   let landed = 0;          // tricks in the CURRENT line
@@ -146,7 +146,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       }
       const r = mkResponse(f, given, submitMs, true, true);
       collected.push(r);
-      const step = recordResponse(app.deck, app.states, session, r);
+      const step = recordResponse(app.deck, app.states, session, r, app.meta.strands);
       session = step.session;
       app.states = step.states;
       sfx.recover();
@@ -158,7 +158,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     const cls = classify(correct, firstKeyMs);
     const r = mkResponse(f, given, submitMs, correct, false);
     collected.push(r);
-    const step = recordResponse(app.deck, app.states, session, r);
+    const step = recordResponse(app.deck, app.states, session, r, app.meta.strands);
     session = step.session;
     app.states = step.states;
     itemsDone += 1;
@@ -333,6 +333,18 @@ export const sessionScreen = (app: App): HTMLElement => {
     bonus: offerBonus,
     over: (): boolean => finished,
   };
+
+  if (session.queue.length === 0) {
+    // Every switched-on operation has nothing to offer today. That is a real
+    // state (a grown-up can switch division on before multiplication is ready
+    // for it), and it must read as a sentence, not as a broken screen.
+    mount(stage, el("div", { class: "reveal", "data-probe": "nothing" },
+      el("h2", { text: "Nothing to practise yet" }),
+      el("p", { class: "note", text: "The operations that are switched on have nothing due right now. A grown-up can switch more on from the settings screen." })));
+    pad.setEnabled(false);
+    pad.root.hidden = true;
+    return root;
+  }
 
   paint();
   return root;

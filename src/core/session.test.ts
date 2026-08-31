@@ -4,12 +4,12 @@ import {
   SESSION_MAX_ITEMS, SESSION_TARGET_ITEMS, STRUGGLE_WINDOW,
 } from "./config";
 import { buildDeck, deckInIntroOrder } from "./facts";
-import { allStates, freshState } from "./scheduler";
+import { allStates, freshState, reviveStrand } from "./scheduler";
 import {
   closerIds, currentFactId, isStruggling, nextNewFacts, planQueue,
   recordResponse, sessionIsOver, startSession,
 } from "./session";
-import type { FactState, Response, ResponseClass, SessionState, States } from "./types";
+import type { FactState, Response, ResponseClass, SessionState, States, Strands } from "./types";
 
 const deck = buildDeck();
 const ordered = deckInIntroOrder(deck);
@@ -252,5 +252,82 @@ describe("new facts across strands", () => {
     }
     const ids = nextNewFacts(deck, states, 20);
     expect(ids.some((id) => deck.get(id)!.kind === "div")).toBe(true);
+  });
+});
+
+describe("practising only some operations", () => {
+  const onlyAddSub: Strands = { add: true, sub: true, mul: false, div: false };
+
+  it("never introduces a fact from a switched-off operation", () => {
+    // School reaches multiplication when it reaches it. Drilling an operation
+    // nobody has taught him is not practice.
+    const ids = nextNewFacts(deck, allStates(deck), 20, onlyAddSub);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(["add", "sub"]).toContain(deck.get(id)!.kind);
+  });
+
+  it("drops switched-off facts out of the due queue entirely", () => {
+    const states = withDue(60);
+    const q = planQueue(deck, states, 0, onlyAddSub);
+    expect(q.length).toBeGreaterThan(0);
+    for (const id of q) expect(["add", "sub"]).toContain(deck.get(id)!.kind);
+  });
+
+  it("does not top up a session with switched-off facts", () => {
+    const states = allStates(deck);
+    for (const f of ordered.slice(0, 120)) {
+      states.set(f.id, { ...freshState(), introduced: true, box: 2, dueOn: 99 });
+    }
+    const q = planQueue(deck, states, 0, onlyAddSub);
+    for (const id of q) expect(["add", "sub"]).toContain(deck.get(id)!.kind);
+  });
+
+  it("ends the session on a switched-on fact, never a switched-off one", () => {
+    const states = withDue(60);
+    for (const f of ordered.slice(0, 60)) {
+      if (f.kind === "mul") states.set(f.id, { ...states.get(f.id)!, box: 5, mastered: true, masteryStreak: 3 });
+    }
+    const s = startSession(deck, states, 0, onlyAddSub);
+    const ids = closerIds(deck, states, s, onlyAddSub);
+    for (const id of ids) expect(["add", "sub"]).toContain(deck.get(id)!.kind);
+  });
+
+  it("KEEPS the progress in a switched-off operation rather than resetting it", () => {
+    const states = withDue(60);
+    const mulId = [...deck.values()].find((f) => f.kind === "mul")!.id;
+    states.set(mulId, { ...freshState(), introduced: true, box: 4, mastered: true, masteryStreak: 3, dueOn: 0 });
+    planQueue(deck, states, 0, onlyAddSub);
+    expect(states.get(mulId)!.box).toBe(4);
+    expect(states.get(mulId)!.mastered).toBe(true);
+  });
+});
+
+describe("switching an operation back on", () => {
+  it("makes a term's worth of overdue facts due today, not overdue by a term", () => {
+    // Otherwise the whole strand avalanches into one session, ordered by an
+    // overdue-ness that only measures how long the switch was off.
+    const states = allStates(deck);
+    const muls = [...deck.values()].filter((f) => f.kind === "mul").slice(0, 20);
+    for (const f of muls) states.set(f.id, { ...freshState(), introduced: true, box: 4, dueOn: 5 });
+    const revived = reviveStrand(deck, states, "mul", 95);
+    for (const f of muls) {
+      expect(revived.get(f.id)!.dueOn).toBe(95);
+      expect(revived.get(f.id)!.box).toBe(4); // progress untouched
+    }
+  });
+
+  it("leaves a fact that is not yet due alone", () => {
+    const states = allStates(deck);
+    const f = [...deck.values()].find((x) => x.kind === "mul")!;
+    states.set(f.id, { ...freshState(), introduced: true, box: 5, dueOn: 120 });
+    expect(reviveStrand(deck, states, "mul", 95).get(f.id)!.dueOn).toBe(120);
+  });
+
+  it("never revives a fact he has not met yet", () => {
+    const states = allStates(deck);
+    const f = [...deck.values()].find((x) => x.kind === "mul")!;
+    const revived = reviveStrand(deck, states, "mul", 95);
+    expect(revived.get(f.id)!.introduced).toBe(false);
+    expect(revived.get(f.id)!.dueOn).toBe(0);
   });
 });

@@ -161,6 +161,98 @@ await step("the CSV export carries its own measurement definition", async () => 
   must(body.split("\n").length > 4, "the CSV has no rows");
 });
 
+// ---- the practice-focus switches -----------------------------------------
+
+await step("a fresh install practises addition and subtraction only", async () => {
+  // He is at the start of third grade and his class has not reached
+  // multiplication. Drilling it would not be practice.
+  const strands = await page.evaluate(() => window.__app.meta().strands);
+  must(strands.add === true && strands.sub === true, `add/sub not on: ${JSON.stringify(strands)}`);
+  must(strands.mul === false && strands.div === false, `mul/div should start off: ${JSON.stringify(strands)}`);
+});
+
+await step("the settings card shows a switch for every operation", async () => {
+  await page.waitForSelector('[data-strand="add"]');
+  for (const k of ["add", "sub", "mul", "div"]) {
+    must(await page.$(`[data-strand="${k}"]`) !== null, `no switch for ${k}`);
+  }
+  must(await page.getAttribute('[data-strand="mul"]', "aria-pressed") === "false", "multiplication reads as on");
+});
+
+await step("the standards card says a switched-off standard is not a result", async () => {
+  const text = (await page.textContent(".screen")) ?? "";
+  must(text.includes("switched off in settings"), "a switched-off standard is reported as if it were a score");
+});
+
+await step("a session asks nothing but addition and subtraction", async () => {
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const kinds = new Set();
+  for (let i = 0; i < 14; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 }).catch(() => undefined);
+    if (await page.$(".sheet") !== null) break;
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact").catch(() => null);
+    if (!id) break;
+    kinds.add(id.split(":")[0]);
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(120);
+  }
+  must(kinds.size > 0, "no problems were asked at all");
+  for (const k of kinds) must(k === "add" || k === "sub", `a ${k} problem was asked while it is switched off`);
+});
+
+await step("switching multiplication on takes effect and survives a reload", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-strand="mul"]', { timeout: 6000 });
+  await page.click('[data-strand="mul"]');
+  await page.waitForTimeout(400);
+  must(await page.evaluate(() => window.__app.meta().strands.mul) === true, "the switch did not take");
+  // And it must not have demanded the code again just to flip a switch.
+  must(await page.$('[data-strand="sub"]') !== null, "flipping a switch threw us back to the PIN pad");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="start"]');
+  must(await page.evaluate(() => window.__app.meta().strands.mul) === true, "the switch did not persist");
+});
+
+await step("switching an operation off keeps everything already learned in it", async () => {
+  const before = await page.evaluate(() => {
+    const st = window.__app.states();
+    return [...st.values()].filter((s) => s.introduced).length;
+  });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-strand="add"]', { timeout: 6000 });
+  await page.click('[data-strand="add"]');
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(() => {
+    const st = window.__app.states();
+    return [...st.values()].filter((s) => s.introduced).length;
+  });
+  must(after === before, `switching addition off changed the progress (${before} -> ${after})`);
+});
+
+await step("the last operation cannot be switched off", async () => {
+  // The app would have nothing to ask.
+  for (const k of ["sub", "mul"]) {
+    const el = await page.$(`[data-strand="${k}"]`);
+    if (el && (await page.getAttribute(`[data-strand="${k}"]`, "aria-pressed")) === "true") {
+      await page.click(`[data-strand="${k}"]`);
+      await page.waitForTimeout(300);
+      while (await page.$(".sheet") !== null) { await page.click(".sheet .btn.go"); await page.waitForTimeout(250); }
+    }
+  }
+  const strands = await page.evaluate(() => window.__app.meta().strands);
+  must(Object.values(strands).some(Boolean), `every operation got switched off: ${JSON.stringify(strands)}`);
+  const remaining = await page.$(`[data-strand="${Object.keys(strands).find((k) => strands[k])}"]`);
+  must(remaining !== null, "the settings card vanished");
+});
+
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);
 await browser.close();
 console.log(process.exitCode ? "PROBE-LOOP RED" : "PROBE-LOOP GREEN");

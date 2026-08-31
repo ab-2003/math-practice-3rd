@@ -240,6 +240,47 @@ would mean division never unlocks: three retrieved responses on distinct days
 at box 4 and 5 intervals is weeks per fact. Box 3 means "he has been right
 about this twice, days apart," and that is enough to hang the inverse on.
 
+## 7b. Practice focus: which operations are switched on
+
+A **parent control**, behind the PIN, added 2026-08-31 at Andy's request:
+*"we have not started multiplication yet so right now we would just be doing
+addition and subtraction."*
+
+School reaches multiplication when it reaches it. Drilling an operation nobody
+has taught him is not practice, it is a boy being asked questions he has never
+been shown how to answer, and for this boy in particular that is the fastest
+route back to the avoidance the whole app is built around.
+
+**A fresh install practises addition and subtraction only.** That is not a
+neutral default, it is the correct one for the autumn of third grade: 2.CE.1
+is the gap he is actually carrying, and multiplication arrives when his class
+does.
+
+The rules:
+
+- A switched-off operation leaves sessions **entirely**: the due queue, the
+  new-fact draw, the top-up, and the closer all filter on it. A session
+  focused on addition must not end on three multiplication facts.
+- **Progress is preserved, never reset.** Boxes, mastery streaks and history
+  in a switched-off strand sit exactly where they were.
+- **Switching one back on REVIVES it** (`reviveStrand`). While an operation is
+  off its facts keep accruing a `dueOn`, so after a term away every one of
+  them is overdue by ninety days. Turning multiplication back on would then
+  dump the whole backlog into one session, ordered by an overdue-ness that
+  measures only how long the switch was off, which is exactly the drowning the
+  new-fact gate exists to prevent. So on revival anything already overdue
+  becomes due **today**. Boxes are untouched: if the time away really did cost
+  him a fact, his next wrong answer says so and the scheduler demotes it.
+  Presuming decay would be guessing; letting him show us is not.
+- **The last operation cannot be switched off**, or the app has nothing to ask.
+- **Division without multiplication is allowed but warned about.** A division
+  fact still needs its own multiplication family at box 3, so nothing new
+  arrives until multiplication is back on. The card says so rather than
+  silently doing nothing.
+- **The dashboard says when a standard is switched off.** Without that, a
+  teacher reads "0 of 176" as a boy failing multiplication when in fact nobody
+  has switched it on. A switched-off standard is a starting point, not a result.
+
 ## 8. Session assembly
 
 Everything due, then new facts **only if the due queue is under the gate**
@@ -452,6 +493,10 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.2.0 - practice focus.** Per-operation switches behind the parent
+      PIN, defaulting to addition and subtraction only. Progress preserved
+      across a switch, revived without an avalanche, and reported honestly on
+      the standards card.
 - [ ] **The real iPad.** Everything above is machine-verified and eyeballed in
       an emulator. An emulation is evidence; his actual iPad is proof, and
       that loop is the one still open.

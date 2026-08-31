@@ -73,5 +73,15 @@ export interface SessionState {
   succeeded: string[];
 }
 
+/**
+ * WHICH ARITHMETIC IS SWITCHED ON.
+ *
+ * A parent control, not a kid control. School reaches multiplication when it
+ * reaches it, and practising an operation he has not been taught is not
+ * practice, it is a boy being asked questions nobody has shown him how to
+ * answer. Progress in a switched-off strand is PRESERVED, never reset.
+ */
+export type Strands = Record<FactKind, boolean>;
+
 export type Deck = ReadonlyMap<string, Fact>;
 export type States = ReadonlyMap<string, FactState>;

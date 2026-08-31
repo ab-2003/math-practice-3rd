@@ -5,7 +5,7 @@ import {
 } from "./config";
 import { deckInIntroOrder } from "./facts";
 import { applyResponse, canIntroduce, isDue } from "./scheduler";
-import type { Deck, Fact, FactState, Response, SessionState, States } from "./types";
+import type { Deck, Fact, FactState, Response, SessionState, States, Strands } from "./types";
 
 /**
  * SESSION ASSEMBLY.
@@ -14,11 +14,18 @@ import type { Deck, Fact, FactState, Response, SessionState, States } from "./ty
  * The gate is the anti-drowning rule: a heavy review day simply has no space
  * for anything new, so a bad day cannot compound into a worse one.
  */
-export const planQueue = (deck: Deck, states: States, day: number): string[] => {
+export const ALL_STRANDS: Strands = { add: true, sub: true, mul: true, div: true };
+
+/** Is this fact's operation switched on right now? */
+export const inPlay = (f: Fact, strands: Strands): boolean => strands[f.kind];
+
+export const planQueue = (
+  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS,
+): string[] => {
   const due = [...deck.values()]
     .filter((f) => {
       const s = states.get(f.id);
-      return s !== undefined && isDue(s, day);
+      return s !== undefined && isDue(s, day) && inPlay(f, strands);
     })
     // Most overdue first, then weakest box: the things he is shakiest on get
     // seen while he still has attention to spend on them.
@@ -33,7 +40,7 @@ export const planQueue = (deck: Deck, states: States, day: number): string[] => 
 
   if (due.length < NEW_FACT_GATE) {
     const room = Math.min(NEW_PER_SESSION, SESSION_MAX_ITEMS - queue.length);
-    for (const id of nextNewFacts(deck, states, room)) queue.push(id);
+    for (const id of nextNewFacts(deck, states, room, strands)) queue.push(id);
   }
 
   // TOP UP to a workable session length.
@@ -48,7 +55,8 @@ export const planQueue = (deck: Deck, states: States, day: number): string[] => 
     const spare = [...deck.values()]
       .filter((f) => {
         const s = states.get(f.id);
-        return s !== undefined && s.introduced && !inQueue.has(f.id) && s.box <= TOPUP_MAX_BOX;
+        return s !== undefined && s.introduced && !inQueue.has(f.id)
+          && s.box <= TOPUP_MAX_BOX && inPlay(f, strands);
       })
       .sort((x, y) => states.get(x.id)!.box - states.get(y.id)!.box || states.get(x.id)!.dueOn - states.get(y.id)!.dueOn);
     for (const f of spare) {
@@ -70,23 +78,26 @@ export const planQueue = (deck: Deck, states: States, day: number): string[] => 
  * moving. Order WITHIN a strand is still strictly by tier, which is where the
  * pedagogy lives.
  */
-export const nextNewFacts = (deck: Deck, states: States, room: number): string[] => {
-  const strands = new Map<string, Fact[]>();
+export const nextNewFacts = (
+  deck: Deck, states: States, room: number, strands: Strands = ALL_STRANDS,
+): string[] => {
+  const lanes = new Map<string, Fact[]>();
   for (const f of deckInIntroOrder(deck)) {
     const s = states.get(f.id);
     if (!s || s.introduced) continue;
+    if (!inPlay(f, strands)) continue;
     if (!canIntroduce(f, states)) continue;
-    const list = strands.get(f.kind);
+    const list = lanes.get(f.kind);
     if (list) list.push(f);
-    else strands.set(f.kind, [f]);
+    else lanes.set(f.kind, [f]);
   }
   const out: string[] = [];
-  const kinds = [...strands.keys()];
+  const kinds = [...lanes.keys()];
   for (let round = 0; out.length < room; round++) {
     let progressed = false;
     for (const k of kinds) {
       if (out.length >= room) break;
-      const f = strands.get(k)![round];
+      const f = lanes.get(k)![round];
       if (!f) continue;
       out.push(f.id);
       progressed = true;
@@ -96,9 +107,11 @@ export const nextNewFacts = (deck: Deck, states: States, room: number): string[]
   return out;
 };
 
-export const startSession = (deck: Deck, states: States, day: number): SessionState => ({
+export const startSession = (
+  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS,
+): SessionState => ({
   day,
-  queue: planQueue(deck, states, day),
+  queue: planQueue(deck, states, day, strands),
   cursor: 0,
   responses: [],
   closerAdded: false,
@@ -122,17 +135,23 @@ export const currentFactId = (s: SessionState): string | null =>
  * the strongest boxes he has, else whatever he got right earlier today. Every
  * branch is something he has already succeeded at, which is the actual point.
  */
-export const closerIds = (deck: Deck, states: States, s: SessionState): string[] => {
+export const closerIds = (
+  deck: Deck, states: States, s: SessionState, strands: Strands = ALL_STRANDS,
+): string[] => {
   const asked = new Set(s.queue);
   const pick = (ids: string[]): string[] => ids.slice(0, CLOSER_ITEMS);
+  const playable = (id: string): boolean => {
+    const f = deck.get(id);
+    return f !== undefined && inPlay(f, strands);
+  };
 
-  const mastered = [...deck.keys()].filter((id) => states.get(id)?.mastered === true);
+  const mastered = [...deck.keys()].filter((id) => states.get(id)?.mastered === true && playable(id));
   if (mastered.length >= CLOSER_ITEMS) return pick(shuffleStable(mastered, s.day));
 
   const strong = [...deck.keys()]
     .filter((id) => {
       const st = states.get(id);
-      return st !== undefined && st.introduced && st.box >= 3;
+      return st !== undefined && st.introduced && st.box >= 3 && playable(id);
     })
     .sort((x, y) => (states.get(y)!.box) - (states.get(x)!.box));
   const fromStrong = [...mastered, ...strong.filter((id) => !mastered.includes(id))];
@@ -140,7 +159,7 @@ export const closerIds = (deck: Deck, states: States, s: SessionState): string[]
 
   // Last resort, and the day-one path: things he got right in this very
   // session. Prefer ones already in the queue only if nothing else exists.
-  const won = s.succeeded.filter((id) => !fromStrong.includes(id));
+  const won = s.succeeded.filter((id) => !fromStrong.includes(id) && playable(id));
   const pool = [...fromStrong, ...won];
   if (pool.length > 0) return pick(pool);
 
@@ -194,6 +213,7 @@ export interface StepResult {
  */
 export const recordResponse = (
   deck: Deck, states: States, session: SessionState, r: Response,
+  strands: Strands = ALL_STRANDS,
 ): StepResult => {
   const nextStates = new Map(states);
   const prev = nextStates.get(r.factId);
@@ -210,7 +230,7 @@ export const recordResponse = (
     // The re-entry closed the loop on a wrong answer. Advance, but the fact
     // was already requeued when the wrong answer landed.
     s.cursor += 1;
-    return finish(deck, nextStates, s);
+    return finish(deck, nextStates, s, strands);
   }
 
   if (r.correct && !s.succeeded.includes(r.factId)) s.succeeded.push(r.factId);
@@ -225,12 +245,12 @@ export const recordResponse = (
   // forced re-entry first, and that arrives as a separate isRetry response.
   if (r.correct) s.cursor += 1;
 
-  return finish(deck, nextStates, s);
+  return finish(deck, nextStates, s, strands);
 };
 
 /** Append the closer and settle the status once the main queue is spent. */
 const finish = (
-  deck: Deck, states: Map<string, FactState>, s: SessionState,
+  deck: Deck, states: Map<string, FactState>, s: SessionState, strands: Strands,
 ): StepResult => {
   if (s.closerAdded) {
     if (s.cursor >= s.queue.length && s.status === "active") s.status = "complete";
@@ -242,7 +262,7 @@ const finish = (
   const struggling = isStruggling(s);
 
   if (spent || capped || struggling) {
-    const closer = closerIds(deck, states, s);
+    const closer = closerIds(deck, states, s, strands);
     s.queue = [...s.queue.slice(0, s.cursor), ...closer];
     s.closerAdded = true;
     s.status = struggling && !spent ? "endedEarly" : "active";

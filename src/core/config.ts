@@ -131,3 +131,14 @@ export const COIN_PER_BONUS = 3;
  * logged as quitting. The struggle detector can still end it sooner.
  */
 export const OFFER_EXIT_AFTER_ITEMS = 20;
+
+/**
+ * Which operations a fresh install practises.
+ *
+ * Addition and subtraction only, deliberately. He is at the START of third
+ * grade and his class has not reached multiplication; VA SOL 2.CE.1 (+/-
+ * within 20) is the gap he is actually carrying, and it is the right place to
+ * spend the autumn. A grown-up switches the rest on from the settings card
+ * when school gets there.
+ */
+export const DEFAULT_STRANDS = { add: true, sub: true, mul: false, div: false };

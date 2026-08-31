@@ -11,7 +11,8 @@
  * the JSON backup is offered on a schedule rather than buried in a menu.
  */
 
-import type { FactState, Response } from "../core/types";
+import { DEFAULT_STRANDS } from "../core/config";
+import type { FactState, Response, Strands } from "../core/types";
 
 export const SCHEMA_VERSION = 1;
 const DB_NAME = "trickline";
@@ -41,11 +42,14 @@ export interface Meta {
   lastSessionDay: number | null;
   streak: number;
   backupNudgedOn: number | null;
+  /** Which operations are switched on. A grown-up setting, behind the PIN. */
+  strands: Strands;
 }
 
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
+  strands: { ...DEFAULT_STRANDS },
 });
 
 let db: IDBDatabase | null = null;
@@ -79,7 +83,9 @@ export const getMeta = async (): Promise<Meta> => {
   if (raw.version !== SCHEMA_VERSION) {
     throw new Error(`saved data is version ${raw.version}, this app speaks ${SCHEMA_VERSION}`);
   }
-  return { ...freshMeta(), ...raw };
+  // A meta saved before a field existed picks up the default rather than
+  // arriving undefined, which is why this spread is not a formality.
+  return { ...freshMeta(), ...raw, strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) } };
 };
 
 export const putMeta = async (m: Meta): Promise<void> => {

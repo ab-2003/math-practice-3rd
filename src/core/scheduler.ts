@@ -3,7 +3,7 @@ import {
   MASTERY_STREAK, MAX_BOX, MIN_BOX,
 } from "./config";
 import { mulPartnerId } from "./facts";
-import type { Deck, Fact, FactState, Response, States } from "./types";
+import type { Deck, Fact, FactKind, FactState, Response, States } from "./types";
 
 export const freshState = (): FactState => ({
   introduced: false, box: MIN_BOX, dueOn: 0, masteryStreak: 0,
@@ -100,4 +100,31 @@ export const allStates = (deck: Deck): Map<string, FactState> => {
   const m = new Map<string, FactState>();
   for (const id of deck.keys()) m.set(id, freshState());
   return m;
+};
+
+/**
+ * SWITCHING A STRAND BACK ON.
+ *
+ * While an operation is off its facts still carry a dueOn, so after a term
+ * away every one of them is overdue by ninety days. Turning multiplication
+ * back on would then dump the whole backlog into one session, ordered by an
+ * overdue-ness that only measures how long the switch was off, which is the
+ * exact drowning the new-fact gate exists to prevent.
+ *
+ * So on revival, anything already overdue is simply due TODAY. The boxes and
+ * the mastery streaks are untouched: progress is preserved, and if the time
+ * away really did cost him a fact, his next wrong answer says so and the
+ * scheduler demotes it. That is honest; presuming decay is not.
+ */
+export const reviveStrand = (
+  deck: Deck, states: States, kind: FactKind, day: number,
+): Map<string, FactState> => {
+  const out = new Map(states);
+  for (const f of deck.values()) {
+    if (f.kind !== kind) continue;
+    const s = out.get(f.id);
+    if (!s || !s.introduced || s.dueOn >= day) continue;
+    out.set(f.id, { ...s, dueOn: day });
+  }
+  return out;
 };

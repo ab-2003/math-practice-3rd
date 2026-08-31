@@ -233,6 +233,33 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .note { color: var(--dim); font-size: 14px; font-weight: 700; text-transform: none; line-height: 1.45; }
 
+/* The practice-focus switches. A switch reads as a switch: the knob moves and
+   the whole row lights, so state is carried by style rather than by a word. */
+.toggles { display: grid; gap: 10px; margin-top: 14px; }
+.toggle {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  background: var(--panel-2); border: 5px solid var(--ink); border-radius: 16px;
+  box-shadow: 0 4px 0 var(--ink); padding: 12px 14px; min-height: 68px;
+  cursor: pointer; text-align: left; font-family: var(--display); color: var(--dim);
+}
+.toggle:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.toggle-knob {
+  flex: none; width: 62px; height: 34px; border-radius: 999px;
+  border: 4px solid var(--ink); background: #10151B; position: relative;
+}
+.toggle-knob::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: 999px; background: var(--line); transition: transform 140ms, background 140ms;
+}
+.toggle.on { color: var(--text); border-color: var(--ink); }
+.toggle.on .toggle-knob { background: var(--acid); }
+.toggle.on .toggle-knob::after { transform: translateX(28px); background: var(--ink); }
+.toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toggle-label { font-weight: 900; font-size: 19px; letter-spacing: 0.02em; text-transform: uppercase; }
+.toggle-hint { font-size: 13px; font-weight: 700; }
+.toggle-hint.dim { color: #7C8A99; }
+.note.warn { color: var(--orange); }
+
 .pinpad { max-width: 320px; margin: 0 auto; }
 .pin-dots { display: flex; gap: 14px; justify-content: center; margin: 18px 0; }
 .pin-dot { width: 22px; height: 22px; border-radius: 999px; border: 4px solid var(--line); }

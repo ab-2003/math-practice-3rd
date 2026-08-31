@@ -16,8 +16,9 @@
  */
 
 import { DERIVED_MAX_MS, RETRIEVED_MAX_MS } from "../core/config";
+import { reviveStrand } from "../core/scheduler";
 import { standardProgress } from "../core/standards";
-import type { Response } from "../core/types";
+import type { FactKind, Response } from "../core/types";
 import type { App } from "./appstate";
 import { heatMap, progressBar, retrievalTrend, type HeatCell, type WeekPoint } from "./charts";
 import { el, mount, on } from "./dom";
@@ -100,19 +101,27 @@ const download = (name: string, text: string, mime: string): void => {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 };
 
+/** Once the code has been given, it stays given for the rest of the visit.
+ *  Re-asking for it after every toggle would make the settings unusable. */
+let unlocked = false;
+export const relock = (): void => { unlocked = false; };
+
 export const dashboardScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
   const body = el("div", {});
   root.append(body);
 
+  if (unlocked) { renderDash(app, body); return root; }
+
   if (app.meta.pin === null) {
     renderPin(app, body, "Set a 4 digit code", (code) => {
       app.meta.pin = code;
+      unlocked = true;
       void app.save().then(() => renderDash(app, body));
     });
   } else {
     renderPin(app, body, "Grown-ups only", (code) => {
-      if (code === app.meta.pin) renderDash(app, body);
+      if (code === app.meta.pin) { unlocked = true; renderDash(app, body); }
       else renderPin(app, body, "Not that one. Try again.", () => undefined, true);
     });
   }
@@ -161,12 +170,32 @@ const renderPin = (
   if (retry) {
     const again = el("button", { type: "button", class: "btn small ghost" }, el("span", { text: "Try again" }));
     on(again, "click", () => renderPin(app, host, "Grown-ups only", (c) => {
-      if (c === app.meta.pin) renderDash(app, host);
+      if (c === app.meta.pin) { unlocked = true; renderDash(app, host); }
       else renderPin(app, host, "Not that one. Try again.", () => undefined, true);
     }));
     wrap.append(again);
   }
   mount(host, wrap);
+};
+
+/**
+ * Flip one operation on or off.
+ *
+ * Turning the LAST one off would leave the app with nothing to ask, so it is
+ * refused. Turning one back ON revives it: anything that went overdue while
+ * the switch was off becomes due today rather than overdue by a term, so a
+ * whole strand cannot avalanche into one session.
+ */
+const flipStrand = (app: App, kind: FactKind): void => {
+  const next = { ...app.meta.strands, [kind]: !app.meta.strands[kind] };
+  if (!Object.values(next).some(Boolean)) {
+    sheet({ title: "Keep at least one", body: "He needs something to practise, so at least one operation has to stay switched on.", confirm: "OK" });
+    return;
+  }
+  const turningOn = next[kind] && !app.meta.strands[kind];
+  app.meta.strands = next;
+  if (turningOn) app.states = reviveStrand(app.deck, app.states, kind, app.day);
+  void app.save().then(() => app.refresh());
 };
 
 const renderDash = (app: App, host: HTMLElement): void => {
@@ -178,7 +207,7 @@ const renderDash = (app: App, host: HTMLElement): void => {
 
     const bar = el("div", { class: "topbar" });
     const back = el("button", { type: "button", class: "btn small ghost", "data-probe": "back" }, el("span", { text: "← Back" }));
-    on(back, "click", () => app.go("home"));
+    on(back, "click", () => { relock(); app.go("home"); });
     bar.append(back, el("div", { class: "grow" }), el("h3", { text: "Progress" }));
     wrap.append(bar);
 
@@ -201,13 +230,67 @@ const renderDash = (app: App, host: HTMLElement): void => {
     const std = el("div", { class: "card" });
     std.append(el("h3", { text: "Virginia Standards of Learning" }));
     for (const s of standardProgress(app.deck, app.states)) {
+      const kinds: FactKind[] = s.code === "2.CE.1" ? ["add", "sub"] : ["mul", "div"];
+      const live = kinds.filter((k) => app.meta.strands[k]);
       std.append(el("div", { class: "mon-sub", text: `${s.code} · grade ${s.grade} · ${s.title}` }));
       std.append(progressBar(s.pct, s.grade === 3 ? "#B6FF3C" : "#35E6FF"));
       std.append(el("p", { class: "note", text: `${s.mastered} of ${s.total} known from memory. ${s.inProgress} in progress.` }));
+      // Without this, a teacher reads "0 of 176" as a boy failing
+      // multiplication, when in fact nobody has switched it on yet.
+      if (live.length === 0) {
+        std.append(el("p", { class: "note warn", text:
+          `Not being practised at the moment: this standard is switched off in settings, so the figure above is a starting point, not a result.` }));
+      } else if (live.length < kinds.length) {
+        const off = kinds.filter((k) => !app.meta.strands[k]);
+        std.append(el("p", { class: "note warn", text:
+          `Partly switched off (${off.join(" and ")}), so this figure covers only what is being practised.` }));
+      }
     }
     std.append(el("p", { class: "note", text:
       "2.CE.1 is a second grade standard being closed this year. 3.CE.2 is due by the end of third grade and is the direct prerequisite for fourth grade multi-digit multiplication and long division." }));
     wrap.append(std);
+
+    // ---- what he is practising -------------------------------------------
+    //
+    // A parent control. School reaches multiplication when it reaches it, and
+    // drilling an operation nobody has taught him is not practice.
+    const KINDS: Array<{ kind: FactKind; label: string; hint: string }> = [
+      { kind: "add", label: "Addition", hint: "facts within 20" },
+      { kind: "sub", label: "Subtraction", hint: "facts within 20" },
+      { kind: "mul", label: "Multiplication", hint: "through 10 x 10" },
+      { kind: "div", label: "Division", hint: "unlocks family by family, once the matching multiplication is solid" },
+    ];
+    const focus = el("div", { class: "card" });
+    focus.append(el("h3", { text: "What he is practising" }));
+    focus.append(el("p", { class: "note", text:
+      "Switch an operation off and it leaves his sessions entirely. Everything he has already learned in it is kept, and switching it back on picks up where he left off." }));
+    const rows = el("div", { class: "toggles" });
+    for (const { kind, label, hint } of KINDS) {
+      // NOT named `on`: that is the event helper, and shadowing it here made
+      // the click binding uncallable.
+      const live = app.meta.strands[kind];
+      const facts = [...app.deck.values()].filter((f) => f.kind === kind);
+      const mastered = facts.filter((f) => app.states.get(f.id)?.mastered === true).length;
+      const row = el("button", {
+        type: "button", class: `toggle${live ? " on" : ""}`,
+        "data-strand": kind, "aria-pressed": String(live),
+      });
+      row.append(el("span", { class: "toggle-knob" }));
+      const text = el("span", { class: "toggle-text" });
+      text.append(el("span", { class: "toggle-label", text: label }));
+      text.append(el("span", { class: "toggle-hint",
+        text: live ? `on · ${mastered} of ${facts.length} from memory` : `off · ${mastered} of ${facts.length} kept` }));
+      text.append(el("span", { class: "toggle-hint dim", text: hint }));
+      row.append(text);
+      on(row, "click", () => flipStrand(app, kind));
+      rows.append(row);
+    }
+    focus.append(rows);
+    if (app.meta.strands.div && !app.meta.strands.mul) {
+      focus.append(el("p", { class: "note warn", text:
+        "Division is on but multiplication is off. A division fact only unlocks once its own multiplication family is solid, so nothing new will arrive until multiplication is switched back on." }));
+    }
+    wrap.append(focus);
 
     // ---- the heat map -----------------------------------------------------
     const perFact = new Map<string, number[]>();
