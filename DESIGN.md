@@ -439,6 +439,18 @@ right where it sits. Scar collected: animationend BUBBLES, so the first
 580ms hop was ending the whole 3.2s lap until the handler was made to check
 the animation's name; probes now time the lap.
 
+**The open shop and the gear rack (0.8.0, Andy's economy).** The mystery
+unlock ladder is gone: all TWENTY monsters (the original twelve, six dragons
+in six colours, PUCKJAW the hockey bruiser and BLADEBACK the inline
+speedster) are on open display with their prices, and he buys whichever one
+he wants in any order. Wanting a specific one and saving for it IS the game;
+the end-of-run offer only says the crew has someone in reach and opens the
+shop. And THE GEAR RACK: twenty helmets, ten shapes in two colourways, drawn
+by one parametric renderer that also dresses the monsters. A helmet is bought
+once, lives in the locker, and any owned monster wears any owned helmet from
+its card, where the art updates the moment he taps it. The rider wears his
+helmet through every solo trick and every victory lap.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -607,6 +619,11 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.8.0 - the open shop and the gear rack.** Twenty monsters on open
+      display, bought in any order (no more mysteries, no more auto-ladder);
+      six new dragons plus a hockey bruiser and an inline speedster; twenty
+      helmets bought once and worn by anyone, on the card, in the shop tile,
+      and through every trick.
 - [x] **0.7.0 - the victory lap and the minimal screen.** Andy's
       choreography: nothing on screen while he thinks; the dim rail appears
       under each solo trick and vanishes; the line-completing answer lights

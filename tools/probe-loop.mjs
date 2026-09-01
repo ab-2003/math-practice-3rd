@@ -108,10 +108,14 @@ await step("progress survives a reload", async () => {
   must(after > 0, "no coins were banked at all");
 });
 
-await step("the collection screen opens and shows the roster", async () => {
+await step("the shop shows all twenty monsters by name, no mysteries", async () => {
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 12, "the roster is not twelve");
+  must((await page.$$(".mon")).length === 20, "the roster is not twenty");
+  const text = (await page.textContent(".roster")) ?? "";
+  must(!text.includes("???"), "a monster is still a mystery");
+  must(text.includes("CINDERWYRM") && text.includes("GILDEDWYRM"), "the dragons are not on display");
+  must((await page.$$(".helm-tile")).length === 20, "the gear rack is not twenty helmets");
   await page.click('[data-probe="back"]');
   await page.waitForSelector('[data-probe="start"]');
 });
@@ -464,7 +468,7 @@ await step("landing a full line raises the LINE LANDED banner", async () => {
   await page.waitForSelector('[data-probe="line-banner"]', { state: "detached", timeout: 4000 });
 });
 
-await step("the unlock is his choice, and keep-saving spends nothing", async () => {
+await step("the run's end offers the shop, and Later spends nothing", async () => {
   await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = []; });
   await page.click('[data-probe="quit"]');
   await page.waitForSelector(".sheet");
@@ -473,12 +477,12 @@ await step("the unlock is his choice, and keep-saving spends nothing", async () 
   await page.click(".sheet .btn.go"); // Done on the run sheet
   await page.waitForSelector(".sheet", { timeout: 5000 });
   const text = (await page.textContent(".sheet")) ?? "";
-  must(text.includes("Keep saving"), "no keep-saving choice was offered");
+  must(text.includes("Later") && text.includes("See the crew"), "the shop offer is missing its choices");
   const coinsBefore = await page.evaluate(() => window.__app.meta().coins);
-  await page.click(".sheet .btn.ghost"); // Keep saving
+  await page.click(".sheet .btn.ghost"); // Later
   await page.waitForTimeout(300);
-  must(await page.evaluate(() => window.__app.meta().coins) === coinsBefore, "keep-saving spent his coins");
-  must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "keep-saving unlocked anyway");
+  must(await page.evaluate(() => window.__app.meta().coins) === coinsBefore, "Later spent his coins");
+  must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "Later bought a monster anyway");
 });
 
 await step("after a run, home says today is done", async () => {
@@ -551,6 +555,42 @@ await step("send out picks who rides, and the collection says so", async () => {
   while (await page.$(".scrim") !== null) { await page.keyboard.press("Escape"); await page.waitForTimeout(200); }
   const badges = await page.$$(".riding-badge");
   must(badges.length === 1, `${badges.length} RIDING badges, wanted exactly 1`);
+});
+
+await step("he buys the dragon he WANTS, not the cheapest", async () => {
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.coins = 5000; m.owned = []; m.rider = null;
+    window.__app.go("collection");
+  });
+  await page.waitForTimeout(250);
+  await page.click('[data-mon="cinderwyrm"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  await page.click(".sheet .btn.go"); // Buy
+  await page.waitForSelector(".sheet", { timeout: 4000 }); // the reveal
+  await page.click(".sheet .btn.go"); // Nice
+  await page.waitForTimeout(300);
+  const m = await page.evaluate(() => window.__app.meta());
+  must(m.owned.includes("cinderwyrm"), "the chosen dragon was not bought");
+  must(!m.owned.includes("grindjaw"), "the shop bought the cheapest instead of his pick");
+  must(m.coins === 5000 - 350, `coins went to ${m.coins}, wanted 4650`);
+});
+
+await step("a helmet is bought once and lands on the monster he puts it on", async () => {
+  await page.click('[data-helm="cap-fire"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  await page.click(".sheet .btn.go"); // Buy
+  await page.waitForTimeout(350);
+  must(await page.evaluate(() => window.__app.meta().helmetsOwned.includes("cap-fire")), "the helmet is not in the locker");
+  await page.click('[data-mon="cinderwyrm"]');
+  await page.waitForSelector('[data-equip="cap-fire"]', { timeout: 4000 });
+  await page.click('[data-equip="cap-fire"]');
+  await page.waitForTimeout(300);
+  must(await page.evaluate(() => window.__app.meta().gear["cinderwyrm"]) === "cap-fire", "the helmet did not go on");
+  // And the monster's art in the open card is wearing it.
+  must(await page.$(".sheet .creature .helm") !== null, "the worn helmet is not drawn on the card");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 });
 
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);

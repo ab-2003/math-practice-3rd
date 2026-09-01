@@ -13,6 +13,7 @@
  */
 
 import type { Creature } from "../core/creatures";
+import type { Helmet } from "../core/gear";
 import type { Trick } from "../core/tricks";
 import { creatureSvg } from "./creature-svg";
 import { el, svg } from "./dom";
@@ -37,7 +38,7 @@ const board = (): SVGElement => {
  * animationend alone: a backgrounded tab never fires it, and the session
  * would wedge with no way forward.
  */
-export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 1): Promise<void> =>
+export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 1, helmet?: Helmet): Promise<void> =>
   new Promise((resolve) => {
     // The answered problem ghosts out while the trick has the stage, and the
     // next one fades in after. Without this the rider hopped straight through
@@ -51,7 +52,7 @@ export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 
     lane.classList.add("show-spot");
     const run = el("div", { class: `trick-run trick-${trick.anim}` });
     const flip = el("div", { class: "trick-flip" });
-    const art = creatureSvg(c, { level });
+    const art = creatureSvg(c, { level, ...(helmet ? { helmet } : {}) });
     art.classList.add("trick-creature");
     flip.append(art, board());
     const rider = el("div", { class: "trick-rider" }, flip);
@@ -100,7 +101,7 @@ export interface LapOpts {
 
 export const playVictoryLap = (
   left: HTMLElement, stage: HTMLElement, c: Creature,
-  tricks: readonly Trick[], level: number, opts: LapOpts,
+  tricks: readonly Trick[], level: number, opts: LapOpts, helmet?: Helmet,
 ): Promise<void> =>
   new Promise((resolve) => {
     const spot = left.querySelector(".spot");
@@ -116,7 +117,7 @@ export const playVictoryLap = (
     run.append(banner);
 
     const flip = el("div", { class: "trick-flip" });
-    const art = creatureSvg(c, { level });
+    const art = creatureSvg(c, { level, ...(helmet ? { helmet } : {}) });
     art.classList.add("trick-creature");
     flip.append(art, board());
     const label = el("div", { class: "lap-label" });

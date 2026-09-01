@@ -580,3 +580,31 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @media (prefers-reduced-motion: reduce) {
   .lap-rider, .lap-label.pop, .lap-banner { animation-duration: 1ms; }
 }
+
+/* ---------- the open shop and the gear rack ---------- */
+.mon.shop-locked { cursor: pointer; background: var(--panel-2); }
+.mon.shop-locked .creature { filter: saturate(0.65) brightness(0.7); }
+.price-chip {
+  display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 900;
+  color: var(--dim); border: 3px solid var(--line); border-radius: 999px; padding: 2px 12px;
+}
+.price-chip.can { color: var(--ink); background: var(--warm); border-color: var(--ink); }
+.gear-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+.helm-tile {
+  font-family: var(--display); background: var(--panel); border: 5px solid var(--ink);
+  border-radius: 16px; box-shadow: 0 4px 0 var(--ink); padding: 8px 6px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; color: var(--text); min-height: 104px;
+}
+.helm-tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.helm-tile.owned { border-color: var(--acid); }
+.helm-mini { width: 74px; height: auto; display: block; }
+.helm-name { font-size: 13px; font-weight: 900; letter-spacing: 0.02em; text-align: center; }
+.gear-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0 4px; }
+.gear-pick {
+  width: 64px; height: 58px; border: 4px solid var(--line); border-radius: 12px;
+  background: var(--panel-2); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--dim); font-family: var(--display); font-weight: 900; font-size: 13px;
+}
+.gear-pick .helm-mini { width: 46px; }
+.gear-pick.sel { border-color: var(--acid); box-shadow: 0 0 0 2px rgba(182, 255, 60, 0.35); color: var(--text); }

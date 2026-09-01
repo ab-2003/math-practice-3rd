@@ -1,8 +1,9 @@
-import { creatureById, levelCost, MAX_LEVEL, nextLocked, ROSTER, type Creature } from "../core/creatures";
+import { cheapestLocked, creatureById, levelCost, MAX_LEVEL, ROSTER, type Creature } from "../core/creatures";
+import { HELMETS, helmetById, type Helmet } from "../core/gear";
 import { standardProgress } from "../core/standards";
 import type { App } from "./appstate";
 import { progressBar } from "./charts";
-import { creatureSilhouette, creatureSvg } from "./creature-svg";
+import { creatureSvg, helmetIcon } from "./creature-svg";
 import { el, on } from "./dom";
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
@@ -13,7 +14,7 @@ export const resolveRider = (app: App): Creature => {
   if (picked && app.meta.owned.includes(picked.id)) return picked;
   const owned = app.meta.owned;
   const newest = owned.length > 0 ? creatureById(owned[owned.length - 1]!) : null;
-  return newest ?? nextLocked(app.meta.owned) ?? ROSTER[0]!;
+  return newest ?? cheapestLocked(app.meta.owned) ?? ROSTER[0]!;
 };
 
 const coinChip = (n: number): HTMLElement =>
@@ -59,17 +60,18 @@ export const homeScreen = (app: App): HTMLElement => {
   const owned = app.meta.owned;
   const star = owned.length > 0 ? resolveRider(app) : null;
   if (star) {
-    const art = creatureSvg(star, { level: app.meta.levels[star.id] ?? 1 });
+    const starHelm = app.meta.gear[star.id] !== undefined ? helmetById(app.meta.gear[star.id]!) : undefined;
+    const art = creatureSvg(star, { level: app.meta.levels[star.id] ?? 1, ...(starHelm ? { helmet: starHelm } : {}) });
     art.classList.add("home-creature");
     hero.append(art);
     hero.append(el("div", { class: "mon-name", text: app.meta.names[star.id] ?? star.name }));
   } else {
-    const next = nextLocked([]);
+    const next = cheapestLocked([]);
     if (next) {
       const art = creatureSvg(next);
       art.classList.add("home-creature", "target");
       hero.append(art);
-      hero.append(el("p", { class: "sub", text: `Land some tricks and ${next.name} is yours.` }));
+      hero.append(el("p", { class: "sub", text: "Land some tricks, then pick any monster in the shop." }));
     }
   }
   root.append(hero);
@@ -92,13 +94,13 @@ export const homeScreen = (app: App): HTMLElement => {
 
   // Progress toward the next monster, always visible: the classic lever,
   // and it was simply missing.
-  const target = nextLocked(app.meta.owned);
+  const target = cheapestLocked(app.meta.owned);
   if (target) {
     const prog = el("div", { class: "card unlock-progress", "data-probe": "unlock-progress" });
     const pct = Math.min(100, Math.round((app.meta.coins / target.cost) * 100));
     prog.append(el("div", { class: "mon-sub", text: app.meta.coins >= target.cost
-      ? `${target.name} is ready to unlock!`
-      : `Saving for ${target.name}` }));
+      ? "A new monster is in reach! Pick anyone you can afford."
+      : `Nearest monster: ${target.name}` }));
     prog.append(progressBar(pct, "#FFE14D"));
     prog.append(el("div", { class: "mon-sub", text: `◆ ${app.meta.coins} / ${target.cost}` }));
     root.append(prog);
@@ -125,42 +127,87 @@ export const collectionScreen = (app: App): HTMLElement => {
   for (const c of ROSTER) {
     const owned = app.meta.owned.includes(c.id);
     const level = app.meta.levels[c.id] ?? 1;
-    const tile = el("div", { class: `mon${owned ? "" : " locked"}`, "data-mon": c.id });
-    tile.append(owned ? creatureSvg(c, { level }) : creatureSilhouette(c));
-    tile.append(el("div", { class: "mon-name", text: owned ? (app.meta.names[c.id] ?? c.name) : "???" }));
-    tile.append(el("div", { class: "mon-sub", text: owned ? `Level ${level}` : `◆ ${c.cost}` }));
+    // NO MYSTERIES (Andy 2026-09-01): every monster shows itself and its
+    // price, and he buys whichever one he wants, in any order.
+    const helm = app.meta.gear[c.id] !== undefined ? helmetById(app.meta.gear[c.id]!) : undefined;
+    const tile = el("div", { class: `mon${owned ? "" : " shop-locked"}`, "data-mon": c.id });
+    tile.append(creatureSvg(c, { level, ...(owned && helm ? { helmet: helm } : {}) }));
+    tile.append(el("div", { class: "mon-name", text: owned ? (app.meta.names[c.id] ?? c.name) : c.name }));
+    tile.append(owned
+      ? el("div", { class: "mon-sub", text: `Level ${level}` })
+      : el("div", { class: `price-chip${app.meta.coins >= c.cost ? " can" : ""}`, text: `◆ ${c.cost}` }));
     if (owned && resolveRider(app).id === c.id) {
       tile.append(el("div", { class: "riding-badge", text: "RIDING" }));
     }
-    if (owned) on(tile, "click", () => monsterSheet(app, c.id));
-    else if (app.meta.coins >= c.cost) {
-      tile.classList.remove("locked");
-      tile.classList.add("affordable");
-      tile.append(el("div", { class: "mon-sub", text: "Tap to unlock" }));
-      on(tile, "click", () => unlockSheet(app, c.id));
-    }
+    on(tile, "click", () => (owned ? monsterSheet(app, c.id) : buySheet(app, c.id)));
     grid.append(tile);
   }
   root.append(grid);
+
+  // THE GEAR RACK: twenty helmets, bought once, worn by anyone he owns.
+  root.append(el("h2", { text: "The Gear Rack", style: "margin-top:18px" }));
+  root.append(el("p", { class: "note", text: "Buy a helmet once and any of the crew can wear it. Put it on from a monster's card." }));
+  const rack = el("div", { class: "gear-rack" });
+  for (const h of HELMETS) {
+    const has = app.meta.helmetsOwned.includes(h.id);
+    const t = el("button", { type: "button", class: `helm-tile${has ? " owned" : ""}`, "data-helm": h.id });
+    t.append(helmetIcon(h));
+    t.append(el("span", { class: "helm-name", text: h.name }));
+    t.append(el("span", { class: "mon-sub", text: has ? "owned" : `◆ ${h.cost}` }));
+    on(t, "click", () => helmSheet(app, h));
+    rack.append(t);
+  }
+  root.append(rack);
   return root;
 };
 
-const unlockSheet = (app: App, id: string): void => {
+const helmSheet = (app: App, h: Helmet): void => {
+  const has = app.meta.helmetsOwned.includes(h.id);
+  const body = el("div", { class: "reveal" });
+  body.append(helmetIcon(h));
+  if (has) {
+    sheet({ title: h.name, body: "Already in the locker. Put it on from any monster's card.", confirm: "OK" });
+    return;
+  }
+  const affordable = app.meta.coins >= h.cost;
+  sheet({
+    title: h.name,
+    body: affordable ? `${h.cost} coins, and you have ${app.meta.coins}.` : `${h.cost} coins. You have ${app.meta.coins}, so keep landing tricks.`,
+    cancel: "Not yet",
+    ...(affordable ? {
+      confirm: `Buy ◆${h.cost}`,
+      onConfirm: (): void => {
+        app.meta.coins -= h.cost;
+        app.meta.helmetsOwned.push(h.id);
+        sfx.coin();
+        void app.save().then(() => app.refresh());
+      },
+    } : {}),
+  });
+};
+
+/** Buying a monster HE chose. The reveal still pops, because it earned it. */
+const buySheet = (app: App, id: string): void => {
   const c = creatureById(id);
   if (!c) return;
+  const affordable = app.meta.coins >= c.cost;
+  const body = el("div", { class: "reveal" });
+  body.append(creatureSvg(c));
+  body.append(el("p", { class: "mon-lore", text: c.lore }));
   sheet({
-    title: `Unlock ${c.name}?`,
-    body: `That is ${c.cost} coins. You have ${app.meta.coins}.`,
-    cancel: "Not yet", confirm: "Unlock",
-    onConfirm: () => {
-      if (app.meta.coins < c.cost) return;
-      app.meta.coins -= c.cost;
-      app.meta.owned.push(c.id);
-      app.meta.levels[c.id] = 1;
-      sfx.roar();
-      void app.save();
-      revealSheet(app, c.id);
-    },
+    title: c.name,
+    body,
+    cancel: "Not yet",
+    ...(affordable ? {
+      confirm: `Buy ◆${c.cost}`,
+      onConfirm: (): void => {
+        app.meta.coins -= c.cost;
+        app.meta.owned.push(c.id);
+        app.meta.levels[c.id] = 1;
+        sfx.roar();
+        void app.save().then(() => revealSheet(app, c.id));
+      },
+    } : {}),
   });
 };
 
@@ -180,9 +227,52 @@ const monsterSheet = (app: App, id: string): void => {
   const level = app.meta.levels[c.id] ?? 1;
   const cost = levelCost(level);
   const body = el("div", { class: "reveal" });
-  body.append(creatureSvg(c, { level }));
+  const wornId = (): string | undefined => app.meta.gear[c.id];
+  const worn = (): Helmet | undefined => {
+    const w = wornId();
+    return w !== undefined ? helmetById(w) : undefined;
+  };
+  let bigArt = creatureSvg(c, { level, ...(worn() ? { helmet: worn()! } : {}) });
+  body.append(bigArt);
   body.append(el("p", { class: "mon-lore", text: c.lore }));
   body.append(el("div", { class: "mon-sub", text: `Level ${level} of ${MAX_LEVEL}` }));
+
+  // The gear row: NONE plus everything in the locker. Updates in place so
+  // he sees the helmet land on the monster the moment he taps it.
+  if (app.meta.helmetsOwned.length > 0) {
+    const row = el("div", { class: "gear-row" });
+    const redraw = (): void => {
+      const fresh = creatureSvg(c, { level, ...(worn() ? { helmet: worn()! } : {}) });
+      bigArt.replaceWith(fresh);
+      bigArt = fresh;
+      for (const t of Array.from(row.children)) {
+        const idAttr = (t as HTMLElement).dataset["equip"] ?? "";
+        t.classList.toggle("sel", idAttr === (wornId() ?? ""));
+      }
+    };
+    const noneTile = el("button", { type: "button", class: `gear-pick${wornId() === undefined ? " sel" : ""}`, "data-equip": "" }, el("span", { text: "none" }));
+    on(noneTile, "click", () => {
+      const g = { ...app.meta.gear };
+      delete g[c.id];
+      app.meta.gear = g;
+      void app.save();
+      redraw();
+    });
+    row.append(noneTile);
+    for (const hid of app.meta.helmetsOwned) {
+      const h = helmetById(hid);
+      if (!h) continue;
+      const t = el("button", { type: "button", class: `gear-pick${wornId() === hid ? " sel" : ""}`, "data-equip": hid, "aria-label": h.name });
+      t.append(helmetIcon(h));
+      on(t, "click", () => {
+        app.meta.gear = { ...app.meta.gear, [c.id]: hid };
+        void app.save();
+        redraw();
+      });
+      row.append(t);
+    }
+    body.append(row);
+  }
 
   // SEND OUT: he picks who rides. Agency turns the collection from a museum
   // into a pre-run ritual.

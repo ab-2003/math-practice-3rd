@@ -18,7 +18,7 @@
 import { COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_AFTER_ITEMS } from "../core/config";
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
-import { nextLocked } from "../core/creatures";
+import { canAffordAny } from "../core/creatures";
 import { presentFact, type Presented } from "../core/present";
 import { currentFactId, recordResponse, sessionIsOver, startSession } from "../core/session";
 import type { Fact, Response, SessionState } from "../core/types";
@@ -34,8 +34,8 @@ import { lineTricks, spotForDay, spotUnlockedBetween, trickUnlockedBetween } fro
 import { lineStrip, playBail, playLanding, playLineBanner } from "./trickline";
 import { playTrick, playVictoryLap } from "./trick-anim";
 import { spotLayer } from "./spots";
+import { helmetById } from "../core/gear";
 import { resolveRider } from "./screens";
-import { revealSheet } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
 
@@ -107,6 +107,8 @@ export const sessionScreen = (app: App): HTMLElement => {
   // fresh profile. Chosen once per session so it does not flicker.
   const rider = resolveRider(app);
   const riderLevel = app.meta.levels[rider.id] ?? 1;
+  const riderGearId = app.meta.gear[rider.id];
+  const riderHelmet = riderGearId !== undefined ? helmetById(riderGearId) : undefined;
 
   const pad: Keypad = keypad({
     maxDigits: 3,
@@ -259,7 +261,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       // five landings itself; a solo land here would double the first one.
       if (!(endsLine && app.meta.animations)) sfx.land(step);
       if (!endsLine) {
-        if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel);
+        if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel, riderHelmet);
         else await playLanding(stage, trick.name);
       } else if (!app.meta.animations) {
         await playLanding(stage, trick.name);
@@ -282,7 +284,7 @@ export const sessionScreen = (app: App): HTMLElement => {
         strip.classList.add("strip-flash");
         window.setTimeout(() => strip.classList.remove("strip-flash"), 950);
         if (app.meta.animations) {
-          await playVictoryLap(left, stage, rider, lineNow, riderLevel, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
+          await playVictoryLap(left, stage, rider, lineNow, riderLevel, { bonus: COIN_PER_LINE, newTrick: tUn?.name }, riderHelmet);
         } else {
           await playLineBanner(left, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
         }
@@ -419,29 +421,22 @@ export const sessionScreen = (app: App): HTMLElement => {
       body.append(el("p", { class: "note", text: `${riderName} was riding.` }));
     }
 
-    const unlockable = nextLocked(app.meta.owned);
-    const canAfford = unlockable !== null && app.meta.coins >= unlockable.cost;
+    const inReach = canAffordAny(app.meta.owned, app.meta.coins);
     sheet({
       title: status === "endedEarly" ? "Good run." : "Run finished!",
       body,
       confirm: "Done",
       onConfirm: () => {
         app.go("home");
-        // The unlock is HIS decision, never an auto-purchase: choosing is
-        // half the fun, and auto-spending broke saving up for the big one.
-        if (unlockable && canAfford) {
+        // The shop is HIS: no auto-purchase, no picking for him. Just the
+        // news that the crew has someone he can afford, whichever he wants.
+        if (inReach) {
           sheet({
-            title: `${unlockable.name} is in reach`,
-            body: `${unlockable.cost} coins, and you have ${app.meta.coins}. Want it, or keep saving?`,
-            cancel: "Keep saving",
-            confirm: "Unlock",
-            onConfirm: () => {
-              app.meta.coins -= unlockable.cost;
-              app.meta.owned.push(unlockable.id);
-              app.meta.levels[unlockable.id] = 1;
-              sfx.roar();
-              void app.save().then(() => revealSheet(app, unlockable.id));
-            },
+            title: "A new monster is in reach",
+            body: `You have ${app.meta.coins} coins, enough for someone in the crew. Pick whichever one you want.`,
+            cancel: "Later",
+            confirm: "See the crew",
+            onConfirm: () => app.go("collection"),
           });
         }
       },

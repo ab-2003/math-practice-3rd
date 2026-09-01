@@ -40,6 +40,10 @@ export interface Meta {
   animations: boolean;
   /** Which monster rides. His pick from the collection; null = newest owned. */
   rider: string | null;
+  /** Helmets bought. Bought once, wearable by any monster. */
+  helmetsOwned: string[];
+  /** Which helmet each monster wears: creatureId -> helmetId. */
+  gear: Record<string, string>;
   /** Lifetime lines landed. Unlocks tricks and spots. */
   linesLanded: number;
   /** Personal bests. They only ever go up, which is what keeps them safe. */
@@ -68,7 +72,7 @@ export interface Meta {
 
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
-  rider: null, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
+  rider: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },

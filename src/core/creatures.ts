@@ -11,7 +11,7 @@
  * in a bundle small enough to live offline.
  */
 
-export type Silhouette = "brute" | "raptor" | "plated" | "horned" | "serpent" | "titan";
+export type Silhouette = "brute" | "raptor" | "plated" | "horned" | "serpent" | "titan" | "dragon";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike";
 
@@ -29,7 +29,13 @@ export interface Creature {
   readonly palette: readonly [string, string, string];
 }
 
-/** Costs climb so the first unlock lands in session one and the last takes months. */
+/**
+ * THE SHOP IS OPEN, Andy 2026-09-01: every monster is VISIBLE with its price,
+ * and he buys whichever one he wants, in any order. No mysteries; wanting a
+ * specific one and saving for it IS the game. Twenty in all: the original
+ * twelve plus six dragons in six colours, a hockey bruiser and an inline
+ * speedster.
+ */
 export const ROSTER: readonly Creature[] = [
   { id: "grindjaw", name: "GRINDJAW", cost: 60,
     lore: "Ate a whole handrail on a dare. The dent is still in its jaw.",
@@ -79,6 +85,38 @@ export const ROSTER: readonly Creature[] = [
     lore: "Landed a line so long it finished somewhere else entirely.",
     silhouette: "titan", crest: "spikes", tail: "blade", eyes: 3, horns: 6,
     palette: ["#FF3D8B", "#2A0016", "#FFD6E7"] },
+  { id: "puckjaw", name: "PUCKJAW", cost: 200,
+    lore: "Checks the boards so hard the rink apologises afterward.",
+    silhouette: "brute", crest: "plates", tail: "club", eyes: 2, horns: 2,
+    palette: ["#8FB7D6", "#0E2233", "#E4F2FC"] },
+  { id: "bladeback", name: "BLADEBACK", cost: 280,
+    lore: "Eight wheels, zero brakes, one very confident grin.",
+    silhouette: "raptor", crest: "sail", tail: "whip", eyes: 2, horns: 1,
+    palette: ["#C9D3DC", "#22282F", "#FF3D8B"] },
+  { id: "cinderwyrm", name: "CINDERWYRM", cost: 350,
+    lore: "Its ollies leave scorch marks. The park pretends not to mind.",
+    silhouette: "dragon", crest: "spikes", tail: "spike", eyes: 2, horns: 2,
+    palette: ["#FF5A2A", "#3A0E00", "#FFD2A8"] },
+  { id: "tidalwyrm", name: "TIDALWYRM", cost: 500,
+    lore: "Surfs the bowl like it is still the sea it grew up in.",
+    silhouette: "dragon", crest: "sail", tail: "blade", eyes: 2, horns: 2,
+    palette: ["#2F7DFF", "#001A45", "#C8DDFF"] },
+  { id: "mosswing", name: "MOSSWING", cost: 650,
+    lore: "Sleeps in the treetops. Lands quieter than a falling leaf.",
+    silhouette: "dragon", crest: "plates", tail: "whip", eyes: 2, horns: 3,
+    palette: ["#4FC24F", "#0C2E0C", "#D8F7C8"] },
+  { id: "nightwyrm", name: "NIGHTWYRM", cost: 800,
+    lore: "You never see its run. You just find the trophies moved.",
+    silhouette: "dragon", crest: "spikes", tail: "blade", eyes: 3, horns: 2,
+    palette: ["#6B4BD6", "#120826", "#D9CCFF"] },
+  { id: "glacierwing", name: "GLACIERWING", cost: 1000,
+    lore: "Grinds rails made of ice it brought along personally.",
+    silhouette: "dragon", crest: "plates", tail: "spike", eyes: 2, horns: 4,
+    palette: ["#CFEFFF", "#0C3A4A", "#FFFFFF"] },
+  { id: "gildedwyrm", name: "GILDEDWYRM", cost: 1300,
+    lore: "Hoards exactly one thing: perfect landings.",
+    silhouette: "dragon", crest: "sail", tail: "blade", eyes: 2, horns: 5,
+    palette: ["#F5C542", "#4A3200", "#FFF3C4"] },
 ];
 
 export const MAX_LEVEL = 10;
@@ -89,6 +127,11 @@ export const levelCost = (currentLevel: number): number => 40 * currentLevel;
 export const creatureById = (id: string): Creature | undefined =>
   ROSTER.find((c) => c.id === id);
 
-/** The next creature he has not unlocked, or null once he owns them all. */
-export const nextLocked = (owned: readonly string[]): Creature | null =>
-  ROSTER.find((c) => !owned.includes(c.id)) ?? null;
+/** The cheapest monster he does not own yet: the home screen's default
+ *  savings target. In the shop itself he buys whatever he wants. */
+export const cheapestLocked = (owned: readonly string[]): Creature | null =>
+  [...ROSTER].filter((c) => !owned.includes(c.id)).sort((a, b) => a.cost - b.cost)[0] ?? null;
+
+/** Can he afford at least one monster he does not own? */
+export const canAffordAny = (owned: readonly string[], coins: number): boolean =>
+  ROSTER.some((c) => !owned.includes(c.id) && c.cost <= coins);

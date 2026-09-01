@@ -17,6 +17,7 @@
  */
 
 import type { Creature, Silhouette } from "../core/creatures";
+import type { Helmet, HelmetShape } from "../core/gear";
 import { svg } from "./dom";
 
 const INK = "#05070A";
@@ -33,6 +34,8 @@ interface Plan {
   /** Where the crest runs, as a spine polyline from tail end to neck. */
   spine: Array<[number, number]>;
   tailAnchor: [number, number];
+  /** Bat-wing fan drawn behind the body. Dragons only. */
+  wings?: string;
 }
 
 const PLANS: Record<Silhouette, Plan> = {
@@ -80,6 +83,16 @@ const PLANS: Record<Silhouette, Plan> = {
     legs: [],
     spine: [[30, 130], [66, 112], [92, 84], [124, 60]],
     tailAnchor: [20, 148],
+  },
+  // Winged. The wings ARE the silhouette; everything else stays grounded.
+  dragon: {
+    body: "M38 152 L46 114 L72 94 L112 88 L142 98 L158 118 L164 152 Z",
+    head: "M130 76 L184 58 L198 82 L182 98 L134 100 Z",
+    face: { x: 144, y: 66, scale: 1 },
+    legs: ["M56 146 L50 182 L78 182 L80 146 Z", "M116 146 L112 182 L142 182 L138 146 Z"],
+    spine: [[48, 124], [74, 96], [110, 88], [138, 96]],
+    tailAnchor: [40, 140],
+    wings: "M66 98 L20 20 L74 58 L92 14 L116 54 L152 24 L146 92 Z",
   },
   // Towering biped. Everything about it is vertical.
   titan: {
@@ -201,7 +214,63 @@ const face = (c: Creature, plan: Plan, glowing: boolean): SVGElement[] => {
  * Spending two days of coins on an invisible number taught the wrong lesson
  * about the whole economy.
  */
-export const creatureSvg = (c: Creature, opts: { level?: number } = {}): SVGElement => {
+/** Every shape drawn around a local origin at the crown of the head, so one
+ *  renderer dresses twenty monsters AND draws the shop tiles. */
+export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): SVGElement[] => {
+  const out: SVGElement[] = [];
+  const dome = (ry = 20, rx = 27): void => {
+    out.push(svg("path", { d: `M-${rx} 6 A ${rx} ${ry} 0 0 1 ${rx} 6 L ${rx - 4} 12 L -${rx - 4} 12 Z`,
+      fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+  };
+  switch (shape) {
+    case "half": dome(); out.push(svg("line", { x1: -16, y1: 12, x2: -12, y2: 24, stroke: INK, "stroke-width": 4 })); break;
+    case "cap": dome(18, 24); out.push(svg("path", { d: "M18 4 L44 2 L44 12 L20 12 Z", fill: accent, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" })); break;
+    case "full":
+      out.push(svg("path", { d: "M-28 4 A 28 24 0 0 1 28 4 L 28 20 L -28 20 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("rect", { x: 2, y: 4, width: 24, height: 8, rx: 4, fill: accent, stroke: INK, "stroke-width": 3 }));
+      break;
+    case "mohawk": dome();
+      for (let k = 0; k < 4; k++) out.push(svg("path", { d: `M${-18 + k * 11} -10 L${-13 + k * 11} -26 L${-8 + k * 11} -10 Z`, fill: accent, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+      break;
+    case "viking": dome();
+      out.push(svg("path", { d: "M-24 -2 L-38 -24 L-26 -20 L-18 -6 Z", fill: accent, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M24 -2 L38 -24 L26 -20 L18 -6 Z", fill: accent, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      break;
+    case "crown":
+      out.push(svg("path", { d: "M-24 12 L-24 -14 L-12 -2 L0 -18 L12 -2 L24 -14 L24 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("circle", { cx: 0, cy: 2, r: 4, fill: accent, stroke: INK, "stroke-width": 2.5 }));
+      break;
+    case "beanie": dome();
+      out.push(svg("rect", { x: -27, y: 4, width: 54, height: 9, rx: 4, fill: accent, stroke: INK, "stroke-width": 4 }));
+      out.push(svg("circle", { cx: 0, cy: -22, r: 7, fill: accent, stroke: INK, "stroke-width": 4 }));
+      break;
+    case "samurai": dome();
+      out.push(svg("path", { d: "M-27 8 L-42 20 L-24 18 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M27 8 L42 20 L24 18 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-3 -8 L0 -26 L3 -8 M-10 -6 L0 -22 M10 -6 L0 -22", fill: "none", stroke: accent, "stroke-width": 4, "stroke-linecap": "round" }));
+      break;
+    case "goggle": dome(16, 25);
+      out.push(svg("circle", { cx: -9, cy: 8, r: 8, fill: accent, stroke: INK, "stroke-width": 4 }));
+      out.push(svg("circle", { cx: 11, cy: 8, r: 8, fill: accent, stroke: INK, "stroke-width": 4 }));
+      break;
+    case "cone":
+      out.push(svg("path", { d: "M-8 -30 L8 -30 L20 12 L-20 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("rect", { x: -14, y: -12, width: 28, height: 8, fill: accent, stroke: INK, "stroke-width": 3 }));
+      break;
+  }
+  return out;
+};
+
+/** A helmet alone, for the gear rack tiles. */
+export const helmetIcon = (h: Helmet): SVGElement => {
+  const root = svg("svg", { viewBox: "-48 -40 96 68", class: "helm-mini", role: "img", "aria-label": h.name });
+  const g = svg("g", {});
+  for (const p of helmetPaths(h.shape, h.colors[0], h.colors[1])) g.append(p);
+  root.append(g);
+  return root;
+};
+
+export const creatureSvg = (c: Creature, opts: { level?: number; helmet?: Helmet } = {}): SVGElement => {
   const lvl = opts.level ?? 1;
   const plan = PLANS[c.silhouette];
   const [body, , glow] = c.palette;
@@ -213,6 +282,9 @@ export const creatureSvg = (c: Creature, opts: { level?: number } = {}): SVGElem
   }
 
   root.append(...tail(c, plan));
+  if (plan.wings !== undefined) {
+    root.append(poly(plan.wings, c.palette[2], SW));
+  }
   root.append(...crest(c, plan));
   for (const l of plan.legs) root.append(poly(l, body));
   root.append(poly(plan.body, body, SW + 2));
@@ -236,6 +308,13 @@ export const creatureSvg = (c: Creature, opts: { level?: number } = {}): SVGElem
 
   root.append(...horns(c, plan, lvl >= 7));
   root.append(...face(c, plan, lvl >= 4));
+
+  if (opts.helmet) {
+    const f = plan.face;
+    const g = svg("g", { class: "helm", transform: `translate(${f.x + 20 * f.scale} ${f.y - 12 * f.scale}) scale(${f.scale})` });
+    for (const pth of helmetPaths(opts.helmet.shape, opts.helmet.colors[0], opts.helmet.colors[1])) g.append(pth);
+    root.append(g);
+  }
   return root;
 };
 
