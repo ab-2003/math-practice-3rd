@@ -315,7 +315,7 @@ export const creatureSvg = (
     viewBox: "-14 -6 246 214", role: "img", "aria-label": c.name,
     // Shop tiles breathe: a tiny idle every ~5s, staggered per tile so the
     // crew never moves in lockstep. Everywhere else the art stands still.
-    class: `creature${opts.idle !== undefined ? ` idle idle-${c.silhouette}` : ""}${opts.fastIdle === true ? " idle-fast" : ""}`,
+    class: `creature${opts.idle !== undefined ? ` idle idle-${c.silhouette} idle-id-${c.id}` : ""}${opts.fastIdle === true ? " idle-fast" : ""}`,
     ...(opts.idle !== undefined ? { style: `--idle-delay:${opts.idle.toFixed(2)}s` } : {}),
   });
 
@@ -414,7 +414,53 @@ export const creatureSvg = (
     puck.append(svg("path", { d: "M-14 -4 L-30 -7 M-13 3 L-26 6", fill: "none", stroke: "#8FB7D6", "stroke-width": 2.6, "stroke-linecap": "round" }));
     puck.setAttribute("transform", "translate(32 30)");
     shot.append(puck);
+    const goal = svg("g", { class: "goal", transform: "translate(96 6)" });
+    goal.append(svg("path", { d: "M0 44 L0 6 L30 6 L30 44", fill: "none", stroke: "#D33A3A", "stroke-width": 5, "stroke-linecap": "round" }));
+    goal.append(svg("path", { d: "M4 14 L26 14 M4 24 L26 24 M4 34 L26 34 M10 8 L10 42 M20 8 L20 42", fill: "none", stroke: "#E4F2FC", "stroke-width": 1.8, opacity: 0.85 }));
+    shot.append(goal);
     root.append(shot);
+  }
+
+  // GRINDJAW grinds a log in his jaw until it SNAPS in half.
+  if (opts.idle !== undefined && c.id === "grindjaw") {
+    const rig = svg("g", { class: "logrig", transform: "translate(150 122)" });
+    const half = (cls: string, dir: number): SVGElement => {
+      const g = svg("g", { class: cls });
+      g.append(svg("rect", { x: dir < 0 ? -44 : 2, y: -8, width: 42, height: 16, rx: 7, fill: "#8B5A2B", stroke: INK, "stroke-width": 4 }));
+      g.append(svg("ellipse", { cx: dir < 0 ? -44 : 44, cy: 0, rx: 4.5, ry: 8, fill: "#C98A3A", stroke: INK, "stroke-width": 3 }));
+      return g;
+    };
+    rig.append(half("log-l", -1), half("log-r", 1));
+    rig.append(svg("path", { class: "grind-sparks", d: "M-4 -12 l3 -7 M2 -13 l4 -6 M8 -11 l2 -8", fill: "none", stroke: "#FFE14D", "stroke-width": 3, "stroke-linecap": "round" }));
+    root.append(rig);
+  }
+
+  // VOLTMAW crackles: lightning arcs over the body while it leaps.
+  if (opts.idle !== undefined && c.id === "voltmaw") {
+    const arcs = svg("g", { class: "voltrig" });
+    arcs.append(svg("path", { class: "bolt bolt-a", d: "M56 84 l12 -14 l-4 12 l14 -10 l-6 16", fill: "none", stroke: "#35E6FF", "stroke-width": 4, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    arcs.append(svg("path", { class: "bolt bolt-b", d: "M120 70 l10 -16 l-2 12 l12 -8 l-8 18", fill: "none", stroke: "#D6FBFF", "stroke-width": 3.4, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    arcs.append(svg("path", { class: "bolt bolt-a", d: "M78 140 l-12 10 l10 -2 l-12 12", fill: "none", stroke: "#35E6FF", "stroke-width": 3.4, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    root.append(arcs);
+  }
+
+  // MAGMASPYNE stands in his own lava pool; bubbles pop as he stomps.
+  if (opts.idle !== undefined && c.id === "magmaspyne") {
+    const pool = svg("g", { class: "lavarig" });
+    pool.append(svg("ellipse", { class: "lava", cx: 100, cy: 186, rx: 82, ry: 13, fill: "#FF5A2A", stroke: "#3A0000", "stroke-width": 5 }));
+    pool.append(svg("ellipse", { cx: 100, cy: 186, rx: 58, ry: 8, fill: "#FF8A1F", opacity: 0.85 }));
+    for (const [bx, d] of [[66, 0], [104, 1], [138, 2]] as const) {
+      pool.append(svg("circle", { class: `bubble bubble-${d}`, cx: bx, cy: 186, r: 5, fill: "#FFE14D", stroke: "#3A0000", "stroke-width": 2.5 }));
+    }
+    root.append(pool);
+  }
+
+  // GLACIODON rides a sailing ice floe under his jump.
+  if (opts.idle !== undefined && c.id === "glaciodon") {
+    const floe = svg("g", { class: "floe" });
+    floe.append(svg("path", { d: "M30 184 L52 176 L96 178 L142 174 L172 182 L164 194 L44 194 Z", fill: "#CFEFFF", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+    floe.append(svg("path", { d: "M60 182 L84 180 M116 180 L142 179", fill: "none", stroke: "#FFFFFF", "stroke-width": 2.6, "stroke-linecap": "round" }));
+    root.append(floe);
   }
 
   // BLADEBACK's idle is a speed burst: hot streaks trail the lean.

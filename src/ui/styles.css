@@ -688,15 +688,72 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes puck-rocket {
   0%, 9%, 100% { opacity: 0; transform: translate(0, 0); }
   10.5% { opacity: 1; transform: translate(4px, 0); }
-  20% { opacity: 0; transform: translate(88px, 14px); }
+  18% { opacity: 1; transform: translate(76px, -2px); }
+  21% { opacity: 0; transform: translate(82px, 0px); }
 }
 .puck-shot .smack { opacity: 0; animation: smack-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes smack-pop { 0%, 9%, 14%, 100% { opacity: 0; } 10.5% { opacity: 1; } }
 /* BLADEBACK's streaks flash through the leap. */
 .dash { opacity: 0; animation: dash-flash var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes dash-flash { 0%, 8%, 20%, 100% { opacity: 0; } 11% { opacity: 1; } 16% { opacity: 0.6; } }
-/* Sub-animations inherit the fast lane inside a card. */
-.idle-fast .stick, .idle-fast .puck, .idle-fast .smack, .idle-fast .dash { animation-duration: 2.6s; }
+/* GRINDJAW's log: gnawed with a jitter, sparks fly, then it SNAPS. */
+.logrig .log-l, .logrig .log-r { animation: log-gnaw var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); transform-box: fill-box; transform-origin: center; }
+.logrig .log-r { animation-name: log-gnaw-r; }
+@keyframes log-gnaw {
+  0%, 100% { transform: none; opacity: 1; }
+  3% { transform: rotate(-2.5deg); }
+  6% { transform: rotate(2deg); }
+  9% { transform: rotate(-2deg); }
+  12% { transform: translate(-18px, 12px) rotate(-26deg); }
+  19% { transform: translate(-22px, 20px) rotate(-30deg); opacity: 0; }
+  19.1% { opacity: 0; }
+  24% { transform: none; opacity: 1; }
+}
+@keyframes log-gnaw-r {
+  0%, 100% { transform: none; opacity: 1; }
+  3% { transform: rotate(2.5deg); }
+  6% { transform: rotate(-2deg); }
+  9% { transform: rotate(2deg); }
+  12% { transform: translate(18px, 10px) rotate(24deg); }
+  19% { transform: translate(24px, 18px) rotate(30deg); opacity: 0; }
+  19.1% { opacity: 0; }
+  24% { transform: none; opacity: 1; }
+}
+.grind-sparks { opacity: 0; animation: sparks var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes sparks { 0%, 2%, 11%, 100% { opacity: 0; } 4% { opacity: 1; } 7% { opacity: 0.4; } 9% { opacity: 1; } }
+
+/* VOLTMAW's arcs snap on and off in alternation. */
+.bolt { opacity: 0; animation: bolt-a var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.bolt-b { animation-name: bolt-b; }
+@keyframes bolt-a { 0%, 3%, 8%, 12%, 22%, 100% { opacity: 0; } 5% { opacity: 1; } 10% { opacity: 1; } 14% { opacity: 0.5; } }
+@keyframes bolt-b { 0%, 4%, 9%, 14%, 22%, 100% { opacity: 0; } 7% { opacity: 1; } 12% { opacity: 1; } 16% { opacity: 0.4; } }
+
+/* MAGMASPYNE's pool is permanent; the bubbles rise on the beat. */
+.bubble { opacity: 0; animation: bubble-pop var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.bubble-1 { animation-delay: calc(var(--idle-delay, 0s) + 0.25s); }
+.bubble-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.5s); }
+@keyframes bubble-pop {
+  0%, 4%, 20%, 100% { opacity: 0; transform: translateY(0); }
+  6% { opacity: 1; }
+  14% { opacity: 0; transform: translateY(-16px); }
+}
+
+/* GLACIODON's floe sails through under the jump. */
+.floe { opacity: 0; animation: floe-sail var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes floe-sail {
+  0%, 2%, 24%, 100% { opacity: 0; transform: translateX(-30px); }
+  6% { opacity: 1; }
+  18% { opacity: 1; transform: translateX(26px); }
+  23% { opacity: 0; transform: translateX(34px); }
+}
+.creature.idle-id-glaciodon { animation-name: idle-leap; }
+
+/* The goal fades in for the slapper; the puck now flies INTO it. */
+.puck-shot .goal { opacity: 0; animation: goal-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes goal-in { 0%, 5%, 26%, 100% { opacity: 0; } 8% { opacity: 1; } 22% { opacity: 1; } }
+
+/* Cards run every act on the fast lane; stillness wins when asked for. */
+.creature.idle-fast, .creature.idle-fast * , .idle-fast .stick, .idle-fast .puck, .idle-fast .smack, .idle-fast .dash { animation-duration: 2.6s; }
 @media (prefers-reduced-motion: reduce) {
-  .creature.idle, .flame, .puck-shot .stick, .puck-shot .puck, .puck-shot .smack, .dash { animation: none; }
+  .creature.idle, .creature.idle *, .flame, .puck-shot .stick, .puck-shot .puck, .puck-shot .smack, .dash { animation: none !important; }
 }

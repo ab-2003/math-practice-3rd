@@ -9,7 +9,7 @@ import { answerOf, fail, missingExpected, ok, typeAnswer } from "./lib/drive.mjs
 
 const BASE = process.env.BASE ?? "http://localhost:8050";
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } });
+const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true });
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
@@ -123,6 +123,20 @@ await step("the shop shows all twenty monsters by name, no mysteries", async () 
   must(delays.length === 20, `${delays.length} idle monsters, wanted 20`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 6, "the six dragons are not breathing");
+  // Every bespoke act is present.
+  for (const [mon, prop] of [["grindjaw", ".log-l"], ["voltmaw", ".bolt"], ["magmaspyne", ".lava"], ["glaciodon", ".floe"], ["puckjaw", ".goal"]]) {
+    must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop} act`);
+  }
+  // THE PHONE SCAR: a real touch on the monster ART (an SVG path, not an
+  // HTMLElement) must open the card. The synthesizer once ate exactly this.
+  {
+    const box = await page.locator('[data-mon="skathorn"]').boundingBox();
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.42);
+    await page.waitForTimeout(400);
+    must(await page.$(".sheet") !== null, "a TOUCH on the art did not open the card");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+  }
   const breaths = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
   must(new Set(breaths).size === 6, "the six dragons breathe the same breath");
@@ -566,6 +580,7 @@ await step("send out picks who rides, and the collection says so", async () => {
     m.owned = ["grindjaw", "voltmaw"];
     m.levels = { grindjaw: 1, voltmaw: 1 };
     m.rider = null;
+    m.lastSessionDay = window.__app.day();
     window.__app.go("collection");
   });
   await page.waitForTimeout(250);
@@ -579,10 +594,41 @@ await step("send out picks who rides, and the collection says so", async () => {
   must(badges.length === 1, `${badges.length} RIDING badges, wanted exactly 1`);
 });
 
+await step("before today's run the shop is one 60-second peek, then closed", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.lastSessionDay = window.__app.day() - 1; // yesterday's run, not today's
+    m.shopPeekDay = null; m.shopPeekAt = null;
+  });
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector(".roster");
+  must(await page.$('[data-probe="shop-peek"]') !== null, "the peek does not announce itself");
+  // Fast-forward the clock past the minute and let the watcher catch it.
+  await page.evaluate(() => { window.__app.meta().shopPeekAt = Date.now() - 61_000; });
+  await page.waitForSelector(".sheet", { timeout: 4000 });
+  must(((await page.textContent(".sheet")) ?? "").includes("Peek"), "the peek did not end with its sheet");
+  await page.click(".sheet .btn.ghost");
+  await page.waitForTimeout(300);
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector('[data-probe="shop-locked"]', { timeout: 4000 });
+  must(await page.$(".roster") === null, "the locked shop still shows the roster");
+  // Today's run done: the doors open for the rest of the day.
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  await page.evaluate(() => { window.__app.meta().lastSessionDay = window.__app.day(); });
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector(".roster", { timeout: 4000 });
+  must(await page.$('[data-probe="shop-peek"]') === null, "the open shop still wears the peek note");
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+});
+
 await step("he buys the dragon he WANTS, not the cheapest", async () => {
   await page.evaluate(() => {
     const m = window.__app.meta();
     m.coins = 5000; m.owned = []; m.rider = null;
+    m.lastSessionDay = window.__app.day(); // shop is open after the run
     window.__app.go("collection");
   });
   await page.waitForTimeout(250);

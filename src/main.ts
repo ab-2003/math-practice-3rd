@@ -64,8 +64,13 @@ document.addEventListener("touchend", (e) => {
   starts.delete(t.identifier);
   // 24px of movement is a pan, not a tap, or half of real taps read as drags.
   if (start && Math.hypot(t.clientX - start.x, t.clientY - start.y) > 24) return;
-  const target = under instanceof HTMLElement ? under.closest(TAPPABLE) : null;
-  const startTarget = start?.el instanceof HTMLElement ? start.el.closest(TAPPABLE) : null;
+  // Element, NOT HTMLElement: a tap on monster ART lands on an SVG path,
+  // which is an SVGElement, and the old gate silently ate every one of those
+  // taps. Andy found it on his phone; tap-audit had not, because it judged
+  // with its own contains() instead of THIS code path. closest() lives on
+  // Element, which is all we need.
+  const target = under instanceof Element ? under.closest(TAPPABLE) : null;
+  const startTarget = start?.el instanceof Element ? start.el.closest(TAPPABLE) : null;
   // A button born mid gesture never eats the same tap.
   if (target instanceof HTMLElement && target === startTarget && !target.hasAttribute("disabled")) {
     target.click();

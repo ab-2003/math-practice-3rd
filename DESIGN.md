@@ -477,6 +477,29 @@ DETAIL CARD the monster performs on a fast loop (act, a beat or two of rest,
 act again) so the one being looked at is the one showing off. All of it on
 one idle clock, staggered in the shop, still under prefers-reduced-motion.
 
+**Prop acting, the peek, and the SVG tap scar (0.9.0).**
+
+Signature acts joined the repertoire: GRINDJAW gnaws a log until it SNAPS in
+half with grind sparks; VOLTMAW crackles under alternating lightning arcs;
+MAGMASPYNE stands in a permanent lava pool with bubbles popping on his beat;
+GLACIODON leaps while an ice floe sails through under his feet; PUCKJAW's
+slapper now ends in a netted GOAL the puck flies into. All on the shared idle
+clock, all probe-pinned, all still under prefers-reduced-motion.
+
+**THE PEEK.** Before today's run the shop opens ONCE, for one minute from
+the moment it opens; then it closes ("You had your peek...") until the run is
+done, with DROP IN as the way forward. After today's run it stays open until
+midnight. Wanting back in is supposed to point at practice.
+
+**THE SVG TAP SCAR, a harness lesson that goes in the permanent list.** On
+Andy's phone, tapping monster ART did nothing: the tap synthesizer gated on
+`instanceof HTMLElement`, and a tap on art lands on an SVG path, which is an
+SVGElement. Every art tap died silently. tap-audit never caught it because it
+judged hits with its OWN contains() check instead of the production
+synthesizer's logic: an instrument that does not share the production code
+path vouches for a different app. The gate is `instanceof Element` now, and
+probe-loop drives a REAL synthesized touch on monster art every run.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -645,6 +668,11 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.9.0 - prop acting, the peek, and the SVG tap fix.** Signature
+      prop acts (log snap, lightning, lava pool, sailing floe, goal-bound
+      slapper); the once-a-day one-minute pre-run shop peek; and the
+      phone-found tap bug (SVG art ate touches) fixed at the synthesizer
+      with a real-touch regression probe.
 - [x] **0.8.2 - character acting.** Bigger in-character idles, six distinct
       dragon FORMS, down-angled 1.6x flames, PUCKJAW's full stick-and-puck
       slapper, BLADEBACK's speed streaks, and fast-loop performance on the

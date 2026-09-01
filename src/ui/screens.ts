@@ -114,6 +114,8 @@ export const homeScreen = (app: App): HTMLElement => {
   return root;
 };
 
+const PEEK_MS = 60_000;
+
 export const collectionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
   const bar = el("div", { class: "topbar" });
@@ -121,6 +123,48 @@ export const collectionScreen = (app: App): HTMLElement => {
   on(back, "click", () => app.go("home"));
   bar.append(back, el("div", { class: "grow" }), coinChip(app.meta.coins));
   root.append(bar);
+
+  // THE PEEK (Andy 2026-09-01): before today's run the shop opens ONCE, for
+  // one minute from the moment it opens; then it shuts until the run is done.
+  // After today's run it stays open until midnight. Wanting to get back in
+  // is supposed to point at the DROP IN button.
+  const runDone = app.meta.lastSessionDay === app.day;
+  if (!runDone) {
+    if (app.meta.shopPeekDay !== app.day) {
+      app.meta.shopPeekDay = app.day;
+      app.meta.shopPeekAt = Date.now();
+      void app.save();
+    }
+    const elapsed = Date.now() - (app.meta.shopPeekAt ?? Date.now());
+    if (elapsed > PEEK_MS) {
+      root.append(el("h2", { text: "The Crew" }));
+      const closedCard = el("div", { class: "card reveal", "data-probe": "shop-locked" });
+      closedCard.append(el("h2", { text: "Shop opens after today's run" }));
+      closedCard.append(el("p", { class: "note", text: "You had your peek. Land today's tricks and the whole shop is yours until midnight." }));
+      const goRun = el("button", { type: "button", class: "btn go big" }, el("span", { text: "Drop In" }));
+      on(goRun, "click", () => app.go("session"));
+      closedCard.append(goRun);
+      root.append(closedCard);
+      return root;
+    }
+    root.append(el("p", { class: "note peek-note", "data-probe": "shop-peek",
+      text: "Quick look! The shop opens for real after today's run." }));
+    const watcher = window.setInterval(() => {
+      if (!root.isConnected) { window.clearInterval(watcher); return; }
+      if (Date.now() - (app.meta.shopPeekAt ?? 0) > PEEK_MS) {
+        window.clearInterval(watcher);
+        app.go("home");
+        sheet({
+          title: "Peek's over!",
+          body: "The shop opens for the rest of the day once today's run is done.",
+          cancel: "OK",
+          confirm: "Drop in",
+          onConfirm: () => app.go("session"),
+        });
+      }
+    }, 1000);
+  }
+
   root.append(el("h2", { text: "The Crew" }));
 
   const grid = el("div", { class: "roster" });

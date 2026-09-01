@@ -40,6 +40,9 @@ export interface Meta {
   animations: boolean;
   /** Which monster rides. His pick from the collection; null = newest owned. */
   rider: string | null;
+  /** The one pre-run shop peek per day: which day, and when it started. */
+  shopPeekDay: number | null;
+  shopPeekAt: number | null;
   /** Helmets bought. Bought once, wearable by any monster. */
   helmetsOwned: string[];
   /** Which helmet each monster wears: creatureId -> helmetId. */
@@ -72,7 +75,7 @@ export interface Meta {
 
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
-  rider: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
+  rider: null, shopPeekDay: null, shopPeekAt: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
