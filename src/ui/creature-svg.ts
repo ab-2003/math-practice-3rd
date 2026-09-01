@@ -137,6 +137,13 @@ const DRAGON_VARIANTS: Record<string, Partial<Plan>> = {
     head: "M128 62 L186 44 L198 70 L182 86 L132 90 Z",
     face: { x: 142, y: 52, scale: 1 },
   },
+  // Kallen's VOIDWYRM: nebula-torn wings and a sleek raised head; the body
+  // carries its own stars.
+  voidwyrm: {
+    wings: "M64 96 L18 30 L46 58 L40 10 L74 48 L86 6 L108 46 L134 16 L142 60 L150 40 L144 90 Z",
+    head: "M130 70 L188 52 L200 78 L182 94 L134 96 Z",
+    face: { x: 145, y: 61, scale: 1 },
+  },
 };
 
 const poly = (d: string, fill: string, w = SW): SVGElement =>
@@ -338,6 +345,20 @@ export const creatureSvg = (
     d: `M${plan.spine[1]?.[0] ?? 60} ${(plan.spine[1]?.[1] ?? 100) + 16} L${plan.spine[2]?.[0] ?? 100} ${(plan.spine[2]?.[1] ?? 90) + 12} L${plan.spine[2]?.[0] ?? 100} ${(plan.spine[2]?.[1] ?? 90) + 26} L${plan.spine[1]?.[0] ?? 60} ${(plan.spine[1]?.[1] ?? 100) + 32} Z`,
     fill: glow, opacity: 0.5,
   }));
+  if (c.id === "voidwyrm") {
+    // The starfield is the hide: white and starlight-blue glints over the
+    // deep violet, so he reads cosmic even standing still.
+    for (const [sx2, sy2, r2] of [[72, 118, 2], [94, 106, 1.6], [114, 128, 2.2], [134, 110, 1.6], [86, 140, 1.8], [124, 142, 1.5], [103, 117, 1.4]] as const) {
+      root.append(svg("circle", { cx: sx2, cy: sy2, r: r2, fill: sx2 % 2 === 0 ? "#FFFFFF" : "#9DB8FF", opacity: 0.9 }));
+    }
+    for (const [gx, gy, gs] of [[80, 128, 5], [120, 118, 6]] as const) {
+      root.append(svg("path", {
+        d: `M${gx} ${gy - gs} L${gx + gs * 0.3} ${gy - gs * 0.3} L${gx + gs} ${gy} L${gx + gs * 0.3} ${gy + gs * 0.3} L${gx} ${gy + gs} L${gx - gs * 0.3} ${gy + gs * 0.3} L${gx - gs} ${gy} L${gx - gs * 0.3} ${gy - gs * 0.3} Z`,
+        fill: "#C9A6FF", opacity: 0.95,
+      }));
+    }
+  }
+
   root.append(poly(plan.head, body, SW + 1));
   if (lvl >= 2) {
     // The deck-sticker star, planted on the flank.
@@ -353,6 +374,22 @@ export const creatureSvg = (
 
   root.append(...horns(c, plan, lvl >= 7));
   root.append(...face(c, plan, lvl >= 4));
+
+  // VOIDWYRM performs on his own patch of COSMOS: a deep-space halo that
+  // fades in for the act, stars twinkling in alternation, one comet.
+  if (opts.idle !== undefined && c.id === "voidwyrm") {
+    const cosmos = svg("g", { class: "cosmos" });
+    cosmos.append(svg("ellipse", { cx: 100, cy: 104, rx: 114, ry: 98, fill: "#0A0620", opacity: 0.85 }));
+    const starGroup = (cls: string, pts: ReadonlyArray<readonly [number, number, number, string]>): SVGElement => {
+      const g2 = svg("g", { class: cls });
+      for (const [x, y, r, col] of pts) g2.append(svg("circle", { cx: x, cy: y, r, fill: col }));
+      return g2;
+    };
+    cosmos.append(starGroup("cstars-a", [[24, 44, 2, "#FFFFFF"], [176, 30, 1.6, "#9DB8FF"], [40, 150, 1.8, "#C9A6FF"], [188, 130, 2.2, "#FFFFFF"], [66, 22, 1.4, "#9DB8FF"]]));
+    cosmos.append(starGroup("cstars-b", [[150, 16, 2, "#C9A6FF"], [12, 100, 1.7, "#FFFFFF"], [196, 78, 1.5, "#9DB8FF"], [90, 12, 1.8, "#FFFFFF"], [168, 168, 1.9, "#C9A6FF"]]));
+    cosmos.append(svg("path", { class: "comet", d: "M30 60 L58 74", stroke: "#FFFFFF", "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0.9 }));
+    root.prepend(cosmos);
+  }
 
   // Dragons breathe on their idle beat, and EACH BREATHES ITS OWN ELEMENT
   // (Andy 2026-09-01): ember fire, ice shards, leaf-spray, void wisps, frost
@@ -393,6 +430,19 @@ export const creatureSvg = (
           }));
         }
         break;
+      case "voidwyrm": { // cosmos stardust: a cone of glints and dust
+        flame.append(svg("path", { d: "M2 2 L34 -12 L46 0 L38 12 L4 10 Z", fill: "#9DB8FF", opacity: 0.28 }));
+        const star = (sx3: number, sy3: number, r3: number, col: string): SVGElement => svg("path", {
+          d: `M${sx3} ${sy3 - r3} L${sx3 + r3 * 0.32} ${sy3 - r3 * 0.32} L${sx3 + r3} ${sy3} L${sx3 + r3 * 0.32} ${sy3 + r3 * 0.32} L${sx3} ${sy3 + r3} L${sx3 - r3 * 0.32} ${sy3 + r3 * 0.32} L${sx3 - r3} ${sy3} L${sx3 - r3 * 0.32} ${sy3 - r3 * 0.32} Z`,
+          fill: col, stroke: INK, "stroke-width": 1.4,
+        });
+        flame.append(star(14, -2, 8, "#FFFFFF"));
+        flame.append(star(30, -8, 6, "#C9A6FF"));
+        flame.append(star(36, 6, 5, "#9DB8FF"));
+        flame.append(svg("circle", { cx: 24, cy: 8, r: 2, fill: "#FFFFFF" }));
+        flame.append(svg("circle", { cx: 42, cy: -4, r: 1.7, fill: "#C9A6FF" }));
+        break;
+      }
       default: // cinderwyrm: the classic ember fire
         flame.append(jag("M2 0 L30 -8 L20 2 L34 6 L18 10 L26 18 L2 10 Z", "#FF8A1F"));
         flame.append(svg("path", { d: "M4 2 L20 -2 L14 4 L22 8 L6 8 Z", fill: "#FFE14D" }));

@@ -111,18 +111,22 @@ await step("progress survives a reload", async () => {
 await step("the shop shows all twenty monsters by name, no mysteries", async () => {
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 20, "the roster is not twenty");
+  must((await page.$$(".mon")).length === 21, "the roster is not twenty-one");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
-  must(text.includes("CINDERWYRM") && text.includes("GILDEDWYRM"), "the dragons are not on display");
+  must(text.includes("CINDERWYRM") && text.includes("VOIDWYRM"), "the dragons are not on display");
+  // Kallen's dragon holds the LAST slot, wears his stars, and brings his sky.
+  must(await page.evaluate(() => document.querySelector(".roster")?.lastElementChild?.getAttribute("data-mon")) === "voidwyrm",
+    "VOIDWYRM is not the final monster in the shop");
+  must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
   must((await page.$$(".helm-tile")).length === 20, "the gear rack is not twenty helmets");
   // The shop breathes: idle animations exist and are STAGGERED, and the
   // dragons carry their fire.
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 20, `${delays.length} idle monsters, wanted 20`);
+  must(delays.length === 21, `${delays.length} idle monsters, wanted 21`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
-  must((await page.$$(".roster .flame")).length === 6, "the six dragons are not breathing");
+  must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   // Every bespoke act is present.
   for (const [mon, prop] of [["grindjaw", ".log-l"], ["voltmaw", ".bolt"], ["magmaspyne", ".lava"], ["glaciodon", ".floe"], ["puckjaw", ".goal"]]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop} act`);
@@ -139,11 +143,11 @@ await step("the shop shows all twenty monsters by name, no mysteries", async () 
   }
   const breaths = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
-  must(new Set(breaths).size === 6, "the six dragons breathe the same breath");
+  must(new Set(breaths).size === 7, "the dragons share breaths that should be their own");
   must(await page.$('[data-mon="puckjaw"] .puck-shot .stick') !== null, "PUCKJAW lost his stick");
   const wings = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .wings")].map((w) => w.getAttribute("d")));
-  must(wings.length === 6 && new Set(wings).size === 6, "the six dragons are palette swaps, not forms");
+  must(wings.length === 7 && new Set(wings).size === 7, "the seven dragons are palette swaps, not forms");
   // With no monsters yet, the rack is on display but shut: gray tiles, a
   // wink of copy, and not a single tappable helmet.
   if (await page.evaluate(() => window.__app.meta().owned.length) === 0) {

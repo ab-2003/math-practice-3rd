@@ -60,7 +60,7 @@ body::before {
 .topbar .btn { flex: none; }
 
 h1, h2, h3 { margin: 0; letter-spacing: 0.02em; text-transform: uppercase; }
-h1 { font-size: clamp(30px, 6vw, 52px); font-weight: 900; line-height: 0.95; }
+h1 { font-size: clamp(24px, 4.2vw, 38px); font-weight: 900; line-height: 0.95; }
 h2 { font-size: clamp(20px, 3.4vw, 28px); font-weight: 900; }
 h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08em; }
 
@@ -74,7 +74,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
 }
 .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
-.btn.big { font-size: clamp(24px, 5vw, 34px); min-height: 84px; width: 100%; }
+.btn.big { font-size: clamp(21px, 4vw, 29px); min-height: 70px; width: 100%; }
 .btn.go { background: var(--acid); color: var(--ink); }
 .btn.alt { background: var(--cyan); color: var(--ink); }
 .btn.warm { background: var(--orange); color: var(--ink); }
@@ -84,7 +84,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 .card {
   background: var(--panel); border: 5px solid var(--ink); border-radius: 20px;
-  box-shadow: 0 6px 0 var(--ink); padding: 16px; margin-bottom: 16px;
+  box-shadow: 0 6px 0 var(--ink); padding: 14px; margin-bottom: 10px;
 }
 
 .coins { font-weight: 900; font-size: 22px; color: var(--warm); display: flex; align-items: center; gap: 6px; }
@@ -93,10 +93,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 /* ---------- home ---------- */
 
 .hero { text-align: center; padding: 4px 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.hero .sub { color: var(--dim); font-size: 17px; margin-top: 8px; font-weight: 700; text-transform: none; letter-spacing: 0; }
-.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.stat { text-align: center; padding: 14px 8px; }
-.stat b { display: block; font-size: 32px; color: var(--acid); }
+.hero .sub { color: var(--dim); font-size: 15px; margin-top: 2px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.stat { text-align: center; padding: 7px 8px; }
+.stat b { display: block; font-size: 24px; color: var(--acid); }
 .stat span { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* The next monster he has not earned shows as HIS art, dimmed. A grey
@@ -211,7 +211,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .mon.locked { background: var(--panel-2); cursor: default; }
 .creature { width: 100%; height: auto; display: block; }
-.hero .creature.home-creature { width: min(38vw, 180px); margin: 0 auto; }
+.hero .creature.home-creature { width: min(24vw, 128px); margin: 0 auto; }
 .mon-name { font-weight: 900; font-size: 15px; letter-spacing: 0.04em; margin-top: 6px; }
 .mon-sub { font-size: 13px; color: var(--dim); font-weight: 800; }
 .mon-lore { font-size: 15px; font-weight: 700; color: var(--dim); text-transform: none; line-height: 1.35; }
@@ -517,7 +517,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   letter-spacing: 0.08em; color: var(--ink); background: var(--acid);
   border: 3px solid var(--ink); border-radius: 999px; padding: 2px 10px;
 }
-.unlock-progress { text-align: center; display: grid; gap: 8px; }
+.unlock-progress { text-align: center; display: grid; gap: 5px; padding: 10px 14px; }
 .done-pill { color: var(--acid); border-color: var(--acid); font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -762,7 +762,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 /* ---------- the daily-done system ---------- */
 .hero { position: relative; }
-.daily-badge { width: min(30vw, 168px); }
+.daily-badge { width: min(24vw, 138px); }
 .daily-badge .badge-star { width: 100%; height: auto; display: block;
   animation: badge-stamp 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both; transform: rotate(-8deg); }
 @keyframes badge-stamp {
@@ -773,7 +773,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @media (min-width: 700px) {
   .daily-badge { position: absolute; right: max(0px, calc(50% - 340px)); top: 40%; }
 }
-.dose-line { display: grid; gap: 6px; margin-top: 10px; text-align: center; }
+.dose-line { display: grid; gap: 4px; margin: 6px 0 8px; text-align: center; }
 .daily-banner {
   position: absolute; inset: 0; z-index: 10; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -807,3 +807,20 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @media (prefers-reduced-motion: reduce) {
   .daily-badge .badge-star, .daily-banner { animation-duration: 1ms; }
 }
+
+/* ---------- VOIDWYRM's cosmos: space fades in for the act ---------- */
+.cosmos { opacity: 0; animation: cosmos-in var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes cosmos-in { 0%, 1.5%, 26%, 100% { opacity: 0; } 6% { opacity: 1; } 20% { opacity: 1; } }
+.cstars-a { animation: twinkle-a var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.cstars-b { animation: twinkle-b var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes twinkle-a { 0%, 100% { opacity: 1; } 8% { opacity: 0.25; } 14% { opacity: 1; } 19% { opacity: 0.4; } }
+@keyframes twinkle-b { 0%, 100% { opacity: 0.35; } 8% { opacity: 1; } 14% { opacity: 0.3; } 19% { opacity: 1; } }
+.comet { opacity: 0; animation: comet-go var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes comet-go {
+  0%, 5%, 24%, 100% { opacity: 0; transform: translate(0, 0); }
+  8% { opacity: 0.9; }
+  18% { opacity: 0; transform: translate(110px, 34px); }
+}
+
+/* Icons riding the big slabs. */
+.btn-ico { height: 26px; width: auto; flex: none; }

@@ -699,6 +699,12 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.10.1 - VOIDWYRM, and the fold.** Kallen's commission: the void
+      dragon, 21st and last in the shop at 500 coins — starry hide, nebula-
+      torn wings (an eighth distinct dragon form), cosmos-stardust breath,
+      and his own patch of twinkling space that fades in for his act. Plus
+      the home screen tightened so the shop button lives above the fold on
+      the iPad, and game-art icons on the DROP IN and MONSTERS slabs.
 - [x] **0.10.0 - the daily dose, the histogram, and the cloud.** A real
       configurable day's-work with the badge/jingle/extra-practice system;
       the nested response-time histogram by problem type; WO4-pattern cloud

@@ -3,20 +3,25 @@ import { canAffordAny, cheapestLocked, ROSTER } from "./creatures";
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
-  it("holds exactly twenty monsters, six of them dragons", () => {
-    expect(ROSTER.length).toBe(20);
-    expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(6);
+  it("holds exactly twenty-one monsters, seven of them dragons", () => {
+    expect(ROSTER.length).toBe(21);
+    expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
+  });
+
+  it("keeps VOIDWYRM last, because he is Kallen's", () => {
+    expect(ROSTER[ROSTER.length - 1]!.id).toBe("voidwyrm");
+    expect(ROSTER[ROSTER.length - 1]!.cost).toBe(500);
   });
 
   it("keeps every id and name unique, and every price positive", () => {
-    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(20);
-    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(20);
+    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(21);
+    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(21);
     for (const c of ROSTER) expect(c.cost).toBeGreaterThan(0);
   });
 
-  it("gives the six dragons six different colours", () => {
+  it("gives the seven dragons seven different colours", () => {
     const bodies = ROSTER.filter((c) => c.silhouette === "dragon").map((c) => c.palette[0]);
-    expect(new Set(bodies).size).toBe(6);
+    expect(new Set(bodies).size).toBe(7);
   });
 
   it("still knows the cheapest target and affordability", () => {

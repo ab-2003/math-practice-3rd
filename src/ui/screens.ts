@@ -43,6 +43,25 @@ const dailyBadge = (): HTMLElement => {
   return wrap;
 };
 
+/** Little game-art icons for the big buttons: ink shapes on the coloured
+ *  slabs, same sticker language as everything else. */
+const iconSkate = (): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 44 22", class: "btn-ico", "aria-hidden": "true" });
+  g.append(svg("path", { d: "M5 6 C1 6 1 13 5 13 L39 13 C43 13 43 6 39 6 Z", fill: "#05070A" }));
+  g.append(svg("circle", { cx: 13, cy: 17, r: 4, fill: "#05070A" }));
+  g.append(svg("circle", { cx: 31, cy: 17, r: 4, fill: "#05070A" }));
+  return g;
+};
+const iconMonster = (): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 40 30", class: "btn-ico", "aria-hidden": "true" });
+  g.append(svg("path", { d: "M6 26 L8 12 L14 6 L27 6 L34 13 L34 26 Z", fill: "#05070A" }));
+  g.append(svg("path", { d: "M11 6 L14 0 L17 6 Z M21 6 L24 0 L27 6 Z", fill: "#05070A" }));
+  g.append(svg("circle", { cx: 16, cy: 14, r: 3.4, fill: "#35E6FF" }));
+  g.append(svg("circle", { cx: 26, cy: 14, r: 3.4, fill: "#35E6FF" }));
+  g.append(svg("path", { d: "M12 21 l4 4 l4 -4 l4 4 l4 -4", fill: "none", stroke: "#35E6FF", "stroke-width": 2.4 }));
+  return g;
+};
+
 const coinChip = (n: number): HTMLElement =>
   el("div", { class: "coins" }, el("span", { text: "◆" }), el("span", { text: String(n) }));
 
@@ -107,7 +126,7 @@ export const homeScreen = (app: App): HTMLElement => {
   const done = doseDone(app);
   if (done) hero.append(dailyBadge());
   const go = el("button", { type: "button", class: "btn go big", "data-probe": "start" },
-    el("span", { text: done ? "Extra Practice" : "Drop In" }));
+    iconSkate(), el("span", { text: done ? "Extra Practice" : "Drop In" }));
   on(go, "click", () => app.go("session"));
   root.append(go);
   if (!done) {
@@ -140,7 +159,7 @@ export const homeScreen = (app: App): HTMLElement => {
   }
 
   const coll = el("button", { type: "button", class: "btn alt big", "data-probe": "collection" },
-    el("span", { text: `Monsters ${app.meta.owned.length}/${ROSTER.length}` }));
+    iconMonster(), el("span", { text: `Monsters ${app.meta.owned.length}/${ROSTER.length}` }));
   on(coll, "click", () => app.go("collection"));
   root.append(coll);
 

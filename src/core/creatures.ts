@@ -117,6 +117,12 @@ export const ROSTER: readonly Creature[] = [
     lore: "Hoards exactly one thing: perfect landings.",
     silhouette: "dragon", crest: "sail", tail: "blade", eyes: 2, horns: 5,
     palette: ["#F5C542", "#4A3200", "#FFF3C4"] },
+  // Kallen's commission (2026-09-01): the VOID DRAGON. Last in the shop on
+  // purpose, because he is the special one.
+  { id: "voidwyrm", name: "VOIDWYRM", cost: 500,
+    lore: "Hatched beyond the last star. Every line it lands leaves stardust.",
+    silhouette: "dragon", crest: "spikes", tail: "whip", eyes: 3, horns: 2,
+    palette: ["#251C4A", "#0A0620", "#9DB8FF"] },
 ];
 
 export const MAX_LEVEL = 10;
