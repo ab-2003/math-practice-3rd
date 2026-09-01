@@ -13,6 +13,7 @@
  */
 
 import type { Creature } from "../core/creatures";
+import type { Trick } from "../core/tricks";
 import { creatureSvg } from "./creature-svg";
 import { el, svg } from "./dom";
 
@@ -36,21 +37,21 @@ const board = (): SVGElement => {
  * animationend alone: a backgrounded tab never fires it, and the session
  * would wedge with no way forward.
  */
-export const playTrick = (host: HTMLElement, c: Creature, index: number, name: string): Promise<void> =>
+export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 1): Promise<void> =>
   new Promise((resolve) => {
     // The answered problem ghosts out while the trick has the stage, and the
     // next one fades in after. Without this the rider hopped straight through
     // the old equation and the whole moment read as clutter.
     host.classList.add("riding");
-    const run = el("div", { class: `trick-run trick-${index}` });
+    const run = el("div", { class: `trick-run trick-${trick.anim}` });
     const flip = el("div", { class: "trick-flip" });
-    const art = creatureSvg(c);
+    const art = creatureSvg(c, { level });
     art.classList.add("trick-creature");
     flip.append(art, board());
     const rider = el("div", { class: "trick-rider" }, flip);
-    if (index === 2) run.append(el("div", { class: "trick-rail" })); // the grind needs its rail
+    if (trick.anim === 2 || trick.anim === 6) run.append(el("div", { class: "trick-rail" })); // grinds need their rail
     run.append(rider);
-    run.append(el("div", { class: "landing", text: name })); // the name still pops
+    run.append(el("div", { class: "landing", text: trick.name })); // the name still pops
     host.append(run);
 
     let done = false;

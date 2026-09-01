@@ -425,6 +425,88 @@ await step("the analog view shows two clock faces and not a single digital time"
   must(await page.$('[data-probe="retype"]') === null, `the analog answer ${mins} was graded wrong`);
 });
 
+// ---- the juice and the agency ---------------------------------------------
+
+const calmMeta = () => page.evaluate(() => {
+  const m = window.__app.meta();
+  m.strands = { add: true, sub: true, mul: false, div: false };
+  m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+  m.animations = false;
+});
+const answerN = async (n) => {
+  for (let i = 0; i < n; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(120);
+  }
+};
+
+await step("the session coin chip counts up the moment a trick lands", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await calmMeta();
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const before = Number((await page.textContent('[data-probe="session-coins"] .chip-n')) ?? "-1");
+  await answerN(1);
+  const after = Number((await page.textContent('[data-probe="session-coins"] .chip-n')) ?? "-1");
+  must(after === before + 1, `chip went ${before} -> ${after}, wanted +1`);
+});
+
+await step("landing a full line raises the LINE LANDED banner", async () => {
+  // Photographing the old build proved a landed line produced no feedback at
+  // all. The banner plays even with the ride animations switched off.
+  await answerN(3);
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  await page.waitForSelector('[data-probe="line-banner"]', { timeout: 4000 });
+  await page.waitForSelector('[data-probe="line-banner"]', { state: "detached", timeout: 4000 });
+});
+
+await step("the unlock is his choice, and keep-saving spends nothing", async () => {
+  await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = []; });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.warm, .sheet .btn.go"); // confirm the breather
+  await page.waitForSelector(".sheet .btn.go", { timeout: 5000 });
+  await page.click(".sheet .btn.go"); // Done on the run sheet
+  await page.waitForSelector(".sheet", { timeout: 5000 });
+  const text = (await page.textContent(".sheet")) ?? "";
+  must(text.includes("Keep saving"), "no keep-saving choice was offered");
+  const coinsBefore = await page.evaluate(() => window.__app.meta().coins);
+  await page.click(".sheet .btn.ghost"); // Keep saving
+  await page.waitForTimeout(300);
+  must(await page.evaluate(() => window.__app.meta().coins) === coinsBefore, "keep-saving spent his coins");
+  must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "keep-saving unlocked anyway");
+});
+
+await step("after a run, home says today is done", async () => {
+  must(await page.$('[data-probe="done-today"]') !== null, "no done-today pill");
+  const label = (await page.textContent('[data-probe="start"]')) ?? "";
+  must(label.toUpperCase().includes("ANOTHER"), `the button still says "${label}"`);
+  must(await page.$('[data-probe="unlock-progress"]') !== null, "no progress toward the next monster on home");
+});
+
+await step("send out picks who rides, and the collection says so", async () => {
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.owned = ["grindjaw", "voltmaw"];
+    m.levels = { grindjaw: 1, voltmaw: 1 };
+    m.rider = null;
+    window.__app.go("collection");
+  });
+  await page.waitForTimeout(250);
+  await page.click('[data-mon="grindjaw"]');
+  await page.waitForSelector('[data-probe="send-out"]', { timeout: 4000 });
+  await page.click('[data-probe="send-out"]');
+  await page.waitForTimeout(350);
+  must(await page.evaluate(() => window.__app.meta().rider) === "grindjaw", "send out did not set the rider");
+  while (await page.$(".scrim") !== null) { await page.keyboard.press("Escape"); await page.waitForTimeout(200); }
+  const badges = await page.$$(".riding-badge");
+  must(badges.length === 1, `${badges.length} RIDING badges, wanted exactly 1`);
+});
+
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);
 await browser.close();
 console.log(process.exitCode ? "PROBE-LOOP RED" : "PROBE-LOOP GREEN");

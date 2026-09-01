@@ -380,6 +380,55 @@ advances all four strands, and the struggle detector still cuts bad days short.
 
 ---
 
+## 9b. The juice, the agency, and the arcs (0.6.0)
+
+A fresh-eyes review (Fable, 2026-09-01) walked the live app as the child would
+and found the core loop calm and true but the REWARDS nearly invisible. Andy
+took every recommendation. What landed, and why:
+
+**The line is an EVENT.** Screenshots proved that completing a line, in an app
+named Trick Line, produced no feedback: the strip silently reset. Now: the
+LINE LANDED banner (fixed ~1s, plays with or without ride animations), the
+strip flashes as a unit, and the +5 rides up off the coin chip.
+
+**Coins are visible while they happen.** A chip in the session topbar counts
+up on every bank with a bump and a floating +n. It shows wallet plus run, so
+it only ever counts UP.
+
+**The unlock is HIS choice.** The old build auto-bought the next monster at
+run's end, which broke saving up for the big one. Now a choice sheet: Unlock,
+or Keep saving. Home also carries a progress bar toward the next monster.
+
+**Levels are visible.** LEVEL UP used to buy an invisible number, which
+teaches a child the economy cheats. Now: deck-sticker star at 2, glowing eyes
+at 4, gold horns at 7, an aura at 10, drawn by the same parametric renderer.
+
+**He picks who rides.** SEND OUT on any owned monster; a RIDING badge in the
+collection; the home hero is the rider. Agency turns the collection into a
+pre-run ritual.
+
+**The vocabulary and the world grow (the spring-semester arcs).** The twelve
+monsters cost 6,230 coins total and exhaust by roughly December, so lifetime
+LINES LANDED now earns two more arcs: new tricks (720 at 25 lines, DARKSLIDE
+at 60, MCTWIST at 110, LASER FLIP at 175; each line is composed from the
+unlocked pool with a rotating showcase slot) and skate spots (halfpipe 15,
+rooftop 40, sunset bowl 80, mega ramp 140), drawn dim behind the stage so the
+equation always owns the contrast.
+
+**The bonus announces itself** (BONUS ROUND, its own sting), **the run tells
+its story** (tricks, lines, longest chain, personal bests that only go up,
+who was riding), and **the day is visible** (the DROP IN button becomes
+ANOTHER RUN? with a done-today pill, serving the one-run-a-day contract).
+
+**The scaffold teaches in sequence**: steps light one at a time, the array
+rows skip-count in, and the bridge frame's eleventh cell is attached to the
+ten-frame instead of floating as a caption. **The chain is audible**: chime
+and landing walk up in pitch through the line, correctness-linked only.
+
+Laws intact throughout: nothing distinguishes retrieved from derived, all
+celebration is fixed-duration, records only rise, and nothing is ever taken
+back.
+
 # PART III - DESIGN SYSTEM
 
 Bold, chunky, high contrast. Skate-deck graphics and monster-sticker art:
@@ -544,6 +593,13 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.6.0 - the juice, the agency, and the arcs.** Everything from the
+      fresh-eyes review (SS9b): the line banner, the visible coin chip, the
+      unlock as a choice plus the home progress bar, visible level
+      accessories, SEND OUT, the trick and spot arcs keyed to lifetime lines,
+      the bonus round announcing itself, the run story with rising-only
+      bests, the done-today button, sequenced scaffolds, and the pitched
+      chain.
 - [x] **0.5.0 - the elapsed-time ladder and the analog clocks.** Three
       explained levels with the parent picking the ceiling (default level 1
       only), mixing everything at or below it; and an opt-in analog view,

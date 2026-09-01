@@ -70,18 +70,29 @@ const noise = (at: number, dur: number, gain: number, cutoff: number): void => {
 export const sfx = {
   /** A digit going into the keypad. Barely there. */
   tap: (): void => env("square", 420, 0, 0.04, 0.05),
-  /** A trick landing: the pop, then the wheels. */
-  land: (): void => {
-    env("triangle", 300, 0, 0.09, 0.18, 720);
+  /**
+   * A trick landing. `step` is the position in the line (0..4) and walks the
+   * pitch upward, so a chain is AUDIBLE as a chain and the fifth landing
+   * already sounds like arrival. Correctness-linked only, never speed:
+   * identical for a retrieved and a derived answer, which keeps the ear as
+   * blind to the difference as the eye.
+   */
+  land: (step = 0): void => {
+    const lift = 1 + step * 0.13;
+    env("triangle", 300 * lift, 0, 0.09, 0.18, 720 * lift);
     noise(0.03, 0.13, 0.11, 2600);
   },
-  /** The correct-answer chime: a quick bright arpeggio over the pop. Same
-   *  chime whether he retrieved it or worked it out; the ear must not be able
-   *  to tell the difference either. */
-  chime: (): void => {
-    env("sine", 1047, 0, 0.16, 0.12);
-    env("sine", 1319, 0.06, 0.18, 0.11);
-    env("triangle", 1568, 0.12, 0.26, 0.1);
+  /** The correct-answer chime, stepping up the scale with the line. */
+  chime: (step = 0): void => {
+    const lift = Math.pow(2, (step * 2) / 12);
+    env("sine", 1047 * lift, 0, 0.16, 0.12);
+    env("sine", 1319 * lift, 0.06, 0.18, 0.11);
+    env("triangle", 1568 * lift, 0.12, 0.26, 0.1);
+  },
+  /** The bonus round announcing itself: a prize should sound like one. */
+  bonusSting: (): void => {
+    [659, 784, 988, 1319].forEach((f, i) => env("triangle", f, i * 0.09, 0.3, 0.13));
+    env("sine", 330, 0, 0.5, 0.08, 392);
   },
   /** A whole line landed. */
   line: (): void => {

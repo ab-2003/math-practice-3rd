@@ -38,6 +38,13 @@ export interface Meta {
   muted: boolean;
   /** Trick animations on a correct answer. A kid control, like mute. */
   animations: boolean;
+  /** Which monster rides. His pick from the collection; null = newest owned. */
+  rider: string | null;
+  /** Lifetime lines landed. Unlocks tricks and spots. */
+  linesLanded: number;
+  /** Personal bests. They only ever go up, which is what keeps them safe. */
+  bestTricksRun: number;
+  bestLinesRun: number;
   coins: number;
   owned: string[];
   levels: Record<string, number>;
@@ -60,7 +67,8 @@ export interface Meta {
 }
 
 export const freshMeta = (): Meta => ({
-  version: SCHEMA_VERSION, pin: null, muted: false, animations: true, coins: 0, owned: [],
+  version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
+  rider: null, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },

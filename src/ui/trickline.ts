@@ -1,23 +1,19 @@
 /**
- * THE TRICK LINE.
+ * THE TRICK LINE, ON SCREEN.
  *
- * Consecutive correct answers chain into a skate line. A wrong answer is a
- * BAIL, which is cheerful and expected: bailing is normal in skating, and
- * that framing is doing real work for a boy who avoids being wrong.
+ * The strip of five decks that fills as he lands tricks, and the LINE LANDED
+ * banner, which exists because photographing the old build proved that
+ * completing a line, the core act of an app named Trick Line, produced no
+ * feedback at all: the strip silently reset and the +5 was invisible.
  *
- * LAW: coins are banked at each landed trick, never at the end of the line.
- * A bail costs the rest of the line and never takes back what he already
- * landed. Nothing in this app is ever removed from him.
- *
- * LAW: every animation here is FIXED duration regardless of how fast he
- * answered. A trick that plays faster when he is quicker is a visible timer
- * wearing a costume, and there are no timers in this app.
+ * LAW: coins bank at each landed trick and the banner is fixed-length
+ * celebration, never a timer. It plays whether or not the ride animations
+ * are switched on: the ride is decoration, the landed line is an EVENT.
  */
 
+import type { Trick } from "../core/tricks";
 import { LINE_LENGTH } from "../core/config";
 import { el, svg } from "./dom";
-
-export const TRICKS = ["OLLIE", "KICKFLIP", "GRIND", "360 SPIN", "BACKFLIP"] as const;
 
 const INK = "#05070A";
 
@@ -34,36 +30,55 @@ const deck = (state: "done" | "now" | "todo"): SVGElement => {
   return g;
 };
 
-/** The row of five decks that fills as he lands tricks. On a phone the five
- *  names collided and shoved OLLIE off the left edge, so narrow screens show
- *  the decks alone plus ONE label: the trick he is on. */
-export const lineStrip = (landed: number): HTMLElement => {
+/** The strip, drawn from THIS line's tricks: the vocabulary grows, so the
+ *  names are data now, not constants. On phones, decks plus one label. */
+export const lineStrip = (landed: number, tricks: readonly Trick[]): HTMLElement => {
   const wrap = el("div", { class: "line-wrap" });
   const row = el("div", { class: "line-strip", "aria-label": `${landed} of ${LINE_LENGTH} tricks landed` });
   for (let i = 0; i < LINE_LENGTH; i++) {
     const state = i < landed ? "done" : i === landed ? "now" : "todo";
     const cell = el("div", { class: `line-cell ${state}` }, deck(state));
-    cell.append(el("span", { class: "trick-name", text: TRICKS[i] ?? "" }));
+    cell.append(el("span", { class: "trick-name", text: tricks[i]?.name ?? "" }));
     row.append(cell);
   }
   wrap.append(row);
-  wrap.append(el("div", { class: "line-now", text: TRICKS[Math.min(landed, LINE_LENGTH - 1)] ?? "" }));
+  wrap.append(el("div", { class: "line-now", text: tricks[Math.min(landed, LINE_LENGTH - 1)]?.name ?? "" }));
   return wrap;
 };
 
-export const trickName = (index: number): string => TRICKS[index % TRICKS.length] ?? "TRICK";
+export interface BannerOpts {
+  bonus: number;
+  newTrick?: string | undefined;
+}
 
-/**
- * The landing flourish. Fixed 620ms, always, whatever the response time was.
- * Resolves when it is done so the caller can sequence rather than guess.
- */
+/** LINE LANDED! Fixed ~1s, resolves when done, never trusts animationend
+ *  alone (a backgrounded tab never fires it). */
+export const playLineBanner = (host: HTMLElement, opts: BannerOpts): Promise<void> =>
+  new Promise((resolve) => {
+    const banner = el("div", { class: "line-banner", "data-probe": "line-banner" });
+    banner.append(el("div", { class: "lb-title", text: "LINE LANDED!" }));
+    banner.append(el("div", { class: "lb-coins", text: `+${opts.bonus}` }));
+    if (opts.newTrick !== undefined) {
+      banner.append(el("div", { class: "lb-new", text: `NEW TRICK: ${opts.newTrick}` }));
+    }
+    host.append(banner);
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      banner.remove();
+      resolve();
+    };
+    const timer = window.setTimeout(finish, opts.newTrick !== undefined ? 1500 : 1050);
+    banner.addEventListener("animationend", () => { window.clearTimeout(timer); finish(); }, { once: true });
+  });
+
+/** The landing flourish used when ride animations are switched off. */
 export const playLanding = (host: HTMLElement, name: string): Promise<void> =>
   new Promise((resolve) => {
     const pop = el("div", { class: "landing", text: name });
     host.append(pop);
     const done = (): void => { pop.remove(); resolve(); };
-    // Never depend on animationend alone: a suspended tab never fires it and
-    // the session would wedge with no way forward.
     const timer = window.setTimeout(done, 620);
     pop.addEventListener("animationend", () => { window.clearTimeout(timer); done(); }, { once: true });
   });

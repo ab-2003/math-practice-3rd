@@ -21,8 +21,20 @@ const FILL = "#B6FF3C";
 const FILL2 = "#35E6FF";
 
 /** A ten-frame: two rows of five, the shape he already reads. */
-const tenFrame = (filled: number, highlightFrom: number, highlightCount: number, tint: string): SVGElement => {
-  const g = svg("svg", { viewBox: "0 0 210 92", class: "frame" });
+const tenFrame = (
+  filled: number, highlightFrom: number, highlightCount: number, tint: string,
+  extra = 0,
+): SVGElement => {
+  // `extra` cells sit attached to the frame's top row: for 11 - 8 the
+  // eleventh square IS part of the picture, and captioning it as loose text
+  // ("plus 1 more") made it float free of the maths it belonged to.
+  const w = 210 + (extra > 0 ? extra * 40 + 12 : 0);
+  const g = svg("svg", { viewBox: `0 0 ${w} 92`, class: "frame" });
+  for (let k = 0; k < extra; k++) {
+    const x = 6 + 5 * 40 + 12 + k * 40;
+    g.append(svg("rect", { x, y: 6, width: 34, height: 34, rx: 6, fill: tint, stroke: INK, "stroke-width": 4 }));
+    g.append(svg("path", { d: `M${x + 8} 23 l6 7 l12 -14`, fill: "none", stroke: INK, "stroke-width": 4, "stroke-linecap": "round" }));
+  }
   for (let i = 0; i < 10; i++) {
     const col = i % 5;
     const row = Math.floor(i / 5);
@@ -48,12 +60,16 @@ const dotArray = (rows: number, cols: number): SVGElement => {
   const cell = 22;
   const g = svg("svg", { viewBox: `0 0 ${cols * cell + 8} ${rows * cell + 8}`, class: "frame array" });
   for (let r = 0; r < rows; r++) {
+    // Each row lights in turn, so the picture skip-counts along with step 2
+    // instead of arriving as a wall of dots.
+    const row = svg("g", { class: "arow", style: `animation-delay:${120 + r * 140}ms` });
     for (let c = 0; c < cols; c++) {
-      g.append(svg("circle", {
+      row.append(svg("circle", {
         cx: 4 + c * cell + cell / 2, cy: 4 + r * cell + cell / 2, r: cell / 2 - 4,
         fill: r % 2 === 0 ? FILL : FILL2, stroke: INK, "stroke-width": 3,
       }));
     }
+    g.append(row);
   }
   return g;
 };
@@ -68,8 +84,7 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
     const toTen = m - 10;      // take this much to land on ten
     const rest = s - toTen;    // then take the rest out of the ten
     box.append(el("p", { class: "scaf-head", text: "Find the ten." }));
-    box.append(tenFrame(10, 10 - rest, rest, "#FF8A1F"));
-    box.append(el("p", { class: "scaf-extra", text: `plus ${toTen} more` }));
+    box.append(tenFrame(10, 10 - rest, rest, "#FF8A1F", toTen));
     steps.append(step(1, `Start at ${m}.`));
     steps.append(step(2, `Take ${toTen} to land on 10.`));
     steps.append(step(3, `Take ${rest} more. That leaves ${f.answer}.`));

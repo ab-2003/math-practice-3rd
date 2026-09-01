@@ -18,7 +18,7 @@
 import { COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_AFTER_ITEMS } from "../core/config";
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
-import { creatureById, nextLocked, ROSTER } from "../core/creatures";
+import { nextLocked } from "../core/creatures";
 import { presentFact, type Presented } from "../core/present";
 import { currentFactId, recordResponse, sessionIsOver, startSession } from "../core/session";
 import type { Fact, Response, SessionState } from "../core/types";
@@ -30,8 +30,11 @@ import { scaffold } from "./scaffold";
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 import { appendResponses, appendSession, type SessionRecord } from "./store";
-import { lineStrip, playBail, playLanding, trickName } from "./trickline";
+import { lineTricks, spotForDay, spotUnlockedBetween, trickUnlockedBetween } from "../core/tricks";
+import { lineStrip, playBail, playLanding, playLineBanner } from "./trickline";
 import { playTrick } from "./trick-anim";
+import { spotLayer } from "./spots";
+import { resolveRider } from "./screens";
 import { revealSheet } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
@@ -39,13 +42,18 @@ type Phase = "asking" | "bailed" | "retry";
 export const sessionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
   const bar = el("div", { class: "topbar" });
+  // The coin chip: rewards must be VISIBLE while they happen, not a number
+  // on the end sheet. It shows wallet plus this run, so it only counts up.
+  const chip = el("div", { class: "coins session-coins", "data-probe": "session-coins" },
+    el("span", { text: "◆" }), el("span", { class: "chip-n", text: String(app.meta.coins) }));
   const strip = el("div", { class: "grow" });
   const quit = el("button", { type: "button", class: "btn small ghost", "data-probe": "quit" }, el("span", { text: "Take a breather" }));
-  bar.append(strip, quit);
+  bar.append(chip, strip, quit);
   root.append(bar);
 
   const wrap = el("div", { class: "session" });
   const left = el("div", { class: "left" });
+  left.append(spotLayer(spotForDay(app.meta.linesLanded, app.day).id));
   const stage = el("div", { class: "stage" });
   const slot = el("div", { class: "answer-slot", "data-probe": "answer" });
   // The answer sits on the same line as an equals sign, so the whole thing
@@ -62,6 +70,25 @@ export const sessionScreen = (app: App): HTMLElement => {
   let landed = 0;          // tricks in the CURRENT line
   let itemsDone = 0;       // real items answered, retries excluded
   let coins = 0;
+  let linesThisRun = 0;
+  let tricksThisRun = 0;
+  let chain = 0;           // consecutive correct, this run
+  let bestChain = 0;
+  let newTrickName: string | null = null;
+  let newSpotName: string | null = null;
+
+  /** Bank coins where he can SEE it: chip bump plus a floating +n. */
+  const bank = (n: number): void => {
+    coins += n;
+    const num = chip.querySelector(".chip-n");
+    if (num) num.textContent = String(app.meta.coins + coins);
+    chip.classList.remove("bump");
+    void (chip as HTMLElement).offsetWidth; // restart the animation
+    chip.classList.add("bump");
+    const float = el("span", { class: "coin-float", text: `+${n}` });
+    chip.append(float);
+    window.setTimeout(() => float.remove(), 900);
+  };
   let phase: Phase = "asking";
   /** The current item as PRESENTED: format, orientation, and what he must
    *  type. Grading always compares against cur.expected, never f.answer
@@ -76,11 +103,10 @@ export const sessionScreen = (app: App): HTMLElement => {
 
   // The rider: the newest creature he owns, or a cameo of the one he is
   // saving for. Chosen once per session so it does not flicker between items.
-  const rider = (() => {
-    const owned = app.meta.owned;
-    const mine = owned.length > 0 ? creatureById(owned[owned.length - 1]!) : null;
-    return mine ?? nextLocked(app.meta.owned) ?? ROSTER[0]!;
-  })();
+  // The rider is HIS pick from the collection; the fallbacks only cover a
+  // fresh profile. Chosen once per session so it does not flicker.
+  const rider = resolveRider(app);
+  const riderLevel = app.meta.levels[rider.id] ?? 1;
 
   const pad: Keypad = keypad({
     maxDigits: 3,
@@ -96,7 +122,11 @@ export const sessionScreen = (app: App): HTMLElement => {
   });
   wrap.append(pad.root);
 
-  const redrawStrip = (): void => { mount(strip, lineStrip(landed)); };
+  const currentTricks = (): ReturnType<typeof lineTricks> => {
+    const total = app.meta.linesLanded + linesThisRun;
+    return lineTricks(total, total);
+  };
+  const redrawStrip = (): void => { mount(strip, lineStrip(landed, currentTricks())); };
 
   const paint = (): void => {
     pad.reset();
@@ -167,7 +197,7 @@ export const sessionScreen = (app: App): HTMLElement => {
 
     if (bonus) {
       const ok = given === bonus.answer;
-      if (ok) { coins += COIN_PER_BONUS; sfx.land(); await playLanding(stage, `+${COIN_PER_BONUS}`); }
+      if (ok) { bank(COIN_PER_BONUS); sfx.land(4); await playLanding(stage, `+${COIN_PER_BONUS}`); }
       else { sfx.bail(); await playBail(stage); }
       bonusLeft -= 1;
       bonus = bonusLeft > 0 ? makeElapsed(Date.now() + bonusLeft, app.meta.elapsedLevel) : null;
@@ -213,18 +243,36 @@ export const sessionScreen = (app: App): HTMLElement => {
     if (correct) {
       // Identical treatment whether he retrieved it or worked it out. This is
       // the law the whole design rests on.
-      coins += COIN_PER_TRICK;
+      const trick = currentTricks()[landed]!;
+      const step = landed;
+      bank(COIN_PER_TRICK);
       landed += 1;
-      // The chime sounds and the trick plays out BEFORE the next problem is
-      // revealed, and both are identical for a retrieved and a derived answer.
-      sfx.chime();
-      sfx.land();
-      if (app.meta.animations) await playTrick(stage, rider, landed - 1, trickName(landed - 1));
-      else await playLanding(stage, trickName(landed - 1));
+      tricksThisRun += 1;
+      chain += 1;
+      bestChain = Math.max(bestChain, chain);
+      // The chime and the landing walk UP the line in pitch, so a chain is
+      // audible as a chain. Identical for retrieved and derived, always.
+      sfx.chime(step);
+      sfx.land(step);
+      if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel);
+      else await playLanding(stage, trick.name);
       if (landed >= LINE_LENGTH) {
-        coins += COIN_PER_LINE;
+        // THE LINE IS AN EVENT. The banner plays with or without the ride
+        // animations: photographing the old build proved that completing a
+        // line, in an app named Trick Line, produced no feedback at all.
+        const before = app.meta.linesLanded + linesThisRun;
+        linesThisRun += 1;
+        const after = before + 1;
+        const tUn = trickUnlockedBetween(before, after);
+        const sUn = spotUnlockedBetween(before, after);
+        if (tUn) newTrickName = tUn.name;
+        if (sUn) newSpotName = sUn.name;
+        bank(COIN_PER_LINE);
         landed = 0;
         sfx.line();
+        strip.classList.add("strip-flash");
+        window.setTimeout(() => strip.classList.remove("strip-flash"), 950);
+        await playLineBanner(left, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
         redrawStrip();
         await lineBreak();
         if (finished) return;
@@ -232,6 +280,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       await advance();
     } else {
       landed = 0;
+      chain = 0;
       sfx.bail();
       await playBail(stage);
       showScaffold(f, cls);
@@ -319,6 +368,11 @@ export const sessionScreen = (app: App): HTMLElement => {
       forced ?? (session.status === "endedEarly" ? "endedEarly" : "complete");
 
     app.meta.coins += coins;
+    app.meta.linesLanded += linesThisRun;
+    const newBestTricks = tricksThisRun > app.meta.bestTricksRun;
+    if (newBestTricks) app.meta.bestTricksRun = tricksThisRun;
+    const newBestLines = linesThisRun > app.meta.bestLinesRun;
+    if (newBestLines) app.meta.bestLinesRun = linesThisRun;
     if (app.meta.lastSessionDay !== app.day) {
       app.meta.streak = app.meta.lastSessionDay === app.day - 1 ? app.meta.streak + 1 : 1;
       app.meta.lastSessionDay = app.day;
@@ -335,26 +389,48 @@ export const sessionScreen = (app: App): HTMLElement => {
     });
     await app.save();
 
+    // The run's story, in his language. Personal bests only ever go up,
+    // which is exactly what keeps them safe under the no-pressure laws.
     const body = el("div", { class: "reveal" });
     body.append(el("h2", { text: `${coins} coins` }));
-    body.append(el("p", { class: "note", text: `${real.length} tricks attempted. Every one of them counted.` }));
-    const unlockable = nextLocked(app.meta.owned);
-    if (unlockable && app.meta.coins >= unlockable.cost) {
-      body.append(el("p", { class: "note", text: `You can unlock ${unlockable.name} now.` }));
+    const story: string[] = [];
+    story.push(`${tricksThisRun} tricks landed` + (linesThisRun > 0 ? ` · ${linesThisRun} full ${linesThisRun === 1 ? "line" : "lines"}` : ""));
+    if (bestChain >= 3) story.push(`Longest chain: ${bestChain} in a row`);
+    body.append(el("p", { class: "note", text: story.join("  ·  ") }));
+    if (newBestTricks && tricksThisRun >= 5) body.append(el("p", { class: "best-line", text: "NEW BEST RUN!" }));
+    else if (newBestLines && linesThisRun >= 2) body.append(el("p", { class: "best-line", text: "MOST LINES EVER!" }));
+    if (newTrickName !== null) body.append(el("p", { class: "best-line", text: `NEW TRICK UNLOCKED: ${newTrickName}` }));
+    if (newSpotName !== null) body.append(el("p", { class: "best-line", text: `NEW SPOT UNLOCKED: ${newSpotName}` }));
+    const riderName = app.meta.names[rider.id] ?? rider.name;
+    if (tricksThisRun > 0 && app.meta.owned.includes(rider.id)) {
+      body.append(el("p", { class: "note", text: `${riderName} was riding.` }));
     }
+
+    const unlockable = nextLocked(app.meta.owned);
+    const canAfford = unlockable !== null && app.meta.coins >= unlockable.cost;
     sheet({
       title: status === "endedEarly" ? "Good run." : "Run finished!",
       body,
       confirm: "Done",
       onConfirm: () => {
-        if (unlockable && app.meta.coins >= unlockable.cost) {
-          app.meta.coins -= unlockable.cost;
-          app.meta.owned.push(unlockable.id);
-          app.meta.levels[unlockable.id] = 1;
-          sfx.roar();
-          void app.save().then(() => revealSheet(app, unlockable.id));
-        }
         app.go("home");
+        // The unlock is HIS decision, never an auto-purchase: choosing is
+        // half the fun, and auto-spending broke saving up for the big one.
+        if (unlockable && canAfford) {
+          sheet({
+            title: `${unlockable.name} is in reach`,
+            body: `${unlockable.cost} coins, and you have ${app.meta.coins}. Want it, or keep saving?`,
+            cancel: "Keep saving",
+            confirm: "Unlock",
+            onConfirm: () => {
+              app.meta.coins -= unlockable.cost;
+              app.meta.owned.push(unlockable.id);
+              app.meta.levels[unlockable.id] = 1;
+              sfx.roar();
+              void app.save().then(() => revealSheet(app, unlockable.id));
+            },
+          });
+        }
       },
     });
   };
@@ -365,9 +441,17 @@ export const sessionScreen = (app: App): HTMLElement => {
    * the retrieval percentage.
    */
   const offerBonus = (): void => {
-    bonusLeft = 3;
-    bonus = makeElapsed(Date.now(), app.meta.elapsedLevel);
-    paint();
+    pad.setEnabled(false);
+    mount(stage, el("div", { class: "bonus-callout", "data-probe": "bonus-callout" },
+      el("span", { class: "bc-big", text: "BONUS ROUND" }),
+      el("span", { class: "bc-sub", text: "clock time!" })));
+    sfx.bonusSting();
+    window.setTimeout(() => {
+      if (finished) return;
+      bonusLeft = 3;
+      bonus = makeElapsed(Date.now(), app.meta.elapsedLevel);
+      paint();
+    }, 950);
   };
 
   on(quit, "click", () => {

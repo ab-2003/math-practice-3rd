@@ -152,9 +152,9 @@ const tail = (c: Creature, plan: Plan): SVGElement[] => {
   return out;
 };
 
-const horns = (c: Creature, plan: Plan): SVGElement[] => {
+const horns = (c: Creature, plan: Plan, gold: boolean): SVGElement[] => {
   const out: SVGElement[] = [];
-  const [, , glow] = c.palette;
+  const glow = gold ? "#FFD84A" : c.palette[2];
   const f = plan.face;
   for (let i = 0; i < c.horns; i++) {
     const t = c.horns === 1 ? 0.5 : i / (c.horns - 1);
@@ -166,7 +166,7 @@ const horns = (c: Creature, plan: Plan): SVGElement[] => {
   return out;
 };
 
-const face = (c: Creature, plan: Plan): SVGElement[] => {
+const face = (c: Creature, plan: Plan, glowing: boolean): SVGElement[] => {
   const out: SVGElement[] = [];
   const f = plan.face;
   const [, accent] = c.palette;
@@ -186,7 +186,8 @@ const face = (c: Creature, plan: Plan): SVGElement[] => {
     : c.eyes === 2 ? [[f.x + 8, f.y + 6], [f.x + 28, f.y + 4]]
     : [[f.x + 6, f.y + 8], [f.x + 24, f.y + 2], [f.x + 40, f.y + 10]];
   for (const [x, y] of spots) {
-    out.push(svg("circle", { cx: x, cy: y, r: 10 * s, fill: "#FFFFFF", stroke: INK, "stroke-width": SW - 2 }));
+    if (glowing) out.push(svg("circle", { cx: x, cy: y, r: 15 * s, fill: "#B6FF3C", opacity: 0.35 }));
+    out.push(svg("circle", { cx: x, cy: y, r: 10 * s, fill: glowing ? "#EDFFC7" : "#FFFFFF", stroke: INK, "stroke-width": SW - 2 }));
     // A slit pupil, angled. This is the single line that stops it reading cute.
     out.push(svg("ellipse", { cx: x + 2, cy: y + 1, rx: 3.2 * s, ry: 7 * s, fill: INK, transform: `rotate(-12 ${x + 2} ${y + 1})` }));
     out.push(svg("path", { d: `M${x - 12 * s} ${y - 9 * s} L${x + 12 * s} ${y - 13 * s}`, stroke: INK, "stroke-width": 5, "stroke-linecap": "round" }));
@@ -194,10 +195,22 @@ const face = (c: Creature, plan: Plan): SVGElement[] => {
   return out;
 };
 
-export const creatureSvg = (c: Creature): SVGElement => {
+/**
+ * Level accessories, so LEVEL UP buys something the eye can see: a deck-
+ * sticker star at 2, glowing eyes at 4, gold horns at 7, an aura at 10.
+ * Spending two days of coins on an invisible number taught the wrong lesson
+ * about the whole economy.
+ */
+export const creatureSvg = (c: Creature, opts: { level?: number } = {}): SVGElement => {
+  const lvl = opts.level ?? 1;
   const plan = PLANS[c.silhouette];
   const [body, , glow] = c.palette;
   const root = svg("svg", { viewBox: "-14 -6 246 214", class: "creature", role: "img", "aria-label": c.name });
+
+  if (lvl >= 10) {
+    root.append(svg("ellipse", { cx: 100, cy: 108, rx: 116, ry: 106, fill: "#B6FF3C", opacity: 0.13 }));
+    root.append(svg("ellipse", { cx: 100, cy: 108, rx: 98, ry: 90, fill: "#B6FF3C", opacity: 0.11 }));
+  }
 
   root.append(...tail(c, plan));
   root.append(...crest(c, plan));
@@ -209,8 +222,20 @@ export const creatureSvg = (c: Creature): SVGElement => {
     fill: glow, opacity: 0.5,
   }));
   root.append(poly(plan.head, body, SW + 1));
-  root.append(...horns(c, plan));
-  root.append(...face(c, plan));
+  if (lvl >= 2) {
+    // The deck-sticker star, planted on the flank.
+    const sx = plan.spine[1]?.[0] ?? 70;
+    const sy = (plan.spine[1]?.[1] ?? 110) + 34;
+    const pts = Array.from({ length: 10 }, (_, i) => {
+      const r = i % 2 === 0 ? 13 : 5.5;
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      return `${sx + Math.cos(a) * r},${sy + Math.sin(a) * r}`;
+    }).join(" ");
+    root.append(svg("polygon", { points: pts, fill: c.palette[2], stroke: INK, "stroke-width": 3 }));
+  }
+
+  root.append(...horns(c, plan, lvl >= 7));
+  root.append(...face(c, plan, lvl >= 4));
   return root;
 };
 
