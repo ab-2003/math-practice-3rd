@@ -97,6 +97,9 @@ const LAP_STEP = LAP_MS / 5;
 export interface LapOpts {
   bonus: number;
   newTrick?: string | undefined;
+  /** The banner's words. Defaults to the line celebration. */
+  title?: string;
+  sub?: string;
 }
 
 export const playVictoryLap = (
@@ -111,8 +114,8 @@ export const playVictoryLap = (
 
     const run = el("div", { class: "lap-run" });
     const banner = el("div", { class: "lap-banner" });
-    banner.append(el("div", { class: "lb-title", text: "LINE LANDED!" }));
-    banner.append(el("div", { class: "lb-coins", text: `+${opts.bonus}` }));
+    banner.append(el("div", { class: "lb-title", text: opts.title ?? "LINE LANDED!" }));
+    banner.append(el("div", { class: "lb-coins", text: opts.sub ?? `+${opts.bonus}` }));
     if (opts.newTrick !== undefined) banner.append(el("div", { class: "lb-new", text: `NEW TRICK: ${opts.newTrick}` }));
     run.append(banner);
 

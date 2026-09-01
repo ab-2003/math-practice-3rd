@@ -943,3 +943,22 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .rockfall, .srain, .sbolt, .deckprop, .waverig, .scrap-1, .scrap-2, .scrap-gear,
   .scorchrig, .riftrig, .dust-1, .dust-2, .dust-3 { opacity: 0 !important; }
 }
+
+/* ---------- speed run ---------- */
+.speed-timer {
+  height: 10px; border: 3px solid var(--ink); border-radius: 999px;
+  background: var(--panel-2); overflow: hidden; margin-bottom: 8px; flex: none;
+}
+.speed-fill { height: 100%; width: 100%; background: var(--cyan); transition: width 200ms linear; }
+.speed-hit .problem { animation: speed-hit 160ms ease-out; }
+@keyframes speed-hit { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.speed-miss .problem { animation: speed-miss 200ms ease-out; }
+@keyframes speed-miss { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-7px); } 65% { transform: translateX(6px); } }
+.home-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.speed-cell { cursor: pointer; font-family: var(--display); border-color: var(--ink); }
+.speed-cell b { color: var(--cyan); font-size: 19px; }
+.speed-cell:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+@media (max-width: 700px) {
+  .home-grid.three { grid-template-columns: 1fr 1fr; }
+  .speed-cell { grid-column: span 2; }
+}

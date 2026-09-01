@@ -531,6 +531,23 @@ the real worker at every release (KV is eventually consistent; the smoke
 polls rather than judging first answers). GRINDJAW's log now exists only
 during his act.
 
+**SPEED RUN (0.12.0): the one bounded exception to the no-pressure law.**
+Andy asked for it by name, and its fences are the feature. A separate mode
+behind its own small door (a third cell in the stats row, no new vertical
+space): how many correct in one minute. During the run there are no rides,
+no banners and no scaffolds, just a flash and the next problem; the timer is
+a slim quiet bar, never ticking digits; the longer celebration is the
+victory lap at the end, wearing TIME! and the score. High scores are kept
+PER SETUP (which operations and missing-number modes are on), because a
+multiply-and-divide minute is a different sport from a plus minute; a
+kid-reachable reset behind a confirm clears them all. One run is allowed
+before the day's work; after the dose the parent-set budget applies
+(default 10/day, set 1-30 in the dashboard); the attempt is spent at the
+START of a run so a bad minute cannot be abandoned for free. And the walls
+that keep it safe: speed-run answers never touch the Leitner scheduler, the
+response log, the histogram or the teacher evidence, and they earn no
+coins, so the game can never out-earn or contaminate the practice.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -699,6 +716,15 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.12.0 - speed run.** One minute, as many as you can: per-setup
+      high scores, kid-reachable reset behind a confirm, attempts counted on
+      screen, one run before the day's work and a parent-set daily budget
+      after (default 10), the attempt spent at the start, the victory lap as
+      the finale, and hard walls between the game and the practice
+      telemetry. Two scars: a screens/speed circular import minified into a
+      TDZ crash (broken with a pure day.ts), and the locked screen's Back
+      button closing over a later `let` (the probe's step-tagged pageerror
+      trace found both).
 - [x] **0.11.0 - the whole company acts.** Every remaining monster got a
       true in-character scene: QUARRYBACK's stomp brings boulders down from
       the sky with dust on impact; STORMHIDE grows a thundercloud that rains

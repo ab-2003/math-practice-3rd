@@ -7,6 +7,7 @@ import { dashboardScreen } from "./dashboard";
 import { mount } from "./dom";
 import { collectionScreen, homeScreen } from "./screens";
 import { sessionScreen } from "./session-screen";
+import { speedScreen } from "./speed-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
 import { cloudAutoPush } from "./cloud";
@@ -57,6 +58,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   const render = (): void => {
     const screen =
       route === "session" ? sessionScreen(app)
+      : route === "speed" ? speedScreen(app)
       : route === "collection" ? collectionScreen(app)
       : route === "dashboard" ? dashboardScreen(app)
       : homeScreen(app);

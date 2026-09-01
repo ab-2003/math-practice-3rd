@@ -46,6 +46,13 @@ export interface Meta {
   dailyGoal: number;
   doseDay: number | null;
   doseCount: number;
+  /** SPEED RUN: per-setup best scores, today's attempt count, and the
+   *  parent-set daily budget. Speed runs never touch the scheduler or the
+   *  practice telemetry; they are a game with a scoreboard. */
+  speedBest: Record<string, number>;
+  speedDay: number | null;
+  speedCount: number;
+  speedLimit: number;
   /** The one pre-run shop peek per day: which day, and when it started. */
   shopPeekDay: number | null;
   shopPeekAt: number | null;
@@ -82,6 +89,7 @@ export interface Meta {
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
   rider: null, dailyGoal: 40, doseDay: null, doseCount: 0,
+  speedBest: {}, speedDay: null, speedCount: 0, speedLimit: 10,
   shopPeekDay: null, shopPeekAt: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
@@ -129,6 +137,8 @@ export const getMeta = async (): Promise<Meta> => {
     missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
     // A save from the brief elapsedHard era maps onto the ladder it became.
     dailyGoal: Math.max(10, Math.min(80, raw.dailyGoal ?? 40)),
+    speedLimit: Math.max(1, Math.min(30, raw.speedLimit ?? 10)),
+    speedBest: raw.speedBest ?? {},
     elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
     elapsedAnalog: raw.elapsedAnalog ?? false,
   };

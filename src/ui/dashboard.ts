@@ -269,6 +269,18 @@ const renderDash = (app: App, host: HTMLElement): void => {
     on(dPlus, "click", () => bumpGoal(5));
     doseRow.append(el("span", { class: "toggle-hint", text: "Problems per day" }), dMinus, dVal, dPlus);
     doseCard.append(doseRow);
+    const spRow = el("div", { class: "stepper" });
+    const spM = el("button", { type: "button", class: "btn small", "data-probe": "speed-minus" }, el("span", { text: "−" }));
+    const spV = el("span", { class: "stepper-value", "data-probe": "speed-limit", text: String(app.meta.speedLimit) });
+    const spP = el("button", { type: "button", class: "btn small", "data-probe": "speed-plus" }, el("span", { text: "+" }));
+    const bumpSpeed = (d: number): void => {
+      app.meta.speedLimit = Math.max(1, Math.min(30, app.meta.speedLimit + d));
+      void app.save().then(() => app.refresh());
+    };
+    on(spM, "click", () => bumpSpeed(-1));
+    on(spP, "click", () => bumpSpeed(1));
+    spRow.append(el("span", { class: "toggle-hint", text: "Speed runs per day (one allowed before the day's work)" }), spM, spV, spP);
+    doseCard.append(spRow);
     wrap.append(doseCard);
 
     // ---- what he is practising -------------------------------------------

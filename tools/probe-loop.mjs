@@ -12,9 +12,11 @@ const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true });
 const page = await ctx.newPage();
 const errors = [];
-page.on("pageerror", (e) => errors.push(String(e)));
+let CURRENT_STEP = "(before first step)";
+page.on("pageerror", (e) => errors.push(`[${CURRENT_STEP}] ${e.message} @ ${(e.stack ?? "").split("\n").slice(1, 3).join(" | ")}`));
 
 const step = async (label, fn) => {
+  CURRENT_STEP = label;
   try { await fn(); ok(label); }
   catch (e) { fail(`${label}: ${String(e).split("\n")[0]}`); }
 };
@@ -190,6 +192,13 @@ await step("setting the PIN opens the dashboard, and the charts render", async (
   await page.click('[data-probe="dose-minus"]');
   await page.waitForTimeout(300);
   must(Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0") === g0, "dose minus did not step back");
+  const sl0 = Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0");
+  await page.click('[data-probe="speed-plus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0") === sl0 + 1, "speed-limit plus did not step");
+  await page.click('[data-probe="speed-minus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0") === sl0, "speed-limit minus did not step back");
 });
 
 await step("the wrong PIN does not open the dashboard", async () => {
@@ -792,6 +801,68 @@ await step("cloud share: create, QR, save-now, and the throttled auto-push", asy
   await page.waitForTimeout(300);
   await page.evaluate(() => localStorage.removeItem("tl-cloud-code"));
   await page.unroute("**/math-pra3-cloudshare**");
+});
+
+await step("speed run: one before the day's work, per-setup bests, then the budget", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false;
+    m.strands = { add: true, sub: true, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    m.doseDay = window.__app.day(); m.doseCount = 0;
+    m.speedDay = null; m.speedCount = 0; m.speedBest = {}; m.speedLimit = 10;
+    window.__app.go("home");
+  });
+  await page.waitForTimeout(250);
+  const cell = (await page.textContent('[data-probe="speed-open"]')) ?? "";
+  must(cell.includes("0/10"), `the speed cell says "${cell}"`);
+  await page.click('[data-probe="speed-open"]');
+  await page.waitForSelector('[data-probe="problem"]', { timeout: 4000 });
+  must(await page.$(".speed-timer") !== null, "no quiet timer bar");
+  must(await page.evaluate(() => window.__app.meta().speedCount) === 1, "the attempt was not spent at the start");
+  for (let i = 0; i < 3; i++) {
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(120);
+  }
+  await page.evaluate(() => window.__speed.end());
+  await page.waitForSelector(".sheet", { timeout: 8000 });
+  const sheetText = (await page.textContent(".sheet")) ?? "";
+  must(sheetText.includes("3 in a minute"), "the finale does not report the score");
+  must(sheetText.includes("NEW BEST"), "a first score is not a new best");
+  must(!sheetText.includes("Again"), "a pre-dose run offered a second attempt");
+  const best = await page.evaluate(() => window.__app.meta().speedBest);
+  must(best["add+sub"] === 3, `the scoreboard holds ${JSON.stringify(best)}`);
+  await page.click(".sheet .btn.ghost"); // Done
+  await page.waitForSelector('[data-probe="speed-open"]', { timeout: 4000 });
+
+  // The second pre-dose attempt is refused.
+  await page.click('[data-probe="speed-open"]');
+  await page.waitForSelector('[data-probe="speed-locked"]', { timeout: 4000 });
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="speed-open"]');
+
+  // Dose done: the budget opens. Reset works mid-screen, behind a confirm.
+  await page.evaluate(() => { const m = window.__app.meta(); m.doseCount = m.dailyGoal; });
+  await page.click('[data-probe="speed-open"]');
+  await page.waitForSelector('[data-probe="problem"]', { timeout: 4000 });
+  await page.click('[data-probe="speed-reset"]');
+  await page.waitForSelector(".sheet .btn.warm", { timeout: 4000 });
+  await page.click(".sheet .btn.warm");
+  await page.waitForTimeout(300);
+  must(Object.keys(await page.evaluate(() => window.__app.meta().speedBest)).length === 0, "reset kept the bests");
+  await page.evaluate(() => window.__speed.end());
+  await page.waitForSelector(".sheet", { timeout: 8000 });
+  await page.click(".sheet .btn.ghost");
+  await page.waitForSelector('[data-probe="speed-open"]', { timeout: 4000 });
+
+  // The budget's end locks the door.
+  await page.evaluate(() => { const m = window.__app.meta(); m.speedCount = m.speedLimit; });
+  await page.click('[data-probe="speed-open"]');
+  await page.waitForSelector('[data-probe="speed-locked"]', { timeout: 4000 });
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="speed-open"]');
 });
 
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);

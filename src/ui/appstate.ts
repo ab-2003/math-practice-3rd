@@ -1,7 +1,7 @@
 import type { Deck, FactState } from "../core/types";
 import type { Meta } from "./store";
 
-export type Route = "home" | "session" | "collection" | "dashboard";
+export type Route = "home" | "session" | "speed" | "collection" | "dashboard";
 
 export interface App {
   deck: Deck;

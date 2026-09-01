@@ -5,6 +5,8 @@ import type { App } from "./appstate";
 import { progressBar } from "./charts";
 import { creatureSvg, helmetIcon } from "./creature-svg";
 import { el, on, svg } from "./dom";
+import { doseDone, speedAttemptsToday, speedKey } from "./day";
+export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 
@@ -16,12 +18,6 @@ export const resolveRider = (app: App): Creature => {
   const newest = owned.length > 0 ? creatureById(owned[owned.length - 1]!) : null;
   return newest ?? cheapestLocked(app.meta.owned) ?? ROSTER[0]!;
 };
-
-/** The day's work is DONE when today's answered items reach the parent-set
- *  goal. The badge, the jingle, the extra-practice label and the shop all
- *  key off this one truth. */
-export const doseDone = (app: App): boolean =>
-  app.meta.doseDay === app.day && app.meta.doseCount >= app.meta.dailyGoal;
 
 /** The prominent stamp for a finished day: a starburst that stamps in once
  *  and then gleams. Retired the little text pill; this is the real thing. */
@@ -137,11 +133,19 @@ export const homeScreen = (app: App): HTMLElement => {
     root.append(dose);
   }
 
-  const grid = el("div", { class: "home-grid" });
+  const grid = el("div", { class: "home-grid three" });
   const mastered = [...app.states.values()].filter((s) => s.mastered).length;
   const learning = [...app.states.values()].filter((s) => s.introduced && !s.mastered).length;
   grid.append(el("div", { class: "card stat" }, el("b", { text: String(mastered) }), el("span", { text: "Locked in" })));
   grid.append(el("div", { class: "card stat" }, el("b", { text: String(learning) }), el("span", { text: "Working on" })));
+  // SPEED RUN rides the stats row: a distinct door, no new vertical space.
+  const bestNow = app.meta.speedBest[speedKey(app)] ?? 0;
+  const used = speedAttemptsToday(app);
+  const speed = el("button", { type: "button", class: "card stat speed-cell", "data-probe": "speed-open" },
+    el("b", { text: "⚡ SPEED RUN" }),
+    el("span", { text: `${bestNow > 0 ? `best ${bestNow} · ` : ""}${used}/${app.meta.speedLimit} today` }));
+  on(speed, "click", () => app.go("speed"));
+  grid.append(speed);
   root.append(grid);
 
   // Progress toward the next monster, always visible: the classic lever,

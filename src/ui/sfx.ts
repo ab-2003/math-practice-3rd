@@ -97,6 +97,13 @@ export const sfx = {
     env("sine", 262, 0.44, 0.6, 0.09, 330);
     noise(0.5, 0.35, 0.06, 3200);
   },
+  /** The speed run's own finale: quick, bright, and NOT the daily fanfare,
+   *  which stays reserved for the day's work. */
+  speedFanfare: (): void => {
+    [523, 659, 784].forEach((f, i) => env("square", f, i * 0.07, 0.18, 0.1));
+    env("triangle", 1047, 0.24, 0.4, 0.15);
+    noise(0.26, 0.3, 0.08, 2800);
+  },
   /** The bonus round announcing itself: a prize should sound like one. */
   bonusSting: (): void => {
     [659, 784, 988, 1319].forEach((f, i) => env("triangle", f, i * 0.09, 0.3, 0.13));
