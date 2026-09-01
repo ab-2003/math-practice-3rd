@@ -319,10 +319,11 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 /* Fixed duration always: an animation that ran faster when he answered faster
    would be a timer wearing a costume. */
 
-.trick-run { position: absolute; inset: -30px 0; overflow: hidden; pointer-events: none; z-index: 5; }
-/* The rider takes the middle of the stage, not a sliver under the text. */
+.trick-run { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; }
+/* The rider works the RAIL LANE, the same one the victory lap uses, so every
+   trick happens over the scenery rather than through the equation. */
 .trick-rider {
-  position: absolute; top: 50%; margin-top: -40px; left: -170px; width: 152px;
+  position: absolute; bottom: 12%; left: -170px; width: 152px;
   animation: t-ride 760ms cubic-bezier(0.2, 0, 0.8, 1) forwards;
 }
 .stage.riding .problem, .stage.riding .word-problem { opacity: 0.08; transition: opacity 120ms; }
@@ -330,7 +331,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .trick-creature { width: 100%; height: auto; }
 .trick-deck { width: 96px; margin-top: -18px; }
 .trick-rail {
-  position: absolute; left: 16%; right: 16%; top: 50%; margin-top: 80px; height: 7px;
+  position: absolute; left: 16%; right: 16%; bottom: calc(12% + 118px); height: 7px;
   border-radius: 4px; background: var(--panel-2); border: 3px solid var(--ink);
   box-shadow: 0 3px 0 var(--ink);
 }
@@ -489,7 +490,15 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 /* ---------- the spot: earned scenery, always behind everything ---------- */
 .session .left { position: relative; }
-.spot { position: absolute; inset: auto 0 12% 0; pointer-events: none; z-index: 0; opacity: 0.75; }
+/* Hidden while he thinks. It fades in dim for a solo trick, and lights for
+   the victory lap. The problem screen stays minimal on purpose. */
+.spot { position: absolute; inset: auto 0 10% 0; pointer-events: none; z-index: 0; opacity: 0; }
+.left.show-spot .spot { opacity: 0.7; }
+/* On a phone the equals row sits close to the rail, so the rider crossed
+   straight through the answer box. While anything is riding, the equation
+   ghosts the same way the problem does: the trick owns the moment. */
+.left.show-spot .eq { opacity: 0.1; transition: opacity 140ms; }
+.left .eq { transition: opacity 240ms; }
 .spot-art { width: min(92%, 640px); margin: 0 auto; display: block; }
 .session .stage, .session .eq { position: relative; z-index: 1; }
 
@@ -526,4 +535,48 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes row-in { to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .steps .step, .frame.array .arow { animation-duration: 1ms; animation-delay: 0ms; }
+}
+
+/* ---------- the victory lap: the spot lights, he rides the whole line ------ */
+.spot, .spot-art path { transition: opacity 300ms ease, filter 300ms ease, stroke 300ms ease; }
+.spot.lit { opacity: 1; filter: drop-shadow(0 0 14px rgba(182, 255, 60, 0.35)); }
+.spot.lit path[stroke-width="7"] { stroke: var(--acid); }
+.spot.lit path[stroke-width="5"] { stroke: var(--cyan); }
+.spot.lit path[stroke-width="4"] { stroke: var(--warm); }
+.spot.lit circle { stroke: var(--warm); }
+
+.lap-run { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 9; }
+.lap-rider {
+  position: absolute; bottom: 11%; left: -170px; width: 152px;
+  animation: lap-ride 3200ms linear forwards;
+}
+@keyframes lap-ride { from { left: -170px; } to { left: 103%; } }
+.lap-run .trick-flip { animation-duration: 580ms !important; }
+.lap-run .trick-deck { animation-duration: 400ms !important; }
+.lap-label {
+  position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+  font-size: 17px; font-weight: 900; letter-spacing: 0.05em; white-space: nowrap;
+  color: var(--acid); text-shadow: 0 3px 0 var(--ink); opacity: 0;
+}
+.lap-label.pop { animation: lap-label 560ms ease-out; }
+@keyframes lap-label {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.8); }
+  30% { opacity: 1; transform: translate(-50%, -2px) scale(1.06); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -12px); }
+}
+.lap-banner {
+  position: absolute; top: 4px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  animation: lap-banner-in 3200ms ease-out forwards;
+}
+@keyframes lap-banner-in {
+  0% { opacity: 0; transform: scale(0.7); }
+  8% { opacity: 1; transform: scale(1.05); }
+  14% { transform: scale(1); }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lap-rider, .lap-label.pop, .lap-banner { animation-duration: 1ms; }
 }

@@ -32,7 +32,7 @@ import { sheet } from "./sheet";
 import { appendResponses, appendSession, type SessionRecord } from "./store";
 import { lineTricks, spotForDay, spotUnlockedBetween, trickUnlockedBetween } from "../core/tricks";
 import { lineStrip, playBail, playLanding, playLineBanner } from "./trickline";
-import { playTrick } from "./trick-anim";
+import { playTrick, playVictoryLap } from "./trick-anim";
 import { spotLayer } from "./spots";
 import { resolveRider } from "./screens";
 import { revealSheet } from "./screens";
@@ -243,8 +243,10 @@ export const sessionScreen = (app: App): HTMLElement => {
     if (correct) {
       // Identical treatment whether he retrieved it or worked it out. This is
       // the law the whole design rests on.
-      const trick = currentTricks()[landed]!;
+      const lineNow = currentTricks();
+      const trick = lineNow[landed]!;
       const step = landed;
+      const endsLine = landed + 1 >= LINE_LENGTH;
       bank(COIN_PER_TRICK);
       landed += 1;
       tricksThisRun += 1;
@@ -253,13 +255,20 @@ export const sessionScreen = (app: App): HTMLElement => {
       // The chime and the landing walk UP the line in pitch, so a chain is
       // audible as a chain. Identical for retrieved and derived, always.
       sfx.chime(step);
-      sfx.land(step);
-      if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel);
-      else await playLanding(stage, trick.name);
-      if (landed >= LINE_LENGTH) {
-        // THE LINE IS AN EVENT. The banner plays with or without the ride
-        // animations: photographing the old build proved that completing a
-        // line, in an app named Trick Line, produced no feedback at all.
+      // On a line-ending answer with animations on, the VICTORY LAP plays all
+      // five landings itself; a solo land here would double the first one.
+      if (!(endsLine && app.meta.animations)) sfx.land(step);
+      if (!endsLine) {
+        if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel);
+        else await playLanding(stage, trick.name);
+      } else if (!app.meta.animations) {
+        await playLanding(stage, trick.name);
+      }
+      if (endsLine) {
+        // THE LINE IS AN EVENT. With animations on, his creature rides the
+        // whole line start to finish while the spot lights up (Andy's ask);
+        // with them off, the banner still fires, because a landed line must
+        // never again pass in silence.
         const before = app.meta.linesLanded + linesThisRun;
         linesThisRun += 1;
         const after = before + 1;
@@ -272,7 +281,11 @@ export const sessionScreen = (app: App): HTMLElement => {
         sfx.line();
         strip.classList.add("strip-flash");
         window.setTimeout(() => strip.classList.remove("strip-flash"), 950);
-        await playLineBanner(left, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
+        if (app.meta.animations) {
+          await playVictoryLap(left, stage, rider, lineNow, riderLevel, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
+        } else {
+          await playLineBanner(left, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
+        }
         redrawStrip();
         await lineBreak();
         if (finished) return;

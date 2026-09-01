@@ -488,6 +488,52 @@ await step("after a run, home says today is done", async () => {
   must(await page.$('[data-probe="unlock-progress"]') !== null, "no progress toward the next monster on home");
 });
 
+await step("landing a line with animations on plays the victory lap and lights the spot", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.strands = { add: true, sub: true, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    m.animations = true;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  // THE MINIMAL-SCREEN CONTRACT (Andy's phone report): while he is thinking,
+  // the scenery is INVISIBLE; it appears dim for a solo trick and vanishes
+  // again before the next problem.
+  must(await page.evaluate(() => getComputedStyle(document.querySelector(".spot")).opacity) === "0",
+    "the rail is visible during a problem");
+  {
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForSelector(".left.show-spot", { timeout: 2500 });
+    await page.waitForSelector(".left.show-spot", { state: "detached", timeout: 6000 })
+      .catch(async () => { must(await page.$(".left.show-spot") === null, "the rail never faded back out"); });
+  }
+  for (let i = 0; i < 3; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(120);
+  }
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+  // The show class is the contract; the 300ms fade tail after it is the
+  // transition doing its job, so judge the CLASS, not a mid-fade opacity.
+  must(await page.$(".left.show-spot") === null, "the rail did not clear off before the next problem");
+  const id5 = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id5));
+  await page.waitForSelector(".lap-run", { timeout: 4000 });
+  must(await page.$(".spot.lit") !== null, "the spot did not light for the lap");
+  must(await page.$(".lap-run .trick-creature") !== null, "no rider on the lap");
+  await page.waitForSelector(".lap-run", { state: "detached", timeout: 7000 });
+  must(await page.$(".spot.lit") === null, "the spot stayed lit after the lap");
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.warm, .sheet .btn.go");
+  await page.waitForTimeout(400);
+  while (await page.$(".scrim") !== null) { await page.click(".sheet .btn.go").catch(() => {}); await page.waitForTimeout(250); }
+});
+
 await step("send out picks who rides, and the collection says so", async () => {
   await page.evaluate(() => {
     const m = window.__app.meta();

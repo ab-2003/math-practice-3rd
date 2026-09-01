@@ -425,6 +425,20 @@ rows skip-count in, and the bridge frame's eleventh cell is attached to the
 ten-frame instead of floating as a caption. **The chain is audible**: chime
 and landing walk up in pitch through the line, correctness-linked only.
 
+**The victory lap and the minimal screen (0.7.0, Andy's choreography).** His
+phone report: the scenery under the answer box was "a little distracting"
+during problems. So the contract is now MINIMAL WHILE THINKING: no scenery at
+all with a problem up. On a correct answer the dim gray rail fades in and the
+rider does that one trick over it on the rail lane, then it vanishes for the
+next problem. On the line-completing answer the spot LIGHTS UP in colour and
+the rider performs the whole line, all five tricks in one 3.2 second
+crossing, each name popping as it lands, the five landing sounds walking up
+the scale, LINE LANDED! +5 riding overhead; then back to minimal. The
+equation row ghosts during any ride, because on a phone the rider crosses
+right where it sits. Scar collected: animationend BUBBLES, so the first
+580ms hop was ending the whole 3.2s lap until the handler was made to check
+the animation's name; probes now time the lap.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -593,6 +607,12 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.7.0 - the victory lap and the minimal screen.** Andy's
+      choreography: nothing on screen while he thinks; the dim rail appears
+      under each solo trick and vanishes; the line-completing answer lights
+      the whole spot and his creature rides all five tricks start to finish
+      before the next problem. The equation ghosts during rides after his
+      phone screenshot showed the rider crossing through it.
 - [x] **0.6.0 - the juice, the agency, and the arcs.** Everything from the
       fresh-eyes review (SS9b): the line banner, the visible coin chip, the
       unlock as a choice plus the home progress bar, visible level
