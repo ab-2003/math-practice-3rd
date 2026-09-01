@@ -50,9 +50,13 @@ export interface Meta {
   /** Missing-number presentation: per-operation switches and the mix percent.
    *  All four OFF by default, per Andy 2026-09-01. */
   missing: MissingCfg;
-  /** Elapsed-time bonus may cross the hour (answers past 60 minutes). OFF by
-   *  default: the bonus round must never bite. */
-  elapsedHard: boolean;
+  /** Highest elapsed-time level allowed: 1 same-hour, 2 crosses the hour
+   *  within 60 minutes, 3 up to two hours. Problems mix everything at or
+   *  below it. Default 1: the bonus round must never bite. */
+  elapsedLevel: 1 | 2 | 3;
+  /** Show the bonus times as analog clock faces instead of digits. Opt-in:
+   *  it doubles as analog-reading practice on five minute marks. */
+  elapsedAnalog: boolean;
 }
 
 export const freshMeta = (): Meta => ({
@@ -60,7 +64,8 @@ export const freshMeta = (): Meta => ({
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
-  elapsedHard: false,
+  elapsedLevel: 1,
+  elapsedAnalog: false,
 });
 
 let db: IDBDatabase | null = null;
@@ -100,6 +105,9 @@ export const getMeta = async (): Promise<Meta> => {
     ...freshMeta(), ...raw,
     strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) },
     missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
+    // A save from the brief elapsedHard era maps onto the ladder it became.
+    elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
+    elapsedAnalog: raw.elapsedAnalog ?? false,
   };
 };
 

@@ -24,6 +24,7 @@ import { currentFactId, recordResponse, sessionIsOver, startSession } from "../c
 import type { Fact, Response, SessionState } from "../core/types";
 import type { App } from "./appstate";
 import { el, mount, on } from "./dom";
+import { clockSvg } from "./clock-svg";
 import { keypad, type Keypad } from "./keypad";
 import { scaffold } from "./scaffold";
 import { sfx } from "./sfx";
@@ -108,7 +109,23 @@ export const sessionScreen = (app: App): HTMLElement => {
       cur = null;
       mslot = null;
       eq.hidden = false;
-      mount(stage, el("p", { class: "word-problem", "data-probe": "bonus", text: bonus.text }));
+      if (app.meta.elapsedAnalog) {
+        // Analog view: the times are FACES to read, never digits. The digital
+        // labels ride along as data attributes so an instrument can verify
+        // the faces without teaching the app to read its own hands.
+        const wrap = el("div", { class: "bonus-analog", "data-probe": "bonus",
+          "data-start": bonus.startLabel, "data-end": bonus.endLabel });
+        const row = el("div", { class: "clock-row" });
+        row.append(
+          el("div", { class: "clock-fig" }, clockSvg(bonus.startMinutes), el("span", { class: "clock-cap", text: bonus.caps[0] })),
+          el("div", { class: "clock-fig" }, clockSvg(bonus.endMinutes), el("span", { class: "clock-cap", text: bonus.caps[1] })),
+        );
+        wrap.append(row);
+        wrap.append(el("p", { class: "word-problem", text: "How many minutes is that?" }));
+        mount(stage, wrap);
+      } else {
+        mount(stage, el("p", { class: "word-problem", "data-probe": "bonus", text: bonus.text }));
+      }
     } else {
       const id = currentFactId(session);
       if (id === null) { void finish(); return; }
@@ -153,7 +170,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       if (ok) { coins += COIN_PER_BONUS; sfx.land(); await playLanding(stage, `+${COIN_PER_BONUS}`); }
       else { sfx.bail(); await playBail(stage); }
       bonusLeft -= 1;
-      bonus = bonusLeft > 0 ? makeElapsed(Date.now() + bonusLeft, app.meta.elapsedHard) : null;
+      bonus = bonusLeft > 0 ? makeElapsed(Date.now() + bonusLeft, app.meta.elapsedLevel) : null;
       if (bonus === null) { await finish(); return; }
       paint();
       return;
@@ -349,7 +366,7 @@ export const sessionScreen = (app: App): HTMLElement => {
    */
   const offerBonus = (): void => {
     bonusLeft = 3;
-    bonus = makeElapsed(Date.now(), app.meta.elapsedHard);
+    bonus = makeElapsed(Date.now(), app.meta.elapsedLevel);
     paint();
   };
 

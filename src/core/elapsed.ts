@@ -2,24 +2,38 @@
  * ELAPSED TIME, THE BONUS ROUND.
  *
  * Virginia SOL 3.MG.4 covers elapsed time, and he is genuinely good at it, so
- * it is used here as a confidence and reward mechanic rather than as drill.
+ * it is used as a confidence and reward mechanic rather than as drill.
  *
  * LAW: this never touches the Leitner scheduler and never enters the parent
- * dashboard's retrieval percentage. Mixing problems he is already good at into
- * the automaticity evidence would inflate the headline number and quietly
- * corrupt the thing that goes to his teacher.
+ * dashboard's retrieval percentage. The answer is always a WHOLE NUMBER OF
+ * MINUTES on the same keypad as everything else, and every time in every
+ * level sits on a FIVE MINUTE MARK, which is also what makes the analog
+ * clock view readable practice rather than a squint.
  *
- * The answer is always a WHOLE NUMBER OF MINUTES, so it fits the same numeric
- * keypad as everything else. No second input mode, no clock widget to mis-tap.
+ * THREE LEVELS, Andy 2026-09-01, because "don't want it to become
+ * discouraging" deserves structure rather than one blunt switch:
+ *
+ *   1  the whole problem lives inside one clock hour        2:10 -> 2:45
+ *   2  it crosses into the next hour, still <= 60 minutes   2:50 -> 3:10
+ *   3  more than an hour, never more than two               2:10 -> 3:45
+ *
+ * The parent picks the level he is ALLOWED UP TO, and problems mix everything
+ * at or below it. Default is level 1 only; 2 and 3 are opt-in.
  */
 
 export interface ElapsedProblem {
   id: string;
-  /** Rendered question text. Short: he reads it unaided. */
+  /** The digital sentence. Short: he reads it unaided. */
   text: string;
   answer: number;
+  level: 1 | 2 | 3;
   startLabel: string;
   endLabel: string;
+  /** Raw clock positions, for the analog view. Minutes since midnight. */
+  startMinutes: number;
+  endMinutes: number;
+  /** One-word captions for under the analog faces: ["opens", "closes"]. */
+  caps: readonly [string, string];
 }
 
 const pad = (n: number): string => String(n).padStart(2, "0");
@@ -31,44 +45,45 @@ const label = (mins: number): string => {
   return `${h12}:${pad(m)}`;
 };
 
-const SCENES: ReadonlyArray<readonly [string, string]> = [
-  ["The skate park opens at", "It closes at"],
-  ["Hockey practice starts at", "It ends at"],
-  ["The bus leaves at", "It gets there at"],
-  ["The movie starts at", "It finishes at"],
-  ["He drops in at", "He rolls out at"],
-  ["Recess starts at", "Recess ends at"],
+const SCENES: ReadonlyArray<readonly [string, string, string, string]> = [
+  ["The skate park opens at", "It closes at", "opens", "closes"],
+  ["Hockey practice starts at", "It ends at", "starts", "ends"],
+  ["The bus leaves at", "It gets there at", "leaves", "arrives"],
+  ["The movie starts at", "It finishes at", "starts", "finishes"],
+  ["He drops in at", "He rolls out at", "drops in", "rolls out"],
+  ["Recess starts at", "Recess ends at", "starts", "ends"],
 ];
 
-/**
- * Deterministic from the seed, so a probe or a test can ask for the same
- * problem twice and get the same one.
- *
- * TWO DIFFICULTIES, Andy 2026-09-01: "don't want it to become discouraging."
- * By default a problem stays INSIDE one clock hour and its answer never
- * passes 60 minutes; 2:10 to 3:45 at the end of a good run is a reward that
- * bites. Crossing the hour is a parent toggle, switched on when he is ready
- * for the crossing to BE the skill.
- */
-export const makeElapsed = (seed: number, crossHour = false): ElapsedProblem => {
+/** Deterministic in the seed, so a probe can ask twice and get the same one. */
+export const makeElapsed = (seed: number, maxLevel: 1 | 2 | 3 = 1): ElapsedProblem => {
   let h = (seed * 2654435761) >>> 0;
   const next = (n: number): number => {
     h = (h * 1664525 + 1013904223) >>> 0;
     return h % n;
   };
+
+  const level = (1 + next(Math.max(1, Math.min(3, maxLevel)))) as 1 | 2 | 3;
   const startHour = 8 + next(11);
   let startMin: number;
   let duration: number;
-  if (crossHour) {
-    // 10 to 95 minutes on five minute marks; crossings arrive often.
-    startMin = next(12) * 5;
-    duration = (2 + next(18)) * 5;
-  } else {
-    // 10 to 50 minutes, and the start minute is chosen so the end stays
-    // inside the same hour: the whole problem lives on one clock face.
+
+  if (level === 1) {
+    // Inside one hour: 10 to 50 minutes, and the start is chosen so the end
+    // never leaves the clock face it began on.
     duration = (2 + next(9)) * 5;
     startMin = next((55 - duration) / 5 + 1) * 5;
+  } else if (level === 2) {
+    // Crosses into the next hour but stays a small span: 10 to 60 minutes,
+    // start late enough that the hour boundary is inside it.
+    duration = (2 + next(11)) * 5;
+    const lowest = Math.max(0, 60 - duration + 5);
+    startMin = lowest + next((55 - lowest) / 5 + 1) * 5;
+  } else {
+    // The big spans: 65 to 120 minutes, per Andy never beyond two hours.
+    duration = (13 + next(12)) * 5;
+    startMin = next(12) * 5;
   }
+
   const start = startHour * 60 + startMin;
   const scene = SCENES[next(SCENES.length)] ?? SCENES[0]!;
   const startLabel = label(start);
@@ -77,7 +92,11 @@ export const makeElapsed = (seed: number, crossHour = false): ElapsedProblem => 
     id: `elapsed:${start}:${duration}`,
     text: `${scene[0]} ${startLabel}. ${scene[1]} ${endLabel}. How many minutes is that?`,
     answer: duration,
+    level,
     startLabel,
     endLabel,
+    startMinutes: start,
+    endMinutes: start + duration,
+    caps: [scene[2], scene[3]],
   };
 };

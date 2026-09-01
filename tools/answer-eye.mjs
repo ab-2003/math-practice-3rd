@@ -36,6 +36,10 @@ await page.evaluate(() => {
   // Both formats must be graded right, so missing-number runs hot here even
   // though Andy ships it off by default.
   m.missing = { add: true, sub: true, mul: true, div: true, pct: 35 };
+  // Digital sentences at the top level, so the independent clock solver gets
+  // spans past sixty minutes to chew on. The analog view has its own probe.
+  m.elapsedLevel = 3;
+  m.elapsedAnalog = false;
 });
 // Click straight in, no second goto: a reload throws away live-meta mutations
 // that were never saved. For a while this harness only exercised mul and div

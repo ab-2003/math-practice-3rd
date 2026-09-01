@@ -325,27 +325,52 @@ const renderDash = (app: App, host: HTMLElement): void => {
     stepRow.append(el("span", { class: "toggle-hint", text: "Missing-number mix" }), minus, valueEl, plus);
     if (anyMissing) focus.append(stepRow);
 
-    // The bonus round's one dial. The elapsed-time reward must never bite, so
-    // by default it lives inside a single clock hour; the crossing becomes
-    // the skill only when a grown-up says he is ready for it.
-    const hardOn = app.meta.elapsedHard;
-    const hard = el("button", {
-      type: "button", class: `toggle sub${hardOn ? " on" : ""}`,
-      "data-probe": "elapsed-hard", "aria-pressed": String(hardOn),
+    // The bonus round's dials. Elapsed time is a reward, so the parent picks
+    // how far it is allowed to stretch, and whether the times are digits to
+    // read or clock faces to practise on.
+    focus.append(el("h3", { text: "Bonus round: elapsed time", style: "margin-top:16px" }));
+    focus.append(el("p", { class: "note", text:
+      "Problems mix everything up to the level you pick. Every time sits on a five minute mark." }));
+    const LEVELS: Array<{ n: 1 | 2 | 3; label: string; hint: string }> = [
+      { n: 1, label: "Same hour", hint: "2:10 to 2:45. Never leaves the hour it started in." },
+      { n: 2, label: "Into the next hour", hint: "2:50 to 3:10. Crosses the hour, still 60 minutes or less." },
+      { n: 3, label: "The big spans", hint: "2:10 to 3:45. More than an hour, never more than two." },
+    ];
+    for (const lvl of LEVELS) {
+      const active = app.meta.elapsedLevel === lvl.n;
+      const allowed = app.meta.elapsedLevel >= lvl.n;
+      const row = el("button", {
+        type: "button", class: `toggle sub level${active ? " on" : ""}`,
+        "data-probe": `elapsed-level-${lvl.n}`, "aria-pressed": String(active),
+      });
+      row.append(el("span", { class: "toggle-knob" }));
+      const text = el("span", { class: "toggle-text" });
+      text.append(el("span", { class: "toggle-label", text: `Level ${lvl.n} · ${lvl.label}` }));
+      text.append(el("span", { class: "toggle-hint", text: `${lvl.hint}${allowed && !active ? " (included)" : ""}` }));
+      row.append(text);
+      on(row, "click", () => {
+        app.meta.elapsedLevel = lvl.n;
+        void app.save().then(() => app.refresh());
+      });
+      focus.append(row);
+    }
+    const anaOn = app.meta.elapsedAnalog;
+    const ana = el("button", {
+      type: "button", class: `toggle sub${anaOn ? " on" : ""}`,
+      "data-probe": "elapsed-analog", "aria-pressed": String(anaOn),
     });
-    hard.append(el("span", { class: "toggle-knob" }));
-    const hardText = el("span", { class: "toggle-text" });
-    hardText.append(el("span", { class: "toggle-label", text: "Bonus round: cross the hour" }));
-    hardText.append(el("span", { class: "toggle-hint", text: hardOn
-      ? "on · times can span the hour and answers can pass 60 minutes"
-      : "off · every bonus problem stays inside one hour, answers 60 minutes or less" }));
-    hard.append(hardText);
-    on(hard, "click", () => {
-      app.meta.elapsedHard = !app.meta.elapsedHard;
+    ana.append(el("span", { class: "toggle-knob" }));
+    const anaText = el("span", { class: "toggle-text" });
+    anaText.append(el("span", { class: "toggle-label", text: "Analog clock faces" }));
+    anaText.append(el("span", { class: "toggle-hint", text: anaOn
+      ? "on · he reads the times off drawn clock faces, five minute marks"
+      : "off · times are written out digitally (2:45)" }));
+    ana.append(anaText);
+    on(ana, "click", () => {
+      app.meta.elapsedAnalog = !app.meta.elapsedAnalog;
       void app.save().then(() => app.refresh());
     });
-    focus.append(el("h3", { text: "Bonus round", style: "margin-top:16px" }));
-    focus.append(hard);
+    focus.append(ana);
     if (app.meta.strands.div && !app.meta.strands.mul) {
       focus.append(el("p", { class: "note warn", text:
         "Division is on but multiplication is off. A division fact only unlocks once its own multiplication family is solid, so nothing new will arrive until multiplication is switched back on." }));

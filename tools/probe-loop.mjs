@@ -381,6 +381,50 @@ await step("switching missing number back off returns every item to standard", a
   }
 });
 
+// ---- elapsed time levels and the analog view -------------------------------
+
+await step("the bonus round defaults to level 1, digital", async () => {
+  const m = await page.evaluate(() => window.__app.meta());
+  must(m.elapsedLevel === 1, `default level is ${m.elapsedLevel}`);
+  must(m.elapsedAnalog === false, "analog is on by default");
+});
+
+await step("the settings offer three explained levels and picking one persists", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-probe="elapsed-level-1"]', { timeout: 6000 });
+  for (const n of [1, 2, 3]) must(await page.$(`[data-probe="elapsed-level-${n}"]`) !== null, `no level ${n} row`);
+  await page.click('[data-probe="elapsed-level-3"]');
+  await page.waitForTimeout(350);
+  await page.reload({ waitUntil: "networkidle" });
+  must(await page.evaluate(() => window.__app.meta().elapsedLevel) === 3, "the level did not persist");
+});
+
+await step("the analog view shows two clock faces and not a single digital time", async () => {
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.elapsedAnalog = true;
+    m.animations = false;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"], [data-probe="bonus"]');
+  await page.evaluate(() => window.__probe.bonus());
+  await page.waitForSelector(".bonus-analog", { timeout: 4000 });
+  must((await page.$$(".bonus-analog .clock")).length === 2, "there are not two clock faces");
+  const visible = (await page.textContent(".stage")) ?? "";
+  must(!/\d{1,2}:\d{2}/.test(visible), `a digital time leaked into the analog view: "${visible.trim()}"`);
+  // Solve it from the data attributes, which exist for exactly this check.
+  const startL = await page.getAttribute('[data-probe="bonus"]', "data-start");
+  const endL = await page.getAttribute('[data-probe="bonus"]', "data-end");
+  const toMin = (l) => (Number(l.split(":")[0]) % 12) * 60 + Number(l.split(":")[1]);
+  const mins = ((toMin(endL) - toMin(startL)) + 720) % 720;
+  await typeAnswer(page, mins);
+  await page.waitForTimeout(250);
+  must(await page.$('[data-probe="retype"]') === null, `the analog answer ${mins} was graded wrong`);
+});
+
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);
 await browser.close();
 console.log(process.exitCode ? "PROBE-LOOP RED" : "PROBE-LOOP GREEN");

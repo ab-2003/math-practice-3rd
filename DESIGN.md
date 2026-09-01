@@ -544,6 +544,11 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.5.0 - the elapsed-time ladder and the analog clocks.** Three
+      explained levels with the parent picking the ceiling (default level 1
+      only), mixing everything at or below it; and an opt-in analog view,
+      two house-style clock faces on five minute marks, so the bonus round
+      doubles as clock-reading practice.
 - [x] **0.4.0 - missing number, gentle time, and pacing.** Missing-number
       format behind per-operation parent switches (all OFF by default, shared
       mix percent, default 20); elapsed-time bonus stays inside one hour until
