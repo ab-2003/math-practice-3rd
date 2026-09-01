@@ -9,6 +9,7 @@ import { collectionScreen, homeScreen } from "./screens";
 import { sessionScreen } from "./session-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
+import { cloudAutoPush } from "./cloud";
 import { getFacts, getMeta, putFacts, putMeta, freshMeta, type Meta } from "./store";
 
 const BACKUP_NUDGE_DAYS = 21;
@@ -43,7 +44,13 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   const app: App = {
     deck, states, meta, day: today(),
     go: (r) => { route = r; render(); },
-    save: async () => { await putMeta(app.meta); await putFacts(app.states); },
+    save: async () => {
+      await putMeta(app.meta);
+      await putFacts(app.states);
+      // Best-effort mirror to the cloud share, throttled, never blocking:
+      // the on-device data is the gold standard.
+      cloudAutoPush();
+    },
     refresh: () => render(),
   };
 

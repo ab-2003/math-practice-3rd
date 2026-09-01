@@ -169,6 +169,17 @@ await step("setting the PIN opens the dashboard, and the charts render", async (
   const text = (await page.textContent(".screen")) ?? "";
   must(text.includes("2.CE.1") && text.includes("3.CE.2"), "the SOL standards are not reported");
   must(text.includes("FIRST DIGIT"), "the measurement definition is not stated on screen");
+  must(await page.$('[data-probe="histogram"]') !== null, "no response-time histogram");
+  must(await page.$('[data-probe="dose-goal"]') !== null, "no daily dose setting");
+  must(await page.$('[data-probe="cloud-card"]') !== null, "no cloud share card");
+  // The dose stepper steps and clamps.
+  const g0 = Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0");
+  await page.click('[data-probe="dose-plus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0") === g0 + 5, "dose plus did not step");
+  await page.click('[data-probe="dose-minus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0") === g0, "dose minus did not step back");
 });
 
 await step("the wrong PIN does not open the dashboard", async () => {
@@ -521,11 +532,63 @@ await step("the run's end offers the shop, and Later spends nothing", async () =
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "Later bought a monster anyway");
 });
 
-await step("after a run, home says today is done", async () => {
-  must(await page.$('[data-probe="done-today"]') !== null, "no done-today pill");
+await step("a short run is NOT the day's work: no badge until the dose", async () => {
+  // The breather run above answered only a few items, so the day is not done.
+  must(await page.$('[data-probe="daily-badge"]') === null, "the badge showed before the dose was met");
+  must(await page.$('[data-probe="dose-progress"]') !== null, "no dose progress line on home");
   const label = (await page.textContent('[data-probe="start"]')) ?? "";
-  must(label.toUpperCase().includes("ANOTHER"), `the button still says "${label}"`);
+  must(label.toUpperCase().includes("DROP"), `the button says "${label}" before the dose is done`);
   must(await page.$('[data-probe="unlock-progress"]') !== null, "no progress toward the next monster on home");
+});
+
+await step("meeting the dose raises the big badge and flips to extra practice", async () => {
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.doseDay = window.__app.day();
+    m.doseCount = m.dailyGoal;
+    window.__app.go("home");
+  });
+  await page.waitForTimeout(300);
+  must(await page.$('[data-probe="daily-badge"]') !== null, "no DONE badge after the dose");
+  const label = (await page.textContent('[data-probe="start"]')) ?? "";
+  must(label.toUpperCase().includes("EXTRA"), `the button says "${label}" after the dose`);
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  must(await page.$('[data-probe="extra-tag"]') !== null, "the session does not say EXTRA PRACTICE");
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.warm, .sheet .btn.go");
+  await page.waitForTimeout(400);
+  while (await page.$(".scrim") !== null) { await page.click(".sheet .btn.ghost, .sheet .btn.go").catch(() => {}); await page.waitForTimeout(250); }
+});
+
+await step("crossing the dose mid-session plays the banner moment", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false;
+    m.strands = { add: true, sub: true, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    m.doseDay = window.__app.day();
+    m.doseCount = m.dailyGoal - 2; // two answers away from the day's work
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  for (let i = 0; i < 2; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(150);
+  }
+  await page.waitForSelector('[data-probe="daily-banner"]', { timeout: 5000 });
+  await page.waitForSelector('[data-probe="daily-banner"]', { state: "detached", timeout: 6000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.warm, .sheet .btn.go");
+  await page.waitForTimeout(400);
+  const endText = (await page.textContent(".sheet").catch(() => "")) ?? "";
+  must(endText.includes("TODAY'S WORK: DONE"), "the end sheet does not carry the DONE line");
+  while (await page.$(".scrim") !== null) { await page.click(".sheet .btn.ghost, .sheet .btn.go").catch(() => {}); await page.waitForTimeout(250); }
 });
 
 await step("landing a line with animations on plays the victory lap and lights the spot", async () => {
@@ -580,7 +643,7 @@ await step("send out picks who rides, and the collection says so", async () => {
     m.owned = ["grindjaw", "voltmaw"];
     m.levels = { grindjaw: 1, voltmaw: 1 };
     m.rider = null;
-    m.lastSessionDay = window.__app.day();
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal;
     window.__app.go("collection");
   });
   await page.waitForTimeout(250);
@@ -598,7 +661,7 @@ await step("before today's run the shop is one 60-second peek, then closed", asy
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.evaluate(() => {
     const m = window.__app.meta();
-    m.lastSessionDay = window.__app.day() - 1; // yesterday's run, not today's
+    m.doseDay = window.__app.day(); m.doseCount = 0; // today's work not done
     m.shopPeekDay = null; m.shopPeekAt = null;
   });
   await page.click('[data-probe="collection"]');
@@ -616,7 +679,11 @@ await step("before today's run the shop is one 60-second peek, then closed", asy
   // Today's run done: the doors open for the rest of the day.
   await page.click('[data-probe="back"]');
   await page.waitForSelector('[data-probe="start"]');
-  await page.evaluate(() => { window.__app.meta().lastSessionDay = window.__app.day(); });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.doseDay = window.__app.day();
+    m.doseCount = m.dailyGoal;
+  });
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster", { timeout: 4000 });
   must(await page.$('[data-probe="shop-peek"]') === null, "the open shop still wears the peek note");
@@ -628,7 +695,7 @@ await step("he buys the dragon he WANTS, not the cheapest", async () => {
   await page.evaluate(() => {
     const m = window.__app.meta();
     m.coins = 5000; m.owned = []; m.rider = null;
-    m.lastSessionDay = window.__app.day(); // shop is open after the run
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; // work done, shop open
     window.__app.go("collection");
   });
   await page.waitForTimeout(250);
@@ -679,6 +746,42 @@ await step("a helmet is bought once and lands on the monster he puts it on", asy
   must(await page.$(".sheet .creature .helm") !== null, "the worn helmet is not drawn on the card");
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
+});
+
+await step("cloud share: create, QR, save-now, and the throttled auto-push", async () => {
+  let puts = 0;
+  await page.route("**/math-pra3-cloudshare**", (route) => {
+    const m = route.request().method();
+    if (m === "PUT") { puts += 1; void route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }); }
+    else if (m === "GET") void route.fulfill({ status: 404, contentType: "application/json", body: '{"error":"nothing"}' });
+    else void route.fulfill({ status: 204, body: "" });
+  });
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-probe="cloud-create"]', { timeout: 6000 });
+  await page.click('[data-probe="cloud-create"]');
+  await page.waitForSelector('[data-probe="cloud-qr"]', { timeout: 6000 });
+  must(puts === 1, `creating pushed ${puts} times, wanted 1`);
+  const codeText = (await page.textContent('[data-probe="cloud-code"]')) ?? "";
+  must(codeText.startsWith("MATH-PRA3-"), `the code reads "${codeText.slice(0, 14)}…", wanted the MATH-PRA3 prefix`);
+  must(await page.evaluate(() => localStorage.getItem("tl-cloud-code") !== null), "the device did not remember its code");
+  await page.click('[data-probe="cloud-save-now"]');
+  await page.waitForTimeout(600);
+  must(puts >= 2, "save-now did not push");
+  // A data save inside the throttle window books a trailing push, never a
+  // burst: the mirror follows the gold standard at a polite distance.
+  await page.evaluate(() => { window.__app.go("home"); });
+  await page.waitForTimeout(200);
+  await page.click('[data-probe="anim-toggle"]');
+  await page.waitForTimeout(400);
+  const pending = await page.evaluate(() => window.__cloud.pending());
+  must(pending === true || puts >= 3, "an in-throttle save neither pushed nor booked a trailing push");
+  await page.click('[data-probe="anim-toggle"]'); // restore
+  await page.waitForTimeout(300);
+  await page.evaluate(() => localStorage.removeItem("tl-cloud-code"));
+  await page.unroute("**/math-pra3-cloudshare**");
 });
 
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);

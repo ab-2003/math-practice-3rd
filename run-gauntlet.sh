@@ -111,4 +111,5 @@ done
 if [ $n -ge 8 ]; then echo "converged 8/8"; else echo "FAILED to converge"; exit 1; fi
 
 LIVE_URL=$LIVE node tools/live-smoke.mjs || exit 1
+node tools/cloud-smoke.mjs || exit 1
 echo "GAUNTLET-DEPLOY DONE — $LIVE"

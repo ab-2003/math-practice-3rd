@@ -35,7 +35,7 @@ import { lineStrip, playBail, playLanding, playLineBanner } from "./trickline";
 import { playTrick, playVictoryLap } from "./trick-anim";
 import { spotLayer } from "./spots";
 import { helmetById } from "../core/gear";
-import { resolveRider } from "./screens";
+import { doseDone, resolveRider } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
 
@@ -48,7 +48,9 @@ export const sessionScreen = (app: App): HTMLElement => {
     el("span", { text: "◆" }), el("span", { class: "chip-n", text: String(app.meta.coins) }));
   const strip = el("div", { class: "grow" });
   const quit = el("button", { type: "button", class: "btn small ghost", "data-probe": "quit" }, el("span", { text: "Take a breather" }));
+  const isExtra = doseDone(app);
   bar.append(chip, strip, quit);
+  if (isExtra) bar.append(el("span", { class: "pill extra-tag", "data-probe": "extra-tag", text: "EXTRA PRACTICE" }));
   root.append(bar);
 
   const wrap = el("div", { class: "session" });
@@ -76,6 +78,25 @@ export const sessionScreen = (app: App): HTMLElement => {
   let bestChain = 0;
   let newTrickName: string | null = null;
   let newSpotName: string | null = null;
+  // THE DAILY DOSE. Crossing the goal mid-session is the day's headline
+  // moment: the one fanfare, the big banner, and the badge waiting at home.
+  const doseBase = app.meta.doseDay === app.day ? app.meta.doseCount : 0;
+  let doseCelebrated = doseBase >= app.meta.dailyGoal;
+
+  const showDailyDone = (): Promise<void> =>
+    new Promise((resolve) => {
+      const b = el("div", { class: "daily-banner", "data-probe": "daily-banner" },
+        el("div", { class: "db-big", text: "TODAY'S WORK DONE!" }),
+        el("div", { class: "db-sub", text: "everything from here is extra credit" }));
+      left.append(b);
+      let fin = false;
+      const done = (): void => { if (fin) return; fin = true; b.remove(); resolve(); };
+      const t = window.setTimeout(done, 2100);
+      b.addEventListener("animationend", (e) => {
+        if (e.target !== b) return;
+        window.clearTimeout(t); done();
+      });
+    });
 
   /** Bank coins where he can SEE it: chip bump plus a floating +n. */
   const bank = (n: number): void => {
@@ -266,6 +287,11 @@ export const sessionScreen = (app: App): HTMLElement => {
       } else if (!app.meta.animations) {
         await playLanding(stage, trick.name);
       }
+      if (!doseCelebrated && doseBase + itemsDone >= app.meta.dailyGoal) {
+        doseCelebrated = true;
+        sfx.dailyJingle();
+        await showDailyDone();
+      }
       if (endsLine) {
         // THE LINE IS AN EVENT. With animations on, his creature rides the
         // whole line start to finish while the spot lights up (Andy's ask);
@@ -384,6 +410,8 @@ export const sessionScreen = (app: App): HTMLElement => {
 
     app.meta.coins += coins;
     app.meta.linesLanded += linesThisRun;
+    app.meta.doseDay = app.day;
+    app.meta.doseCount = doseBase + itemsDone;
     const newBestTricks = tricksThisRun > app.meta.bestTricksRun;
     if (newBestTricks) app.meta.bestTricksRun = tricksThisRun;
     const newBestLines = linesThisRun > app.meta.bestLinesRun;
@@ -412,6 +440,11 @@ export const sessionScreen = (app: App): HTMLElement => {
     story.push(`${tricksThisRun} tricks landed` + (linesThisRun > 0 ? ` · ${linesThisRun} full ${linesThisRun === 1 ? "line" : "lines"}` : ""));
     if (bestChain >= 3) story.push(`Longest chain: ${bestChain} in a row`);
     body.append(el("p", { class: "note", text: story.join("  ·  ") }));
+    if (doseBase + itemsDone >= app.meta.dailyGoal) {
+      body.append(el("p", { class: "best-line", text: "TODAY'S WORK: DONE ✓" }));
+    } else {
+      body.append(el("p", { class: "note", text: `Today so far: ${doseBase + itemsDone} of ${app.meta.dailyGoal}` }));
+    }
     if (newBestTricks && tricksThisRun >= 5) body.append(el("p", { class: "best-line", text: "NEW BEST RUN!" }));
     else if (newBestLines && linesThisRun >= 2) body.append(el("p", { class: "best-line", text: "MOST LINES EVER!" }));
     if (newTrickName !== null) body.append(el("p", { class: "best-line", text: `NEW TRICK UNLOCKED: ${newTrickName}` }));

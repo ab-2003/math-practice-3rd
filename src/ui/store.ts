@@ -40,6 +40,12 @@ export interface Meta {
   animations: boolean;
   /** Which monster rides. His pick from the collection; null = newest owned. */
   rider: string | null;
+  /** The daily dose: how many real items make a day's work (parent-set),
+   *  and how many he has answered today. The badge, the jingle and the shop
+   *  all key off it. */
+  dailyGoal: number;
+  doseDay: number | null;
+  doseCount: number;
   /** The one pre-run shop peek per day: which day, and when it started. */
   shopPeekDay: number | null;
   shopPeekAt: number | null;
@@ -75,7 +81,8 @@ export interface Meta {
 
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
-  rider: null, shopPeekDay: null, shopPeekAt: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
+  rider: null, dailyGoal: 40, doseDay: null, doseCount: 0,
+  shopPeekDay: null, shopPeekAt: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
@@ -121,6 +128,7 @@ export const getMeta = async (): Promise<Meta> => {
     strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) },
     missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
     // A save from the brief elapsedHard era maps onto the ladder it became.
+    dailyGoal: Math.max(10, Math.min(80, raw.dailyGoal ?? 40)),
     elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
     elapsedAnalog: raw.elapsedAnalog ?? false,
   };

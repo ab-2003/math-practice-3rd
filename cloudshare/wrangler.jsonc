@@ -1,0 +1,11 @@
+{
+  // TRICK LINE's cloudshare worker, own hostname on purpose so the data
+  // outlives any app URL (the WO4 commercial-proofing law).
+  // Deploy: npx wrangler deploy --config cloudshare/wrangler.jsonc
+  "name": "math-pra3-cloudshare",
+  "main": "worker.ts",
+  "compatibility_date": "2026-08-01",
+  "kv_namespaces": [
+    { "binding": "SHARES", "id": "bf2134f98a40414dbdcaafd41e6caa95" }
+  ]
+}

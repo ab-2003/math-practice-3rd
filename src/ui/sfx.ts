@@ -89,6 +89,14 @@ export const sfx = {
     env("sine", 1319 * lift, 0.06, 0.18, 0.11);
     env("triangle", 1568 * lift, 0.12, 0.26, 0.1);
   },
+  /** TODAY'S WORK DONE: the one true fanfare. Played once a day, at the
+   *  moment the daily dose is reached, and nowhere else, so it stays special. */
+  dailyJingle: (): void => {
+    [392, 523, 659, 784].forEach((f, i) => env("triangle", f, i * 0.11, 0.3, 0.14));
+    env("triangle", 1047, 0.44, 0.55, 0.16);
+    env("sine", 262, 0.44, 0.6, 0.09, 330);
+    noise(0.5, 0.35, 0.06, 3200);
+  },
   /** The bonus round announcing itself: a prize should sound like one. */
   bonusSting: (): void => {
     [659, 784, 988, 1319].forEach((f, i) => env("triangle", f, i * 0.09, 0.3, 0.13));

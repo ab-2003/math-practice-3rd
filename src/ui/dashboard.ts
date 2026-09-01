@@ -21,6 +21,7 @@ import { standardProgress } from "../core/standards";
 import type { FactKind, Response } from "../core/types";
 import type { App } from "./appstate";
 import { heatMap, progressBar, retrievalTrend, type HeatCell, type WeekPoint } from "./charts";
+import { cloudCard } from "./cloud-ui";
 import { el, mount, on } from "./dom";
 import { sheet } from "./sheet";
 import { eraseAll, exportAll, getResponses, getSessions, importAll, type SessionRecord } from "./store";
@@ -251,6 +252,25 @@ const renderDash = (app: App, host: HTMLElement): void => {
       "2.CE.1 is a second grade standard being closed this year. 3.CE.2 is due by the end of third grade and is the direct prerequisite for fourth grade multi-digit multiplication and long division." }));
     wrap.append(std);
 
+    // ---- the daily dose ---------------------------------------------------
+    const doseCard = el("div", { class: "card" });
+    doseCard.append(el("h3", { text: "The daily dose" }));
+    doseCard.append(el("p", { class: "note", text:
+      "How many answered problems make a day's work. The DONE badge, the jingle, the extra-practice label and the shop unlock all key off this number." }));
+    const doseRow = el("div", { class: "stepper" });
+    const dMinus = el("button", { type: "button", class: "btn small", "data-probe": "dose-minus" }, el("span", { text: "−" }));
+    const dVal = el("span", { class: "stepper-value", "data-probe": "dose-goal", text: String(app.meta.dailyGoal) });
+    const dPlus = el("button", { type: "button", class: "btn small", "data-probe": "dose-plus" }, el("span", { text: "+" }));
+    const bumpGoal = (d: number): void => {
+      app.meta.dailyGoal = Math.max(10, Math.min(80, app.meta.dailyGoal + d));
+      void app.save().then(() => app.refresh());
+    };
+    on(dMinus, "click", () => bumpGoal(-5));
+    on(dPlus, "click", () => bumpGoal(5));
+    doseRow.append(el("span", { class: "toggle-hint", text: "Problems per day" }), dMinus, dVal, dPlus);
+    doseCard.append(doseRow);
+    wrap.append(doseCard);
+
     // ---- what he is practising -------------------------------------------
     //
     // A parent control. School reaches multiplication when it reaches it, and
@@ -377,6 +397,67 @@ const renderDash = (app: App, host: HTMLElement): void => {
     }
     wrap.append(focus);
 
+    // ---- how long answers take -------------------------------------------
+    //
+    // Buckets NEST inside the classification, so the histogram explains the
+    // mechanic instead of talking past it: the first two buckets are the
+    // retrieved band (<3s), the next two are the derived band (3-8s), and
+    // the last is the effortful tail. Correct answers only; a wrong answer's
+    // clock measures a guess, not a retrieval.
+    const BUCKETS = [
+      { max: 1500, label: "under 1.5s", color: "#B6FF3C" },
+      { max: 3000, label: "1.5–3s", color: "#8FE08F" },
+      { max: 5000, label: "3–5s", color: "#35E6FF" },
+      { max: 8000, label: "5–8s", color: "#FFE14D" },
+      { max: Infinity, label: "8s+", color: "#FF8A1F" },
+    ];
+    const OPS: Record<string, string> = { add: "+", sub: "−", mul: "×", div: "÷" };
+    const histRows = new Map<string, number[]>();
+    const bump2 = (key: string, ms: number): void => {
+      const row = histRows.get(key) ?? BUCKETS.map(() => 0);
+      row[BUCKETS.findIndex((b) => ms < b.max)] = (row[BUCKETS.findIndex((b) => ms < b.max)] ?? 0) + 1;
+      histRows.set(key, row);
+    };
+    for (const r of scored) {
+      if (!r.correct || r.firstKeyMs === null) continue;
+      const op = OPS[r.factId.split(":")[0] ?? ""] ?? "?";
+      const key = `${op}${(r.format ?? "standard") === "missing" ? " missing" : ""}`;
+      bump2("all", r.firstKeyMs);
+      bump2(key, r.firstKeyMs);
+    }
+    const hist = el("div", { class: "card", "data-probe": "histogram" });
+    hist.append(el("h3", { text: "How long answers take" }));
+    hist.append(el("p", { class: "note", text:
+      "First-digit time on correct answers. The first two bands are answers from memory (under 3s); the middle two are worked out (3–8s); the last is the long tail." }));
+    const legend = el("div", { class: "hist-legend" });
+    for (const b of BUCKETS) {
+      legend.append(el("span", { class: "hist-key" },
+        el("span", { class: "hist-swatch", style: `background:${b.color}` }), el("span", { text: b.label })));
+    }
+    hist.append(legend);
+    const order = ["all", "+", "+ missing", "−", "− missing", "×", "× missing", "÷", "÷ missing"];
+    for (const key of order) {
+      const row = histRows.get(key);
+      if (!row) continue;
+      const total = row.reduce((a, b) => a + b, 0);
+      if (total === 0) continue;
+      const line = el("div", { class: "hist-row" });
+      line.append(el("span", { class: "hist-label", text: key === "all" ? "ALL" : key }));
+      const barEl = el("div", { class: "hist-bar" });
+      row.forEach((n, i) => {
+        if (n === 0) return;
+        barEl.append(el("span", {
+          class: "hist-seg", style: `flex:${n};background:${BUCKETS[i]!.color}`,
+          title: `${BUCKETS[i]!.label}: ${n}`,
+        }));
+      });
+      line.append(barEl);
+      line.append(el("span", { class: "hist-n", text: String(total) }));
+      hist.append(line);
+    }
+    if (histRows.size === 0) hist.append(el("p", { class: "note", text: "No answers yet." }));
+    wrap.append(hist);
+
     // ---- the heat map -----------------------------------------------------
     const perFact = new Map<string, number[]>();
     for (const r of scored) {
@@ -472,6 +553,9 @@ const renderDash = (app: App, host: HTMLElement): void => {
     row.append(csvBtn, jsonBtn, restore, inp, reset);
     data.append(row);
     wrap.append(data);
+
+    // ---- the cloud share --------------------------------------------------
+    wrap.append(cloudCard(app));
 
     mount(host, wrap);
   })();

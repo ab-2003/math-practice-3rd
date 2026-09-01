@@ -500,6 +500,37 @@ synthesizer's logic: an instrument that does not share the production code
 path vouches for a different app. The gate is `instanceof Element` now, and
 probe-loop drives a REAL synthesized touch on monster art every run.
 
+**The daily dose, the histogram, and the cloud (0.10.0, day-one feedback).**
+
+**THE DAILY DOSE.** One run no longer means the day is done (a six-item
+breather was lighting the done state, and his son could not tell whether he
+had done enough). A day's work is now a parent-set number of answered
+problems (default 40, settable 10-80 in the dashboard). Crossing it
+mid-session is the day's headline moment: the one fanfare the app owns, a
+TODAY'S WORK DONE banner, and then the big starburst stamp on the home
+screen for the rest of the day, with the button flipping to EXTRA PRACTICE
+and every later session wearing an EXTRA PRACTICE tag. Below the goal, home
+shows a quiet "Today's tricks: X / G" bar. The little text pill is retired.
+The shop unlock keys off the dose too.
+
+**THE HISTOGRAM.** "How long answers take": first-digit times on correct
+answers in five buckets chosen to NEST inside the classification (under
+1.5s and 1.5-3s are the retrieved band; 3-5s and 5-8s the derived band;
+8s+ the tail), split by problem type (all four operations, standard and
+missing-number). The chart explains the mechanic instead of talking past it.
+
+**CLOUD SHARE**, cloned from the proven WO4 pattern: a 100-bit bearer code
+(displayed MATH-PRA3-XXXXX-...), no accounts, no PII, one KV entry per code
+on math-pra3-cloudshare.beyer-games.workers.dev (worker in cloudshare/, own
+hostname on purpose). Parent settings create/connect (type, paste, or scan;
+QR carries the CODE, never a URL), copy/share/save-now/load/disconnect/
+delete. Every data save schedules a THROTTLED (45s, trailing) fire-and-forget
+push; failures and hangs never block the app - the on-device data is the
+gold standard and the cloud is a best-effort mirror. cloud-smoke.mjs proves
+the real worker at every release (KV is eventually consistent; the smoke
+polls rather than judging first answers). GRINDJAW's log now exists only
+during his act.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -668,6 +699,11 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.10.0 - the daily dose, the histogram, and the cloud.** A real
+      configurable day's-work with the badge/jingle/extra-practice system;
+      the nested response-time histogram by problem type; WO4-pattern cloud
+      share with throttled never-blocking auto-push; the log only during
+      GRINDJAW's act.
 - [x] **0.9.0 - prop acting, the peek, and the SVG tap fix.** Signature
       prop acts (log snap, lightning, lava pool, sailing floe, goal-bound
       slapper); the once-a-day one-minute pre-run shop peek; and the

@@ -4,7 +4,7 @@ import { standardProgress } from "../core/standards";
 import type { App } from "./appstate";
 import { progressBar } from "./charts";
 import { creatureSvg, helmetIcon } from "./creature-svg";
-import { el, on } from "./dom";
+import { el, on, svg } from "./dom";
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 
@@ -15,6 +15,32 @@ export const resolveRider = (app: App): Creature => {
   const owned = app.meta.owned;
   const newest = owned.length > 0 ? creatureById(owned[owned.length - 1]!) : null;
   return newest ?? cheapestLocked(app.meta.owned) ?? ROSTER[0]!;
+};
+
+/** The day's work is DONE when today's answered items reach the parent-set
+ *  goal. The badge, the jingle, the extra-practice label and the shop all
+ *  key off this one truth. */
+export const doseDone = (app: App): boolean =>
+  app.meta.doseDay === app.day && app.meta.doseCount >= app.meta.dailyGoal;
+
+/** The prominent stamp for a finished day: a starburst that stamps in once
+ *  and then gleams. Retired the little text pill; this is the real thing. */
+const dailyBadge = (): HTMLElement => {
+  const wrap = el("div", { class: "daily-badge", "data-probe": "daily-badge" });
+  const g = svg("svg", { viewBox: "0 0 200 200", class: "badge-star" });
+  const pts: string[] = [];
+  for (let i = 0; i < 24; i++) {
+    const r = i % 2 === 0 ? 96 : 78;
+    const a = (i / 24) * Math.PI * 2 - Math.PI / 2;
+    pts.push(`${100 + Math.cos(a) * r},${100 + Math.sin(a) * r}`);
+  }
+  g.append(svg("polygon", { points: pts.join(" "), fill: "#B6FF3C", stroke: "#05070A", "stroke-width": 6 }));
+  g.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#05070A", "stroke-width": 4, "stroke-dasharray": "3 7" }));
+  g.append(svg("text", { x: 100, y: 88, "text-anchor": "middle", "font-size": 21, "font-weight": 900, fill: "#05070A" }, "TODAY'S"));
+  g.append(svg("text", { x: 100, y: 112, "text-anchor": "middle", "font-size": 21, "font-weight": 900, fill: "#05070A" }, "WORK"));
+  g.append(svg("text", { x: 100, y: 140, "text-anchor": "middle", "font-size": 27, "font-weight": 900, fill: "#05070A" }, "DONE ✓"));
+  wrap.append(g);
+  return wrap;
 };
 
 const coinChip = (n: number): HTMLElement =>
@@ -76,14 +102,21 @@ export const homeScreen = (app: App): HTMLElement => {
   }
   root.append(hero);
 
-  // One run a day is the whole contract, so today's state lives on the
-  // button itself: the ask, or the "already done, more is a bonus".
-  const doneToday = app.meta.lastSessionDay === app.day;
+  // Today's state lives on the button and, when the work is done, on the
+  // big stamp beside the hero: after the dose, everything is EXTRA PRACTICE.
+  const done = doseDone(app);
+  if (done) hero.append(dailyBadge());
   const go = el("button", { type: "button", class: "btn go big", "data-probe": "start" },
-    el("span", { text: doneToday ? "Another Run?" : "Drop In" }));
+    el("span", { text: done ? "Extra Practice" : "Drop In" }));
   on(go, "click", () => app.go("session"));
-  if (doneToday) hero.append(el("span", { class: "pill done-pill", "data-probe": "done-today", text: "✓ today's run done" }));
   root.append(go);
+  if (!done) {
+    const todayN = app.meta.doseDay === app.day ? app.meta.doseCount : 0;
+    const dose = el("div", { class: "dose-line", "data-probe": "dose-progress" });
+    dose.append(el("span", { class: "mon-sub", text: `Today's tricks: ${todayN} / ${app.meta.dailyGoal}` }));
+    dose.append(progressBar(Math.min(100, Math.round((todayN / app.meta.dailyGoal) * 100)), "#B6FF3C"));
+    root.append(dose);
+  }
 
   const grid = el("div", { class: "home-grid" });
   const mastered = [...app.states.values()].filter((s) => s.mastered).length;
@@ -128,7 +161,7 @@ export const collectionScreen = (app: App): HTMLElement => {
   // one minute from the moment it opens; then it shuts until the run is done.
   // After today's run it stays open until midnight. Wanting to get back in
   // is supposed to point at the DROP IN button.
-  const runDone = app.meta.lastSessionDay === app.day;
+  const runDone = doseDone(app);
   if (!runDone) {
     if (app.meta.shopPeekDay !== app.day) {
       app.meta.shopPeekDay = app.day;
