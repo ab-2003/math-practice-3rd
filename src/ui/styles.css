@@ -824,3 +824,122 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 /* Icons riding the big slabs. */
 .btn-ico { height: 26px; width: auto; flex: none; }
+
+/* ---------- the rest of the company gets its acts ---------- */
+/* NOTE: rigs with an attribute transform get it RESTATED in keyframes,
+   because CSS animation transforms replace the attribute wholesale. */
+
+/* QUARRYBACK: boulders from the sky, dust on impact. */
+.rock-1 { animation: rockfall-1 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); opacity: 0; }
+.rock-2 { animation: rockfall-2 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); opacity: 0; }
+.rock-3 { animation: rockfall-3 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); opacity: 0; }
+@keyframes rockfall-1 { 0%, 2% { opacity: 0; transform: translate(52px, -34px); } 3.5% { opacity: 1; } 9% { opacity: 1; transform: translate(52px, 136px); } 11% { opacity: 0; transform: translate(52px, 140px); } 100% { opacity: 0; transform: translate(52px, -34px); } }
+@keyframes rockfall-2 { 0%, 5% { opacity: 0; transform: translate(106px, -40px) scale(1.35); } 6.5% { opacity: 1; } 12% { opacity: 1; transform: translate(106px, 132px) scale(1.35); } 14% { opacity: 0; transform: translate(106px, 136px) scale(1.35); } 100% { opacity: 0; transform: translate(106px, -40px) scale(1.35); } }
+@keyframes rockfall-3 { 0%, 8% { opacity: 0; transform: translate(152px, -30px) scale(0.9); } 9.5% { opacity: 1; } 15% { opacity: 1; transform: translate(152px, 140px) scale(0.9); } 17% { opacity: 0; transform: translate(152px, 144px) scale(0.9); } 100% { opacity: 0; transform: translate(152px, -30px) scale(0.9); } }
+.dust-1 { opacity: 0; animation: dustpop-1 var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.dust-2 { opacity: 0; animation: dustpop-2 var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.dust-3 { opacity: 0; animation: dustpop-3 var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes dustpop-1 { 0%, 8.5% { opacity: 0; } 10% { opacity: 1; } 13% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes dustpop-2 { 0%, 11.5% { opacity: 0; } 13% { opacity: 1; } 16% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes dustpop-3 { 0%, 14.5% { opacity: 0; } 16% { opacity: 1; } 19% { opacity: 0; } 100% { opacity: 0; } }
+
+/* STORMHIDE: cloud in, rain falls twice, one bolt, all clear. */
+.scloud { opacity: 0; animation: scloud-in var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes scloud-in { 0%, 1.5% { opacity: 0; } 4% { opacity: 1; } 20% { opacity: 1; } 24% { opacity: 0; } 100% { opacity: 0; } }
+.srain { opacity: 0; animation: srain-fall var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes srain-fall {
+  0%, 5% { opacity: 0; transform: translateY(0); }
+  6.5% { opacity: 1; }
+  9% { opacity: 0.2; transform: translateY(9px); }
+  9.5% { opacity: 1; transform: translateY(0); }
+  12% { opacity: 0.2; transform: translateY(9px); }
+  12.5% { opacity: 1; transform: translateY(0); }
+  15% { opacity: 0; transform: translateY(9px); }
+  100% { opacity: 0; }
+}
+.sbolt { opacity: 0; animation: sbolt-strike var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes sbolt-strike { 0%, 15.5% { opacity: 0; } 16.5% { opacity: 1; } 17.5% { opacity: 0.3; } 18.5% { opacity: 1; } 20% { opacity: 0; } 100% { opacity: 0; } }
+
+/* NIGHTCOIL: he vanishes; the trophy relocates while nobody is looking. */
+.creature.idle-id-nightcoil { animation-name: idle-vanish; }
+@keyframes idle-vanish {
+  0%, 22%, 100% { opacity: 1; transform: none; }
+  5% { opacity: 0.1; }
+  14% { opacity: 0.1; }
+  17% { opacity: 1; transform: translateX(6px); }
+  20% { transform: none; }
+}
+.trophy { animation: trophy-move var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes trophy-move {
+  0%, 5% { opacity: 1; transform: translate(38px, 168px); }
+  14% { transform: translate(112px, 168px); }
+  22% { opacity: 1; transform: translate(112px, 168px); }
+  25% { opacity: 0; transform: translate(112px, 168px); }
+  28% { opacity: 0; transform: translate(38px, 168px); }
+  32%, 100% { opacity: 1; transform: translate(38px, 168px); }
+}
+
+/* SKATHORN: a deck pops off the frill, flips a full turn, drops home. */
+.deckprop { opacity: 0; transform-box: fill-box; transform-origin: center; animation: deck-flip var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes deck-flip {
+  0%, 3% { opacity: 0; transform: translate(150px, 26px) rotate(0); }
+  5% { opacity: 1; transform: translate(150px, 16px) rotate(40deg); }
+  9% { transform: translate(150px, -2px) rotate(200deg); }
+  13% { transform: translate(150px, 0px) rotate(360deg); }
+  17% { opacity: 1; transform: translate(150px, 24px) rotate(360deg); }
+  20%, 100% { opacity: 0; transform: translate(150px, 26px) rotate(360deg); }
+}
+
+/* TIDEWRECK: the wave washes through, mast and all. */
+.wave { opacity: 0; animation: wave-wash var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes wave-wash {
+  0%, 2% { opacity: 0; transform: translateX(-38px); }
+  7% { opacity: 1; }
+  18% { opacity: 1; transform: translateX(28px); }
+  23%, 100% { opacity: 0; transform: translateX(40px); }
+}
+
+/* RUSTFANG: the shake rattles hardware loose; the gear rolls for it. */
+.scrap-1 { opacity: 0; animation: scrapfall-1 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.scrap-2 { opacity: 0; animation: scrapfall-2 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.scrap-gear { opacity: 0; animation: gear-roll var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes scrapfall-1 { 0%, 6% { opacity: 0; transform: translate(70px, 96px) rotate(0); } 8% { opacity: 1; } 14% { opacity: 1; transform: translate(84px, 152px) rotate(140deg); } 17%, 100% { opacity: 0; transform: translate(88px, 176px) rotate(220deg); } }
+@keyframes scrapfall-2 { 0%, 9% { opacity: 0; transform: translate(112px, 88px) rotate(0); } 11% { opacity: 1; } 16% { opacity: 1; transform: translate(124px, 150px) rotate(-140deg); } 19%, 100% { opacity: 0; transform: translate(128px, 176px) rotate(-220deg); } }
+@keyframes gear-roll { 0%, 8% { opacity: 0; transform: translate(58px, 150px) rotate(0); } 10% { opacity: 1; } 19% { opacity: 1; transform: translate(8px, 172px) rotate(-360deg); } 22%, 100% { opacity: 0; transform: translate(0px, 176px) rotate(-420deg); } }
+
+/* EMBERCLAW: the scorch draws itself in behind the charge, embers rise. */
+.scorch { stroke-dasharray: 140; stroke-dashoffset: 140; opacity: 0; animation: scorch-draw var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes scorch-draw { 0%, 6% { opacity: 0; stroke-dashoffset: 140; } 8% { opacity: 1; } 15% { stroke-dashoffset: 0; opacity: 1; } 21% { opacity: 1; } 25%, 100% { opacity: 0; stroke-dashoffset: 0; } }
+.scorch2 { stroke-dasharray: 120; stroke-dashoffset: 120; opacity: 0; animation: scorch2-draw var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes scorch2-draw { 0%, 8% { opacity: 0; stroke-dashoffset: 120; } 10% { opacity: 1; } 17% { stroke-dashoffset: 0; opacity: 1; } 22% { opacity: 1; } 26%, 100% { opacity: 0; stroke-dashoffset: 0; } }
+.ember-1, .ember-2, .ember-3 { opacity: 0; animation: ember-rise var(--idle-cycle, 4.8s) ease-out infinite; }
+.ember-1 { animation-delay: calc(var(--idle-delay, 0s) + 0.15s); }
+.ember-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.35s); }
+.ember-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.55s); }
+@keyframes ember-rise { 0%, 11% { opacity: 0; transform: translateY(0); } 13% { opacity: 1; } 19%, 100% { opacity: 0; transform: translateY(-14px); } }
+
+/* VOIDCREST: the rift tears open and takes a little light with it. */
+.rift { transform-box: fill-box; transform-origin: center; animation: rift-open var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); transform: translate(28px, 96px) scaleY(0); }
+@keyframes rift-open {
+  0%, 4% { transform: translate(28px, 96px) scaleY(0); }
+  7% { transform: translate(28px, 96px) scaleY(1.12); }
+  9% { transform: translate(28px, 96px) scaleY(1); }
+  17% { transform: translate(28px, 96px) scaleY(1); }
+  20%, 100% { transform: translate(28px, 96px) scaleY(0); }
+}
+.riftstar-1 { opacity: 0; animation: riftpull-1 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.riftstar-2 { opacity: 0; animation: riftpull-2 var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes riftpull-1 { 0%, 8% { opacity: 0; transform: none; } 10% { opacity: 1; } 16%, 100% { opacity: 0; transform: translate(-22px, 16px) scale(0.2); } }
+@keyframes riftpull-2 { 0%, 10% { opacity: 0; transform: none; } 12% { opacity: 1; } 18%, 100% { opacity: 0; transform: translate(-24px, -18px) scale(0.2); } }
+
+/* MAGMASPYNE's boil: the extra poppers ride tighter staggers. */
+.bubble-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.15s); }
+.bubble-4 { animation-delay: calc(var(--idle-delay, 0s) + 0.4s); }
+.bubble-5 { animation-delay: calc(var(--idle-delay, 0s) + 0.3s); }
+
+/* Under reduced motion the transient props stand down entirely; the standing
+   scenery (pool, depth bubbles, trophy, cloudless sky) simply stands. */
+@media (prefers-reduced-motion: reduce) {
+  .rockfall, .srain, .sbolt, .deckprop, .waverig, .scrap-1, .scrap-2, .scrap-gear,
+  .scorchrig, .riftrig, .dust-1, .dust-2, .dust-3 { opacity: 0 !important; }
+}

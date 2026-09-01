@@ -494,15 +494,146 @@ export const creatureSvg = (
     root.append(arcs);
   }
 
-  // MAGMASPYNE stands in his own lava pool; bubbles pop as he stomps.
+  // MAGMASPYNE stands in his own lava pool. The pool has DEPTH at rest,
+  // permanent half-risen bubbles breaking the surface, and during his act it
+  // comes to a rolling boil (Andy: "not just a red puddle").
   if (opts.idle !== undefined && c.id === "magmaspyne") {
     const pool = svg("g", { class: "lavarig" });
     pool.append(svg("ellipse", { class: "lava", cx: 100, cy: 186, rx: 82, ry: 13, fill: "#FF5A2A", stroke: "#3A0000", "stroke-width": 5 }));
     pool.append(svg("ellipse", { cx: 100, cy: 186, rx: 58, ry: 8, fill: "#FF8A1F", opacity: 0.85 }));
-    for (const [bx, d] of [[66, 0], [104, 1], [138, 2]] as const) {
-      pool.append(svg("circle", { class: `bubble bubble-${d}`, cx: bx, cy: 186, r: 5, fill: "#FFE14D", stroke: "#3A0000", "stroke-width": 2.5 }));
+    // The standing depth: domes mid-surfacing and one dark blister.
+    const depth = svg("g", { class: "lava-depth" });
+    depth.append(svg("path", { d: "M58 187 a7 5 0 0 1 14 0 Z", fill: "#FFB25A", stroke: "#3A0000", "stroke-width": 2.5 }));
+    depth.append(svg("path", { d: "M116 189 a5.5 4 0 0 1 11 0 Z", fill: "#FF8A1F", stroke: "#3A0000", "stroke-width": 2.2 }));
+    depth.append(svg("path", { d: "M143 185 a4.5 3.4 0 0 1 9 0 Z", fill: "#FFE14D", stroke: "#3A0000", "stroke-width": 2 }));
+    depth.append(svg("circle", { cx: 87, cy: 190, r: 3.2, fill: "#B33A0E", stroke: "#3A0000", "stroke-width": 1.8 }));
+    pool.append(depth);
+    // The boil: six poppers on tight staggers.
+    for (const [bx, d] of [[66, 0], [104, 1], [138, 2], [80, 3], [122, 4], [95, 5]] as const) {
+      pool.append(svg("circle", { class: `bubble bubble-${d}`, cx: bx, cy: 186, r: d % 2 === 0 ? 5 : 3.8, fill: "#FFE14D", stroke: "#3A0000", "stroke-width": 2.5 }));
     }
     root.append(pool);
+  }
+
+  // QUARRYBACK stomps and BOULDERS FALL FROM THE SKY (Andy's spec).
+  if (opts.idle !== undefined && c.id === "quarryback") {
+    const rig = svg("g", { class: "rockfall" });
+    const rock = (cls: string, x: number, sc: number, fill: string): void => {
+      const g2 = svg("g", { class: cls, transform: `translate(${x} -30) scale(${sc})` });
+      g2.append(svg("path", { d: "M-11 4 L-7 -8 L4 -11 L12 -3 L9 8 L-3 11 Z", fill, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      rig.append(g2);
+    };
+    rock("rock-1", 52, 1, "#9AA6B2");
+    rock("rock-2", 106, 1.35, "#7A8794");
+    rock("rock-3", 152, 0.9, "#B5C0CB");
+    for (const [dx2, dcls] of [[52, "dust-1"], [106, "dust-2"], [152, "dust-3"]] as const) {
+      const d2 = svg("g", { class: dcls });
+      d2.append(svg("circle", { cx: dx2 - 10, cy: 182, r: 4, fill: "#8A97A6", opacity: 0.8 }));
+      d2.append(svg("circle", { cx: dx2 + 9, cy: 184, r: 3.2, fill: "#B5C0CB", opacity: 0.8 }));
+      rig.append(d2);
+    }
+    root.append(rig);
+  }
+
+  // STORMHIDE: a storm cloud forms over his head, rains, then throws a bolt.
+  if (opts.idle !== undefined && c.id === "stormhide") {
+    const rig = svg("g", { class: "stormrig" });
+    const cloud = svg("g", { class: "scloud" });
+    cloud.append(svg("path", {
+      d: "M96 22 a13 13 0 0 1 24 -8 a14 14 0 0 1 26 2 a11 11 0 0 1 14 12 q0 8 -10 8 L104 36 q-10 0 -8 -14 Z",
+      fill: "#4A5866", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round",
+    }));
+    rig.append(cloud);
+    const rain = svg("g", { class: "srain" });
+    for (const rx2 of [104, 118, 132, 148]) {
+      rain.append(svg("line", { x1: rx2, y1: 42, x2: rx2 - 3, y2: 52, stroke: "#8FB7D6", "stroke-width": 3, "stroke-linecap": "round" }));
+    }
+    rig.append(rain);
+    const bolt = svg("g", { class: "sbolt" });
+    bolt.append(svg("path", { d: "M128 36 L118 58 L127 56 L114 84 L136 60 L126 62 L138 40 Z", fill: "#FFE14D", stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+    rig.append(bolt);
+    root.append(rig);
+  }
+
+  // NIGHTCOIL vanishes, and while you cannot see him, the trophy MOVES.
+  if (opts.idle !== undefined && c.id === "nightcoil") {
+    const trophy = svg("g", { class: "trophy", transform: "translate(38 168)" });
+    trophy.append(svg("path", { d: "M-8 -14 L8 -14 L6 -2 Q0 4 -6 -2 Z", fill: "#F5C542", stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+    trophy.append(svg("path", { d: "M-4 2 L4 2 L6 8 L-6 8 Z", fill: "#C9971E", stroke: INK, "stroke-width": 2.6 }));
+    root.append(trophy);
+  }
+
+  // SKATHORN's frill IS a deck, so a deck appears and flips over it.
+  if (opts.idle !== undefined && c.id === "skathorn") {
+    const deckp = svg("g", { class: "deckprop", transform: "translate(150 26)" });
+    deckp.append(svg("path", { d: "M-24 -4 C-30 -4 -30 4 -24 4 L24 4 C30 4 30 -4 24 -4 Z", fill: "#B6FF3C", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+    deckp.append(svg("circle", { cx: -14, cy: 8, r: 4, fill: INK }));
+    deckp.append(svg("circle", { cx: 14, cy: 8, r: 4, fill: INK }));
+    root.append(deckp);
+  }
+
+  // TIDEWRECK: a wave washes through, carrying a drowned mast.
+  if (opts.idle !== undefined && c.id === "tidewreck") {
+    const rig = svg("g", { class: "waverig" });
+    const wave = svg("g", { class: "wave" });
+    wave.append(svg("path", {
+      d: "M8 196 Q34 172 62 188 Q66 176 80 180 Q104 164 132 186 Q138 172 152 178 Q176 168 196 190 L196 200 L8 200 Z",
+      fill: "#2FA8FF", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round", opacity: 0.95,
+    }));
+    wave.append(svg("path", { d: "M30 182 q6 -6 12 0 M96 176 q6 -6 12 0 M158 176 q6 -6 12 0", fill: "none", stroke: "#CBE9FF", "stroke-width": 3, "stroke-linecap": "round" }));
+    wave.append(svg("path", { d: "M120 182 L132 152 L136 154 L127 182 Z M130 160 L144 166 L131 170 Z", fill: "#8B5A2B", stroke: INK, "stroke-width": 2.6, "stroke-linejoin": "round" }));
+    rig.append(wave);
+    root.append(rig);
+  }
+
+  // RUSTFANG shakes himself and the scrapyard falls off: nuts, a bolt, a gear.
+  if (opts.idle !== undefined && c.id === "rustfang") {
+    const rig = svg("g", { class: "scraprig" });
+    const nut = (cls: string, x: number, y: number): void => {
+      const g2 = svg("g", { class: cls, transform: `translate(${x} ${y})` });
+      g2.append(svg("path", { d: "M-6 -3 L0 -7 L6 -3 L6 3 L0 7 L-6 3 Z", fill: "#C98A3A", stroke: INK, "stroke-width": 2.6, "stroke-linejoin": "round" }));
+      g2.append(svg("circle", { cx: 0, cy: 0, r: 2.2, fill: INK }));
+      rig.append(g2);
+    };
+    nut("scrap-1", 70, 96);
+    nut("scrap-2", 112, 88);
+    const gear = svg("g", { class: "scrap-gear", transform: "translate(58 150)" });
+    gear.append(svg("circle", { cx: 0, cy: 0, r: 9, fill: "#8A97A6", stroke: INK, "stroke-width": 3 }));
+    for (let i = 0; i < 8; i++) {
+      const a2 = (i / 8) * Math.PI * 2;
+      gear.append(svg("rect", { x: Math.cos(a2) * 10 - 2, y: Math.sin(a2) * 10 - 2, width: 4, height: 4, fill: "#8A97A6", stroke: INK, "stroke-width": 1.6 }));
+    }
+    gear.append(svg("circle", { cx: 0, cy: 0, r: 3, fill: INK }));
+    rig.append(gear);
+    root.append(rig);
+  }
+
+  // EMBERCLAW's charge burns a scorch mark in, embers rising off it.
+  if (opts.idle !== undefined && c.id === "emberclaw") {
+    const rig = svg("g", { class: "scorchrig" });
+    rig.append(svg("path", { class: "scorch", d: "M52 186 Q100 174 158 184", fill: "none", stroke: "#FF6A00", "stroke-width": 7, "stroke-linecap": "round" }));
+    rig.append(svg("path", { class: "scorch2", d: "M60 190 Q104 180 150 188", fill: "none", stroke: "#FFD79E", "stroke-width": 3, "stroke-linecap": "round" }));
+    for (const [ex, dcls] of [[76, "ember-1"], [108, "ember-2"], [138, "ember-3"]] as const) {
+      rig.append(svg("circle", { class: dcls, cx: ex, cy: 182, r: 3, fill: "#FFE14D", stroke: "#3A0E00", "stroke-width": 1.6 }));
+    }
+    root.append(rig);
+  }
+
+  // VOIDCREST: a rift tears open beside him and takes a little light with it.
+  if (opts.idle !== undefined && c.id === "voidcrest") {
+    const rig = svg("g", { class: "riftrig" });
+    const rift = svg("g", { class: "rift", transform: "translate(28 96)" });
+    rift.append(svg("ellipse", { cx: 0, cy: 0, rx: 9, ry: 34, fill: "#05070A", stroke: "#FF3D8B", "stroke-width": 4 }));
+    rift.append(svg("ellipse", { cx: 0, cy: 0, rx: 3.5, ry: 22, fill: "#2A0016" }));
+    rig.append(rift);
+    for (const [sx4, sy4, dcls] of [[54, 74, "riftstar-1"], [58, 122, "riftstar-2"]] as const) {
+      rig.append(svg("path", {
+        class: dcls,
+        d: `M${sx4} ${sy4 - 5} L${sx4 + 1.6} ${sy4 - 1.6} L${sx4 + 5} ${sy4} L${sx4 + 1.6} ${sy4 + 1.6} L${sx4} ${sy4 + 5} L${sx4 - 1.6} ${sy4 + 1.6} L${sx4 - 5} ${sy4} L${sx4 - 1.6} ${sy4 - 1.6} Z`,
+        fill: "#FFD6E7", stroke: INK, "stroke-width": 1.4,
+      }));
+    }
+    root.append(rig);
   }
 
   // GLACIODON rides a sailing ice floe under his jump.

@@ -128,7 +128,13 @@ await step("the shop shows all twenty monsters by name, no mysteries", async () 
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   // Every bespoke act is present.
-  for (const [mon, prop] of [["grindjaw", ".log-l"], ["voltmaw", ".bolt"], ["magmaspyne", ".lava"], ["glaciodon", ".floe"], ["puckjaw", ".goal"]]) {
+  for (const [mon, prop] of [
+    ["grindjaw", ".log-l"], ["voltmaw", ".bolt"], ["magmaspyne", ".lava"],
+    ["magmaspyne", ".lava-depth"], ["glaciodon", ".floe"], ["puckjaw", ".goal"],
+    ["quarryback", ".rockfall"], ["stormhide", ".sbolt"], ["nightcoil", ".trophy"],
+    ["skathorn", ".deckprop"], ["tidewreck", ".waverig"], ["rustfang", ".scrap-gear"],
+    ["emberclaw", ".scorch"], ["voidcrest", ".rift"],
+  ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop} act`);
   }
   // THE PHONE SCAR: a real touch on the monster ART (an SVG path, not an

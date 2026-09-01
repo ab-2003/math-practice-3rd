@@ -699,6 +699,18 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.11.0 - the whole company acts.** Every remaining monster got a
+      true in-character scene: QUARRYBACK's stomp brings boulders down from
+      the sky with dust on impact; STORMHIDE grows a thundercloud that rains
+      and throws a bolt; NIGHTCOIL vanishes while his trophy relocates in
+      plain sight; SKATHORN's deck pops off the frill and flips a full turn;
+      TIDEWRECK's wave washes through carrying a drowned mast; RUSTFANG
+      shakes nuts loose and a gear rolls for it; EMBERCLAW's charge draws a
+      scorch mark in with embers rising; VOIDCREST tears open a rift that
+      takes a little light with it. MAGMASPYNE's pool gained standing DEPTH
+      (surfacing domes and a blister at rest) and a six-popper rolling boil
+      during his act. All fourteen bespoke rigs probe-pinned; transient props
+      stand down entirely under reduced motion.
 - [x] **0.10.1 - VOIDWYRM, and the fold.** Kallen's commission: the void
       dragon, 21st and last in the shop at 500 coins — starry hide, nebula-
       torn wings (an eighth distinct dragon form), cosmos-stardust breath,
