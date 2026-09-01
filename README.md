@@ -1,0 +1,36 @@
+# TRICK LINE
+
+**A math fact fluency PWA for one particular third grader — skate tricks, original kaiju, and a scheduler that honours how he actually thinks.**
+
+Built for a boy who can *derive* any fact (11 − 8 by bridging through ten, talking himself through it) but can't yet *retrieve* them instantly — the gap that turns into a wall when 4th-grade long division demands facts on tap. The app's whole design is one idea:
+
+> **Correctness and automaticity are different measurements.** The learner is credited on correctness — a worked-out answer earns full points, the same trick, the same coins, indistinguishable on screen. The scheduler promotes on latency — only answers faster than 3 seconds (measured to the *first digit*, so his typing speed is never mistaken for his memory) move a fact up the spaced-repetition ladder. He experiences a generous game; the scheduler quietly runs a strict one.
+
+![Home](docs/home.png)
+
+## How it plays
+
+- **Trick Line**: every correct answer lands the next skate trick. Five tricks land a line — and his monster rides the whole line start to finish while the park lights up.
+- **A Leitner scheduler** (5 boxes, 1/2/4/8/16 days) with placement-on-first-sight, an anti-drowning gate on new facts, and mastery only after three fast recalls on three separate days.
+- **Wrong answers can't be skipped** — a warm scaffold shows *his own* bridge-through-ten strategy back to him, then he types the correct answer himself. No red X, no buzzer, ever.
+- **A daily dose** (parent-set) with a fanfare, a stamped badge, and everything after it labelled extra practice.
+- **The shop**: 21 original dino-kaiju (seven dragons, each a different form with a different breath), 20 helmets, all with in-character idle acts — boulders fall for the quarry beast, the storm titan gets rained on, the night serpent vanishes while his trophy relocates.
+- **Speed Run**: one minute, as many as you can — budgeted per day, with per-setup high scores, and firewalled from the practice telemetry.
+
+![Victory lap](docs/victory-lap.png)
+![The shop](docs/shop.png)
+
+## The parent side
+
+Behind a PIN: retrieval-vs-derivation trend by week, a fact-by-fact heat map, a response-time histogram whose buckets nest inside the classification, session stamina logs, per-operation practice switches, CSV export that carries its own measurement definition, and an anonymous **cloud share code** (QR) so a parent or teacher can view the record from their own device. The iPad remains the gold standard; the cloud is a throttled, never-blocking mirror.
+
+![Parent dashboard](docs/parent-dashboard.png)
+
+## Under the hood
+
+- Vite + TypeScript, **no framework, no canvas library** — the entire app is vanilla DOM and inline SVG. Every creature is a parameter set through one renderer; every sound is synthesized WebAudio. No image or audio assets ship at all, so the offline bundle is ~60 KB gzipped.
+- **Installable PWA, fully offline**: hand-written service worker with a build-generated precache, IndexedDB with a rejected-not-coerced schema version.
+- **Verification culture inherited from a family of shipped games**: 100+ unit tests, deliberate-mutation checks that prove the tests bite, and eight Playwright "senses" including `answer-eye`, which re-derives every graded answer with a second independent implementation, drives real touches, and reads the screenshots back. The release gate deploys only from green and polls the live edge to convergence.
+- Aligned to the **Virginia SOL**: closing the grade-2 automaticity standard (2.CE.1) while building toward grade-3's (3.CE.2).
+
+Built by a dad and [Claude Code](https://claude.com/claude-code), in a day, from field reports sent between homework and bedtime.
