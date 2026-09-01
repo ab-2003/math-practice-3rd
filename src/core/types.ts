@@ -50,6 +50,9 @@ export interface Response {
   correct: boolean;
   answered: number | null;
   cls: ResponseClass;
+  /** How the item was presented: standard, or missing-number. Travels into
+   *  the CSV so a specialist can split the two if they ever diverge. */
+  format?: "standard" | "missing";
   /**
    * The forced re-entry after a wrong answer. He has just been shown the
    * answer and the scaffold, so this is a typing exercise, not a retrieval

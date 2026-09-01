@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  CLOSER_ITEMS, NEW_FACT_GATE, NEW_PER_SESSION, REQUEUE_GAP,
+  CLOSER_ITEMS, NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
   SESSION_MAX_ITEMS, SESSION_TARGET_ITEMS, STRUGGLE_WINDOW,
 } from "./config";
 import { buildDeck, deckInIntroOrder } from "./facts";
@@ -64,9 +64,11 @@ describe("session assembly", () => {
     expect(q.length).toBeGreaterThanOrEqual(5);
   });
 
-  it("introduces new facts on a clear day", () => {
+  it("FILLS a clear day with new facts rather than dripping four", () => {
+    // Andy, from the first real sessions: "I haven't gotten anything bigger
+    // than like 3+2." A reviewer has to be allowed to move.
     const q = planQueue(deck, allStates(deck), 0);
-    expect(q.length).toBe(NEW_PER_SESSION);
+    expect(q.length).toBe(NEW_FILL_MAX);
     expect(q[0]).toBe(ordered[0]!.id);
   });
 
@@ -221,7 +223,7 @@ describe("new facts across strands", () => {
     const states = allStates(deck);
     const seen = new Set<string>();
     for (let round = 0; round < 12; round++) {
-      for (const id of nextNewFacts(deck, states, NEW_PER_SESSION)) {
+      for (const id of nextNewFacts(deck, states, 4)) {
         seen.add(deck.get(id)!.kind);
         states.set(id, { ...freshState(), introduced: true, box: 3, dueOn: 99 });
       }
@@ -235,7 +237,7 @@ describe("new facts across strands", () => {
     const states = allStates(deck);
     const picked: number[] = [];
     for (let round = 0; round < 20; round++) {
-      for (const id of nextNewFacts(deck, states, NEW_PER_SESSION)) {
+      for (const id of nextNewFacts(deck, states, 4)) {
         const f = deck.get(id)!;
         if (f.kind === "mul") picked.push(f.tier);
         states.set(id, { ...freshState(), introduced: true, box: 3, dueOn: 99 });

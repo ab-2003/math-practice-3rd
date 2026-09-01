@@ -22,6 +22,10 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* The hidden attribute is a UA-level rule, so any author display beats it.
+   .eq { display: flex } was quietly resurrecting the bottom answer slot under
+   every missing-number item, two slots on one screen. */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0; padding: 0; height: 100%;
@@ -379,3 +383,30 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .line-now { display: block; }
   .line-cell { min-width: 0; }
 }
+
+/* ---------- missing number ---------- */
+
+/* The inline blank IS the answer slot for these items. */
+.problem.missing { font-size: clamp(38px, 9.5vw, 88px); display: flex; align-items: center; justify-content: center; flex-wrap: nowrap; }
+.mslot {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.4em; min-height: 1.15em; margin: 0 0.08em; padding: 0 0.12em;
+  border: 5px dashed var(--line); border-radius: 0.22em;
+  color: var(--acid); background: rgba(0, 0, 0, 0.25); line-height: 1;
+}
+.mslot.filled { border-style: solid; border-color: var(--acid); }
+
+.scaf-eq {
+  font-size: clamp(26px, 5vw, 40px); font-weight: 900; letter-spacing: 0.04em;
+  color: var(--text); margin: 0 0 10px; text-shadow: 0 4px 0 var(--ink);
+}
+
+/* The secondary switch under each operation row, and the mix stepper. */
+.toggle.sub { min-height: 52px; padding: 8px 12px; margin-left: 34px; box-shadow: 0 3px 0 var(--ink); }
+.toggle.sub .toggle-knob { width: 48px; height: 28px; }
+.toggle.sub .toggle-knob::after { width: 16px; height: 16px; }
+.toggle.sub.on .toggle-knob::after { transform: translateX(20px); }
+.toggle.sub .toggle-label { font-size: 15px; }
+.stepper { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+.stepper .btn.small { min-width: 56px; font-size: 24px; }
+.stepper-value { font-weight: 900; font-size: 22px; color: var(--acid); min-width: 64px; text-align: center; }

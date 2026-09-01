@@ -12,6 +12,7 @@
  */
 
 import { DEFAULT_STRANDS } from "../core/config";
+import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
 import type { FactState, Response, Strands } from "../core/types";
 
 export const SCHEMA_VERSION = 1;
@@ -46,12 +47,20 @@ export interface Meta {
   backupNudgedOn: number | null;
   /** Which operations are switched on. A grown-up setting, behind the PIN. */
   strands: Strands;
+  /** Missing-number presentation: per-operation switches and the mix percent.
+   *  All four OFF by default, per Andy 2026-09-01. */
+  missing: MissingCfg;
+  /** Elapsed-time bonus may cross the hour (answers past 60 minutes). OFF by
+   *  default: the bonus round must never bite. */
+  elapsedHard: boolean;
 }
 
 export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
+  missing: { ...DEFAULT_MISSING },
+  elapsedHard: false,
 });
 
 let db: IDBDatabase | null = null;
@@ -87,7 +96,11 @@ export const getMeta = async (): Promise<Meta> => {
   }
   // A meta saved before a field existed picks up the default rather than
   // arriving undefined, which is why this spread is not a formality.
-  return { ...freshMeta(), ...raw, strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) } };
+  return {
+    ...freshMeta(), ...raw,
+    strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) },
+    missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
+  };
 };
 
 export const putMeta = async (m: Meta): Promise<void> => {

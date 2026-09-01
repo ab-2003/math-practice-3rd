@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEMOTE_BOXES_ON_WRONG, MASTERY_STREAK, MAX_BOX, MIN_BOX } from "./config";
+import { DEMOTE_BOXES_ON_WRONG, FIRST_SIGHT_BOX, MASTERY_STREAK, MAX_BOX, MIN_BOX } from "./config";
 import { buildDeck } from "./facts";
 import { allStates, applyResponse, boxInterval, canIntroduce, freshState, isDue } from "./scheduler";
 import type { FactState, Response, ResponseClass } from "./types";
@@ -23,7 +23,8 @@ const walk = (steps: Array<[ResponseClass, number, boolean?]>): FactState => {
 
 describe("the Leitner transition", () => {
   it("promotes a box on a retrieved answer and schedules by the new box", () => {
-    const s = applyResponse(freshState(), resp("retrieved", 10));
+    const seen = { ...freshState(), seen: 2, introduced: true };
+    const s = applyResponse(seen, resp("retrieved", 10));
     expect(s.box).toBe(2);
     expect(s.dueOn).toBe(10 + boxInterval(2));
     expect(s.introduced).toBe(true);
@@ -63,8 +64,27 @@ describe("the Leitner transition", () => {
   it("floors the box at one and caps it at five", () => {
     const low = applyResponse({ ...freshState(), box: MIN_BOX, introduced: true }, resp("effortful", 5, false));
     expect(low.box).toBe(MIN_BOX);
-    const high = applyResponse({ ...freshState(), box: MAX_BOX, introduced: true }, resp("retrieved", 5));
+    const high = applyResponse({ ...freshState(), box: MAX_BOX, introduced: true, seen: 4 }, resp("retrieved", 5));
     expect(high.box).toBe(MAX_BOX);
+  });
+});
+
+describe("placement on first sight", () => {
+  it("sends a fact he retrieved instantly, never having seen it, to a far box", () => {
+    const s = applyResponse(freshState(), resp("retrieved", 10));
+    expect(s.box).toBe(FIRST_SIGHT_BOX);
+    expect(s.dueOn).toBe(10 + boxInterval(FIRST_SIGHT_BOX));
+    expect(s.masteryStreak).toBe(1); // still three distinct days to mastery
+  });
+
+  it("gives no such jump to a derived first answer", () => {
+    const s = applyResponse(freshState(), resp("derived", 10));
+    expect(s.box).toBe(1);
+  });
+
+  it("climbs one rung at a time on every sighting after the first", () => {
+    const first = applyResponse({ ...freshState(), seen: 1, introduced: true }, resp("retrieved", 10));
+    expect(first.box).toBe(2);
   });
 });
 

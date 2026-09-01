@@ -5,7 +5,7 @@
  * step here.
  */
 import { chromium } from "playwright";
-import { answerOf, fail, ok, typeAnswer } from "./lib/drive.mjs";
+import { answerOf, fail, missingExpected, ok, typeAnswer } from "./lib/drive.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:8050";
 const browser = await chromium.launch();
@@ -289,6 +289,96 @@ await step("the last operation cannot be switched off", async () => {
   must(Object.values(strands).some(Boolean), `every operation got switched off: ${JSON.stringify(strands)}`);
   const remaining = await page.$(`[data-strand="${Object.keys(strands).find((k) => strands[k])}"]`);
   must(remaining !== null, "the settings card vanished");
+});
+
+// ---- missing number --------------------------------------------------------
+
+await step("missing number starts OFF for all four operations", async () => {
+  const m = await page.evaluate(() => window.__app.meta().missing);
+  must(m.add === false && m.sub === false && m.mul === false && m.div === false, JSON.stringify(m));
+  must(m.pct === 20, `default mix is ${m.pct}, not 20`);
+});
+
+await step("each operation has its own missing-number switch, plus the mix stepper", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-missing="add"]', { timeout: 6000 });
+  for (const k of ["add", "sub", "mul", "div"]) {
+    must(await page.$(`[data-missing="${k}"]`) !== null, `no missing switch for ${k}`);
+  }
+  // The stepper only appears once something is on: a mix of nothing is noise.
+  must(await page.$('[data-probe="missing-pct"]') === null, "the stepper shows while everything is off");
+  await page.click('[data-missing="add"]');
+  await page.waitForSelector('[data-probe="missing-pct"]', { timeout: 4000 });
+  must(await page.evaluate(() => window.__app.meta().missing.add) === true, "the switch did not take");
+});
+
+await step("the mix percentage steps and persists", async () => {
+  await page.click('[data-probe="missing-plus"]');
+  await page.waitForTimeout(300);
+  must((await page.textContent('[data-probe="missing-pct"]'))?.trim() === "25%", "plus did not step to 25");
+  await page.reload({ waitUntil: "networkidle" });
+  must(await page.evaluate(() => window.__app.meta().missing.pct) === 25, "the mix did not persist");
+});
+
+await step("a missing item types into its own inline blank and grades on the operand", async () => {
+  // Everything is set AFTER the reload: a mutation on the live meta object
+  // does not survive page.goto, and the first draft of this step set the
+  // strands before one, so only multiplication was on and no missing item
+  // could ever appear.
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.strands = { add: true, sub: true, mul: false, div: false };
+    m.missing = { add: true, sub: true, mul: false, div: false, pct: 100 };
+    m.animations = false;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"][data-format="missing"]', { timeout: 6000 });
+  const text = (await page.textContent('[data-probe="problem"]')) ?? "";
+  const wantNum = missingExpected(text);
+  await page.click(`.keypad .key[data-key="${String(wantNum)[0]}"]`);
+  const inBlank = (await page.textContent('[data-probe="mslot"]'))?.trim() ?? "";
+  must(inBlank === String(wantNum)[0], `typed into the blank but it shows "${inBlank}"`);
+  for (const d of String(wantNum).slice(1)) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.click(".keypad .key.enter");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  must(await page.$('[data-probe="retype"]') === null, `the operand ${wantNum} was graded wrong for "${text}"`);
+});
+
+await step("a wrong missing answer reveals the whole fact and demands the operand", async () => {
+  await page.waitForSelector('[data-probe="problem"][data-format="missing"]', { timeout: 6000 });
+  const text = (await page.textContent('[data-probe="problem"]')) ?? "";
+  const wantNum = missingExpected(text);
+  await typeAnswer(page, wantNum + 1);
+  await page.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+  must(await page.$(".scaf-eq") !== null, "the completed equation is not revealed");
+  const retype = (await page.textContent('[data-probe="retype"]')) ?? "";
+  must(Number(retype.replace(/\D+/g, "")) === wantNum, `retype asks for "${retype}", not ${wantNum}`);
+  await typeAnswer(page, wantNum);
+  await page.waitForSelector('[data-probe="retype"]', { state: "detached", timeout: 6000 });
+});
+
+await step("switching missing number back off returns every item to standard", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    m.animations = false;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  for (let i = 0; i < 8; i++) {
+    if (await page.$(".sheet") !== null) break;
+    const fmt = await page.getAttribute('[data-probe="problem"]', "data-format").catch(() => null);
+    if (fmt === null) break;
+    must(fmt === "standard", "a missing item appeared with everything off");
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+    await typeAnswer(page, answerOf(id));
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 }).catch(() => undefined);
+  }
 });
 
 if (errors.length > 0) fail(`uncaught page errors: ${errors.slice(0, 3).join(" | ")}`);

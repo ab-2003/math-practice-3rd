@@ -71,10 +71,11 @@ const csv = (rs: readonly Response[], sessions: readonly SessionRecord[]): strin
   };
   const lines: string[] = [];
   lines.push(`# TRICK LINE practice export. ${MEASUREMENT_NOTE}`);
-  lines.push(["date", "fact", "kind", "correct", "answered", "first_key_ms", "submit_ms", "classification", "is_retry"].join(","));
+  lines.push(["date", "fact", "kind", "format", "correct", "answered", "first_key_ms", "submit_ms", "classification", "is_retry"].join(","));
   for (const r of rs) {
     lines.push([
       esc(new Date(r.at).toISOString()), esc(r.factId), esc(r.factId.split(":")[0] ?? ""),
+      esc(r.format ?? "standard"),
       esc(r.correct), esc(r.answered), esc(r.firstKeyMs), esc(r.submitMs), esc(r.cls), esc(r.isRetry),
     ].join(","));
   }
@@ -284,8 +285,67 @@ const renderDash = (app: App, host: HTMLElement): void => {
       row.append(text);
       on(row, "click", () => flipStrand(app, kind));
       rows.append(row);
+
+      // Under each operation: its own missing-number switch. Small on
+      // purpose; it is a seasoning, not a strand.
+      const mOn = app.meta.missing[kind];
+      const sub = el("button", {
+        type: "button", class: `toggle sub${mOn ? " on" : ""}`,
+        "data-missing": kind, "aria-pressed": String(mOn),
+      });
+      sub.append(el("span", { class: "toggle-knob" }));
+      const subText = el("span", { class: "toggle-text" });
+      subText.append(el("span", { class: "toggle-label", text: "Missing number" }));
+      subText.append(el("span", { class: "toggle-hint", text: mOn
+        ? `on · about ${app.meta.missing.pct}% of ${label.toLowerCase()} items ask 7 ${kind === "add" ? "+" : kind === "sub" ? "−" : kind === "mul" ? "×" : "÷"} ▢ = style`
+        : "off" }));
+      sub.append(subText);
+      on(sub, "click", () => {
+        app.meta.missing = { ...app.meta.missing, [kind]: !app.meta.missing[kind] };
+        void app.save().then(() => app.refresh());
+      });
+      rows.append(sub);
     }
     focus.append(rows);
+
+    // One shared mix percentage for whichever operations have it on. Still
+    // typed production, so the first-digit clock stays honest at any setting.
+    const anyMissing = Object.entries(app.meta.missing).some(([k, v]) => k !== "pct" && v === true);
+    const stepRow = el("div", { class: "stepper" });
+    const minus = el("button", { type: "button", class: "btn small", "data-probe": "missing-minus" }, el("span", { text: "−" }));
+    const valueEl = el("span", { class: "stepper-value", "data-probe": "missing-pct", text: `${app.meta.missing.pct}%` });
+    const plus = el("button", { type: "button", class: "btn small", "data-probe": "missing-plus" }, el("span", { text: "+" }));
+    const bump = (d: number): void => {
+      const pct = Math.max(5, Math.min(80, app.meta.missing.pct + d));
+      app.meta.missing = { ...app.meta.missing, pct };
+      void app.save().then(() => app.refresh());
+    };
+    on(minus, "click", () => bump(-5));
+    on(plus, "click", () => bump(5));
+    stepRow.append(el("span", { class: "toggle-hint", text: "Missing-number mix" }), minus, valueEl, plus);
+    if (anyMissing) focus.append(stepRow);
+
+    // The bonus round's one dial. The elapsed-time reward must never bite, so
+    // by default it lives inside a single clock hour; the crossing becomes
+    // the skill only when a grown-up says he is ready for it.
+    const hardOn = app.meta.elapsedHard;
+    const hard = el("button", {
+      type: "button", class: `toggle sub${hardOn ? " on" : ""}`,
+      "data-probe": "elapsed-hard", "aria-pressed": String(hardOn),
+    });
+    hard.append(el("span", { class: "toggle-knob" }));
+    const hardText = el("span", { class: "toggle-text" });
+    hardText.append(el("span", { class: "toggle-label", text: "Bonus round: cross the hour" }));
+    hardText.append(el("span", { class: "toggle-hint", text: hardOn
+      ? "on · times can span the hour and answers can pass 60 minutes"
+      : "off · every bonus problem stays inside one hour, answers 60 minutes or less" }));
+    hard.append(hardText);
+    on(hard, "click", () => {
+      app.meta.elapsedHard = !app.meta.elapsedHard;
+      void app.save().then(() => app.refresh());
+    });
+    focus.append(el("h3", { text: "Bonus round", style: "margin-top:16px" }));
+    focus.append(hard);
     if (app.meta.strands.div && !app.meta.strands.mul) {
       focus.append(el("p", { class: "note warn", text:
         "Division is on but multiplication is off. A division fact only unlocks once its own multiplication family is solid, so nothing new will arrive until multiplication is switched back on." }));

@@ -155,9 +155,15 @@ still wants it:
    run on time-to-first-digit. A tapped choice has no first digit, so those
    items would carry fake timings or holes.
 
-The variety itch has a safe outlet if wanted: **missing-number problems**
-(8 + _ = 15), still typed production, and the exact shape of his bridge
-strategy. Not built; offered.
+The variety itch has a safe outlet, and Andy took it (2026-09-01):
+**missing-number problems** (8 + ▢ = 15), still typed production, the exact
+shape of his bridge strategy. Per operation switches in parent settings, OFF
+for all four by default, mixing at an editable shared percentage (default 20)
+when on. The blank is always an OPERAND, never the result; he types into the
+blank itself (one slot on screen, not two); grading and the forced re-entry
+demand the operand; the format travels into the CSV. `answer-eye` solves every
+missing item from the rendered sentence alone, a second implementation to the
+last digit.
 
 ## 4. Rules that are not negotiable
 
@@ -300,6 +306,31 @@ The rules:
 - **The dashboard says when a standard is switched off.** Without that, a
   teacher reads "0 of 176" as a boy failing multiplication when in fact nobody
   has switched it on. A switched-off standard is a starting point, not a result.
+
+## 7c. Pacing: placement and the fill (2026-09-01)
+
+Andy, after the first real sessions: *"How does it decide when to increase the
+size of the facts... I haven't gotten anything bigger than like 3+2."* Nothing
+was deciding. New material dripped in at a fixed four facts a session in
+curriculum order, the right pace for a child building from nothing and
+exactly wrong for a REVIEWER, who was weeks away from ever meeting 8+7.
+
+Two rules replaced the drip:
+
+- **Placement on first sight.** A fact retrieved fast on its very first
+  sighting was never something to teach: it starts at box 4 instead of
+  climbing from the bottom rung. The ladder exists to schedule learning; a
+  fact he already owns does not need its bottom rungs. Mastery still takes
+  three distinct days.
+- **The fill.** A session takes new material up to its target length (cap 24
+  new per sitting) whenever the due queue is light. The anti-drowning gate is
+  untouched and makes the flood self-limiting: what he owns flies to a
+  distant box after one look, and what he does not stacks up as due work that
+  closes the gate.
+
+Re-simulated on the slow-consolidator profile: 81 facts met by day 7 (was 28),
+all four strands moving, sessions in the 44 to 50 item band, and the struggle
+detector still ends bad days early.
 
 ## 8. Session assembly
 
@@ -513,6 +544,15 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.4.0 - missing number, gentle time, and pacing.** Missing-number
+      format behind per-operation parent switches (all OFF by default, shared
+      mix percent, default 20); elapsed-time bonus stays inside one hour until
+      a parent switches the crossing on; placement-on-first-sight plus the
+      session fill replace the four-fact drip. Scars collected: the `hidden`
+      attribute is UA-level and `.eq { display: flex }` beat it, so every
+      missing item briefly showed two answer slots; and `answer-eye` spent a
+      while exercising only multiplication because an earlier probe happened
+      to have SAVED it on, so its own state setup is now explicit.
 - [x] **0.3.0 - the trick, performed.** On a correct answer his creature (the
       newest owned, else a cameo of the one he is saving for) rides the stage
       and does the line's trick: ollie, kickflip with a spinning deck, rail

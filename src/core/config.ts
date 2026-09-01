@@ -37,13 +37,32 @@ export const DEMOTE_BOXES_ON_WRONG = 2;
 export const MASTERY_STREAK = 3;
 
 /**
+ * PLACEMENT. A fact retrieved fast on its VERY FIRST sighting was never
+ * something to teach: it starts at this box instead of climbing from the
+ * bottom rung, so known material clears out at the speed he demonstrates it.
+ * The Leitner ladder exists to schedule learning; a fact he already owns does
+ * not need its bottom rungs. Mastery still takes three distinct days.
+ */
+export const FIRST_SIGHT_BOX = 4;
+
+/**
  * New facts are only introduced when the due queue is under this. He never
  * drowns: a heavy review day simply has no room for anything new.
  */
 export const NEW_FACT_GATE = 12;
 
-/** Ceiling on new facts in any one session, even on a completely clear day. */
-export const NEW_PER_SESSION = 4;
+/**
+ * Ceiling on new facts in one session.
+ *
+ * Was 4, and Andy caught what that does to a REVIEWER: "I haven't gotten
+ * anything bigger than like 3+2." A boy who mostly owns the small facts was
+ * weeks away from ever meeting 8+7 at two addition facts a session. Sessions
+ * now FILL with new material whenever the due queue is light; the anti-
+ * drowning gate above still slams this to zero the moment real review piles
+ * up, so the pace of introduction is set by what he demonstrates, not by a
+ * drip.
+ */
+export const NEW_FILL_MAX = 24;
 
 /** Unique facts planned into a session before requeues are added on top. */
 export const SESSION_MAX_ITEMS = 48;

@@ -19,6 +19,7 @@ import { COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { creatureById, nextLocked, ROSTER } from "../core/creatures";
+import { presentFact, type Presented } from "../core/present";
 import { currentFactId, recordResponse, sessionIsOver, startSession } from "../core/session";
 import type { Fact, Response, SessionState } from "../core/types";
 import type { App } from "./appstate";
@@ -33,14 +34,6 @@ import { playTrick } from "./trick-anim";
 import { revealSheet } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
-
-/** Commutative facts are ONE fact with two presentations. The orientation is
- *  random so he meets both, without the deck doubling. */
-const present = (f: Fact, salt: number): { a: number; b: number; op: string } => {
-  const flip = (f.kind === "add" || f.kind === "mul") && ((salt * 2654435761) >>> 0) % 2 === 1;
-  const op = f.kind === "add" ? "+" : f.kind === "sub" ? "−" : f.kind === "mul" ? "×" : "÷";
-  return flip ? { a: f.b, b: f.a, op } : { a: f.a, b: f.b, op };
-};
 
 export const sessionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
@@ -69,6 +62,11 @@ export const sessionScreen = (app: App): HTMLElement => {
   let itemsDone = 0;       // real items answered, retries excluded
   let coins = 0;
   let phase: Phase = "asking";
+  /** The current item as PRESENTED: format, orientation, and what he must
+   *  type. Grading always compares against cur.expected, never f.answer
+   *  directly, or every missing-number item would be graded wrong. */
+  let cur: Presented | null = null;
+  let mslot: HTMLElement | null = null;
   let paintedAt = 0;
   let firstKeyMs: number | null = null;
   let bonus: ElapsedProblem | null = null;
@@ -87,8 +85,11 @@ export const sessionScreen = (app: App): HTMLElement => {
     maxDigits: 3,
     onFirstKey: () => { firstKeyMs ??= Math.round(performance.now() - paintedAt); },
     onChange: (v) => {
-      slot.textContent = v === "" ? "" : v;
-      slot.classList.toggle("filled", v !== "");
+      // A missing-number item types into its own inline blank; everything
+      // else types into the slot under the equals sign.
+      const target = cur?.format === "missing" && phase === "asking" && mslot ? mslot : slot;
+      target.textContent = v;
+      target.classList.toggle("filled", v !== "");
     },
     onSubmit: (v) => { void submit(Number(v)); },
   });
@@ -104,18 +105,36 @@ export const sessionScreen = (app: App): HTMLElement => {
     redrawStrip();
 
     if (bonus) {
+      cur = null;
+      mslot = null;
+      eq.hidden = false;
       mount(stage, el("p", { class: "word-problem", "data-probe": "bonus", text: bonus.text }));
     } else {
       const id = currentFactId(session);
       if (id === null) { void finish(); return; }
       const f = app.deck.get(id);
       if (!f) { void finish(); return; }
-      const p = present(f, itemsDone + f.a * 31 + f.b);
-      mount(stage, el("div", { class: "problem", "data-probe": "problem", "data-fact": f.id },
-        el("span", { text: String(p.a) }),
-        el("span", { class: "op", text: ` ${p.op} ` }),
-        el("span", { text: String(p.b) }),
-      ));
+      cur = presentFact(f, itemsDone + f.a * 31 + f.b, app.meta.missing);
+      const prob = el("div", {
+        class: `problem${cur.format === "missing" ? " missing" : ""}`,
+        "data-probe": "problem", "data-fact": f.id, "data-format": cur.format,
+      });
+      const operand = (which: "a" | "b"): HTMLElement => {
+        if (cur!.blank === which) {
+          mslot = el("span", { class: "mslot", "data-probe": "mslot" });
+          return mslot;
+        }
+        return el("span", { text: String(which === "a" ? cur!.a : cur!.b) });
+      };
+      mslot = null;
+      prob.append(operand("a"), el("span", { class: "op", text: ` ${cur.op} ` }), operand("b"));
+      if (cur.format === "missing") {
+        prob.append(el("span", { class: "op", text: " = " }), el("span", { text: String(cur.result) }));
+      }
+      // The inline blank IS the answer slot for a missing item; two slots on
+      // one screen would be a genuine puzzle about where the digits will land.
+      eq.hidden = cur.format === "missing";
+      mount(stage, prob);
     }
     pad.setEnabled(true);
     // The clock starts when it is on the glass, not when we decided to draw.
@@ -134,7 +153,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       if (ok) { coins += COIN_PER_BONUS; sfx.land(); await playLanding(stage, `+${COIN_PER_BONUS}`); }
       else { sfx.bail(); await playBail(stage); }
       bonusLeft -= 1;
-      bonus = bonusLeft > 0 ? makeElapsed(Date.now() + bonusLeft) : null;
+      bonus = bonusLeft > 0 ? makeElapsed(Date.now() + bonusLeft, app.meta.elapsedHard) : null;
       if (bonus === null) { await finish(); return; }
       paint();
       return;
@@ -145,9 +164,11 @@ export const sessionScreen = (app: App): HTMLElement => {
     const f = app.deck.get(id);
     if (!f) { await finish(); return; }
 
+    const want = cur?.expected ?? f.answer;
+
     if (phase === "retry") {
       // The forced re-entry. It closes the loop; it never scores.
-      if (given !== f.answer) {
+      if (given !== want) {
         slot.classList.add("locked");
         pad.setEnabled(true);
         pad.reset();
@@ -163,7 +184,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       return;
     }
 
-    const correct = given === f.answer;
+    const correct = given === want;
     const cls = classify(correct, firstKeyMs);
     const r = mkResponse(f, given, submitMs, correct, false);
     collected.push(r);
@@ -204,16 +225,25 @@ export const sessionScreen = (app: App): HTMLElement => {
     factId: f.id, day: app.day, at: Date.now(),
     firstKeyMs, submitMs, correct, answered: given,
     cls: classify(correct, firstKeyMs), isRetry,
+    format: cur?.format ?? "standard",
   });
 
   /** The bail: warm, brief, and then his own method handed back to him. */
   const showScaffold = (f: Fact, _cls: string): void => {
     phase = "bailed";
-    const p = present(f, itemsDone);
+    const p = cur ?? presentFact(f, itemsDone, app.meta.missing);
     const box = el("div", {});
     box.append(el("p", { class: "scaf-head", text: "No worries. Roll it back." }));
-    box.append(scaffold(f, p.a, p.b));
-    box.append(el("p", { class: "retype", text: `Type ${f.answer} to roll on`, "data-probe": "retype" }));
+    if (p.format === "missing") {
+      // Reveal the whole fact first, so the blank stops being a mystery
+      // before the picture explains why it is true.
+      const a = p.blank === "a" ? p.expected : p.a;
+      const b = p.blank === "b" ? p.expected : p.b;
+      box.append(el("p", { class: "scaf-eq", text: `${a} ${p.op} ${b} = ${p.result}` }));
+    }
+    box.append(scaffold(f, p.a === 0 && p.blank === "a" ? p.expected : p.a, p.b));
+    box.append(el("p", { class: "retype", text: `Type ${p.expected} to roll on`, "data-probe": "retype" }));
+    eq.hidden = false;
     mount(stage, box);
     // pad.reset() rather than clearing the slot text by hand: the keypad holds
     // its OWN value, and blanking only the display left the wrong answer still
@@ -319,7 +349,7 @@ export const sessionScreen = (app: App): HTMLElement => {
    */
   const offerBonus = (): void => {
     bonusLeft = 3;
-    bonus = makeElapsed(Date.now());
+    bonus = makeElapsed(Date.now(), app.meta.elapsedHard);
     paint();
   };
 
@@ -337,6 +367,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     answer: (n: number) => submit(n),
     correctAnswer: (): number | null => {
       if (bonus) return bonus.answer;
+      if (cur) return cur.expected;
       const id = currentFactId(session);
       return id === null ? null : (app.deck.get(id)?.answer ?? null);
     },

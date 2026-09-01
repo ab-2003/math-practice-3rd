@@ -1,6 +1,6 @@
 import {
   BOX_INTERVAL_DAYS, DEMOTE_BOXES_ON_WRONG, DIVISION_UNLOCK_BOX,
-  MASTERY_STREAK, MAX_BOX, MIN_BOX,
+  FIRST_SIGHT_BOX, MASTERY_STREAK, MAX_BOX, MIN_BOX,
 } from "./config";
 import { mulPartnerId } from "./facts";
 import type { Deck, Fact, FactKind, FactState, Response, States } from "./types";
@@ -54,7 +54,9 @@ export const applyResponse = (prev: FactState, r: Response): FactState => {
   }
 
   if (r.cls === "retrieved") {
-    s.box = Math.min(MAX_BOX, s.box + 1);
+    // Placement: retrieved on the very first sighting means he owned this
+    // fact before the app ever showed it. Skip the bottom rungs.
+    s.box = prev.seen === 0 ? FIRST_SIGHT_BOX : Math.min(MAX_BOX, s.box + 1);
     // DISTINCT DAYS is load bearing. Three fast answers inside one session
     // are partly priming from having just seen the fact; only a new day is
     // evidence that it survived sleep. A second retrieved response the same

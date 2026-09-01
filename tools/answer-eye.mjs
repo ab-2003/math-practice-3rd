@@ -16,7 +16,7 @@
  * from the raw stored response log.
  */
 import { chromium } from "playwright";
-import { answerOf, currentFact, fail, ok, startSession, typeAnswer, waitReady } from "./lib/drive.mjs";
+import { answerOf, fail, missingExpected, ok, typeAnswer, waitReady } from "./lib/drive.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:8050";
 const ITEMS = Number(process.env.ITEMS ?? 80);
@@ -27,12 +27,29 @@ const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 
-await startSession(page, BASE);
+await page.goto(BASE, { waitUntil: "networkidle" });
+await page.waitForSelector('[data-probe="start"]');
+await page.evaluate(() => {
+  const m = window.__app.meta();
+  m.strands = { add: true, sub: true, mul: true, div: true };
+  m.animations = false;
+  // Both formats must be graded right, so missing-number runs hot here even
+  // though Andy ships it off by default.
+  m.missing = { add: true, sub: true, mul: true, div: true, pct: 35 };
+});
+// Click straight in, no second goto: a reload throws away live-meta mutations
+// that were never saved. For a while this harness only exercised mul and div
+// because an EARLIER probe happened to have saved them on: a coincidence
+// wearing a green tick.
+await page.click('[data-probe="start"]');
+await page.waitForSelector('[data-probe="problem"]');
+await waitReady(page);
 
 let checked = 0;
 let wrongsTested = 0;
 let sessions = 0;
 let bonusChecked = 0;
+let missingSeen = 0;
 const seen = new Set();
 
 /** Day one plans only a handful of new facts, so reaching a useful sample
@@ -50,6 +67,8 @@ const readState = () => page.evaluate(() => ({
   retype: document.querySelector('[data-probe="retype"]') !== null,
   bonus: document.querySelector('[data-probe="bonus"]') !== null,
   problem: document.querySelector('[data-probe="problem"]')?.getAttribute("data-fact") ?? null,
+  format: document.querySelector('[data-probe="problem"]')?.getAttribute("data-format") ?? "standard",
+  ptext: document.querySelector('[data-probe="problem"]')?.textContent ?? "",
 }));
 
 let guard = 0;
@@ -87,13 +106,18 @@ while (checked + bonusChecked < ITEMS && guard++ < ITEMS * 6) {
   if (!st.problem) { await page.waitForTimeout(150); continue; }
 
   const id = st.problem;
-  const expected = answerOf(id);
+  // For a missing item the expected value is the blanked OPERAND, solved here
+  // from the rendered sentence alone; answerOf(id) would grade it wrong,
+  // which is itself a check that the format attribute tells the truth.
+  const expected = st.format === "missing" ? missingExpected(st.ptext) : answerOf(id);
+  if (st.format === "missing") missingSeen += 1;
   seen.add(id.split(":")[0]);
 
   if (st.retype) { await typeAnswer(page, expected); await page.waitForTimeout(120); continue; }
 
   // Every fifth item is answered WRONG on purpose, to prove the app catches a
-  // wrong answer, shows the scaffold, and refuses to let him move on.
+  // wrong answer, shows the scaffold, and refuses to let him move on. Missing
+  // items take this path too: their retype must demand the OPERAND.
   if (checked % 5 === 4 && wrongsTested < 8) {
     wrongsTested += 1;
     await typeAnswer(page, expected === 0 ? 7 : expected + 1);
@@ -132,6 +156,8 @@ else ok(`${wrongsTested} wrong answers raised the scaffold and blocked the skip`
 if (seen.size < 2) fail(`only saw fact kinds: ${[...seen].join(",")}`);
 else ok(`fact kinds exercised: ${[...seen].join(", ")}`);
 if (bonusChecked > 0) ok(`${bonusChecked} elapsed-time bonus problems solved against an independent clock`);
+if (missingSeen < 5) fail(`only ${missingSeen} missing-number items appeared at a 35% mix`);
+else ok(`${missingSeen} missing-number items solved from the rendered sentence alone`);
 
 // ---- the stored log must reconstruct the dashboard's headline --------------
 const audit = await page.evaluate(async () => {

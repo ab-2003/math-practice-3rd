@@ -44,3 +44,26 @@ export const startSession = async (page, base) => {
 
 export const fail = (msg) => { console.error(`FAIL ${msg}`); process.exitCode = 1; };
 export const ok = (msg) => console.log(`  ok  ${msg}`);
+
+/**
+ * Independently solve a MISSING-NUMBER item from its rendered text alone,
+ * e.g. "7 + = 15" (the blank is an empty span). Never reads the app's
+ * expected value: the whole point is a second implementation.
+ */
+export const missingExpected = (text) => {
+  const [lhsRaw, rhsRaw] = text.split("=");
+  if (rhsRaw === undefined) throw new Error(`no equals sign in "${text}"`);
+  const result = Number((rhsRaw.match(/\d+/) ?? [])[0]);
+  const op = (lhsRaw.match(/[+\u2212\u00d7\u00f7]/) ?? [])[0];
+  const numMatch = lhsRaw.match(/\d+/);
+  if (!op || !numMatch || !Number.isFinite(result)) throw new Error(`unparseable "${text}"`);
+  const operand = Number(numMatch[0]);
+  const blankFirst = lhsRaw.indexOf(numMatch[0]) > lhsRaw.indexOf(op);
+  switch (op) {
+    case "+": return result - operand;
+    case "\u2212": return blankFirst ? result + operand : operand - result;
+    case "\u00d7": return result / operand;
+    case "\u00f7": return blankFirst ? result * operand : operand / result;
+    default: throw new Error(`unknown op ${op}`);
+  }
+};

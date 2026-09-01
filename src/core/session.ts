@@ -1,5 +1,5 @@
 import {
-  CLOSER_ITEMS, NEW_FACT_GATE, NEW_PER_SESSION, REQUEUE_GAP,
+  CLOSER_ITEMS, NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
   SESSION_HARD_CAP, SESSION_MAX_ITEMS, SESSION_TARGET_ITEMS, STRUGGLE_THRESHOLD,
   STRUGGLE_WINDOW, TOPUP_MAX_BOX,
 } from "./config";
@@ -39,7 +39,11 @@ export const planQueue = (
   const queue = due.slice(0, SESSION_MAX_ITEMS);
 
   if (due.length < NEW_FACT_GATE) {
-    const room = Math.min(NEW_PER_SESSION, SESSION_MAX_ITEMS - queue.length);
+    // FILL, don't drip. The session takes as much new material as fits its
+    // target, and first-sight placement (scheduler.ts) makes the flood self-
+    // limiting: what he already owns flies to a distant box after one look,
+    // and what he does not stacks up as due work that closes this gate.
+    const room = Math.min(NEW_FILL_MAX, SESSION_TARGET_ITEMS - queue.length);
     for (const id of nextNewFacts(deck, states, room, strands)) queue.push(id);
   }
 

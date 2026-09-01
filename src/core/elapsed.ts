@@ -43,20 +43,33 @@ const SCENES: ReadonlyArray<readonly [string, string]> = [
 /**
  * Deterministic from the seed, so a probe or a test can ask for the same
  * problem twice and get the same one.
+ *
+ * TWO DIFFICULTIES, Andy 2026-09-01: "don't want it to become discouraging."
+ * By default a problem stays INSIDE one clock hour and its answer never
+ * passes 60 minutes; 2:10 to 3:45 at the end of a good run is a reward that
+ * bites. Crossing the hour is a parent toggle, switched on when he is ready
+ * for the crossing to BE the skill.
  */
-export const makeElapsed = (seed: number): ElapsedProblem => {
+export const makeElapsed = (seed: number, crossHour = false): ElapsedProblem => {
   let h = (seed * 2654435761) >>> 0;
   const next = (n: number): number => {
     h = (h * 1664525 + 1013904223) >>> 0;
     return h % n;
   };
-  // Start on a five minute mark between 8:00 and 6:55.
   const startHour = 8 + next(11);
-  const startMin = next(12) * 5;
+  let startMin: number;
+  let duration: number;
+  if (crossHour) {
+    // 10 to 95 minutes on five minute marks; crossings arrive often.
+    startMin = next(12) * 5;
+    duration = (2 + next(18)) * 5;
+  } else {
+    // 10 to 50 minutes, and the start minute is chosen so the end stays
+    // inside the same hour: the whole problem lives on one clock face.
+    duration = (2 + next(9)) * 5;
+    startMin = next((55 - duration) / 5 + 1) * 5;
+  }
   const start = startHour * 60 + startMin;
-  // Durations from 10 to 95 minutes, on five minute marks, so crossing the
-  // hour happens often. That crossing IS the skill.
-  const duration = (2 + next(18)) * 5;
   const scene = SCENES[next(SCENES.length)] ?? SCENES[0]!;
   const startLabel = label(start);
   const endLabel = label(start + duration);
