@@ -75,6 +75,14 @@ export const sfx = {
     env("triangle", 300, 0, 0.09, 0.18, 720);
     noise(0.03, 0.13, 0.11, 2600);
   },
+  /** The correct-answer chime: a quick bright arpeggio over the pop. Same
+   *  chime whether he retrieved it or worked it out; the ear must not be able
+   *  to tell the difference either. */
+  chime: (): void => {
+    env("sine", 1047, 0, 0.16, 0.12);
+    env("sine", 1319, 0.06, 0.18, 0.11);
+    env("triangle", 1568, 0.12, 0.26, 0.1);
+  },
   /** A whole line landed. */
   line: (): void => {
     [523, 659, 784, 1047].forEach((f, i) => env("triangle", f, i * 0.07, 0.22, 0.15));

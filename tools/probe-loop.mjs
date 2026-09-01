@@ -161,6 +161,44 @@ await step("the CSV export carries its own measurement definition", async () => 
   must(body.split("\n").length > 4, "the CSV has no rows");
 });
 
+await step("a correct answer plays the trick before the next problem appears", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  // The rider must exist mid-run and be gone before the keypad wakes.
+  const seen = await page.waitForSelector(".trick-run .trick-creature", { timeout: 1200 }).catch(() => null);
+  must(seen !== null, "no trick animation appeared on a correct answer");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  must(await page.$(".trick-run") === null, "the trick run outlived its own animation");
+});
+
+await step("the kid can switch the tricks off, and the switch persists", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('[data-probe="anim-toggle"]');
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => window.__app.meta().animations) === false, "the toggle did not take");
+  await page.reload({ waitUntil: "networkidle" });
+  must(await page.evaluate(() => window.__app.meta().animations) === false, "the toggle did not persist");
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  const ride = await page.waitForSelector(".trick-run", { timeout: 900 }).catch(() => null);
+  must(ride === null, "the trick still played with the toggle off");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('[data-probe="anim-toggle"]'); // back on for the rest
+  await page.waitForTimeout(250);
+  // The steps that follow expect to find the dashboard open, as it was before
+  // this block navigated away. Put it back the way we found it.
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector(".chart", { timeout: 6000 });
+});
+
 // ---- the practice-focus switches -----------------------------------------
 
 await step("a fresh install practises addition and subtraction only", async () => {

@@ -35,6 +35,8 @@ export interface Meta {
   version: number;
   pin: string | null;
   muted: boolean;
+  /** Trick animations on a correct answer. A kid control, like mute. */
+  animations: boolean;
   coins: number;
   owned: string[];
   levels: Record<string, number>;
@@ -47,7 +49,7 @@ export interface Meta {
 }
 
 export const freshMeta = (): Meta => ({
-  version: SCHEMA_VERSION, pin: null, muted: false, coins: 0, owned: [],
+  version: SCHEMA_VERSION, pin: null, muted: false, animations: true, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
 });

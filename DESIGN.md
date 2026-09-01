@@ -139,6 +139,26 @@ building when in fact it is.
 hands.** `submitMs` is stored on every response for diagnosis and is never
 allowed near classification.
 
+## 3b. The ruling on multiple choice (2026-09-01)
+
+Andy asked whether ~10% of questions might be multiple choice. Advised
+against, and he should overrule this in full knowledge of the reasoning if he
+still wants it:
+
+1. **Recognition is not recall.** Picking 15 from four options is a weaker
+   memory act than producing 15, and the transfer target, long division, only
+   ever asks for production.
+2. **It is his documented failure mode.** He rapid-guessed a 43-question test.
+   Free entry is the one structural guarantee a session cannot be guessed
+   through, and even occasional MC teaches that the app can sometimes be gamed.
+3. **It corrupts the evidence.** Classification and the teacher-facing chart
+   run on time-to-first-digit. A tapped choice has no first digit, so those
+   items would carry fake timings or holes.
+
+The variety itch has a safe outlet if wanted: **missing-number problems**
+(8 + _ = 15), still typed production, and the exact shape of his bridge
+strategy. Not built; offered.
+
 ## 4. Rules that are not negotiable
 
 1. **No multiple choice, ever.** Free numeric entry on a large custom keypad,
@@ -493,6 +513,15 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.3.0 - the trick, performed.** On a correct answer his creature (the
+      newest owned, else a cameo of the one he is saving for) rides the stage
+      and does the line's trick: ollie, kickflip with a spinning deck, rail
+      grind, 360, backflip. A chime sounds and the answered problem ghosts out
+      before the next fades in. Fixed 760ms always, identical for retrieved
+      and derived, kid toggle (skateboard button by the mute button), honours
+      prefers-reduced-motion. Phone fix: the five trick names collided at
+      390-430px and shoved OLLIE off the edge; narrow screens now show the
+      decks plus one label. Multiple choice considered and ruled out (SS3b).
 - [x] **0.2.0 - practice focus.** Per-operation switches behind the parent
       PIN, defaulting to addition and subtraction only. Progress preserved
       across a switch, revived without an avalanche, and reported honestly on

@@ -18,7 +18,7 @@
 import { COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_AFTER_ITEMS } from "../core/config";
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
-import { nextLocked } from "../core/creatures";
+import { creatureById, nextLocked, ROSTER } from "../core/creatures";
 import { currentFactId, recordResponse, sessionIsOver, startSession } from "../core/session";
 import type { Fact, Response, SessionState } from "../core/types";
 import type { App } from "./appstate";
@@ -29,6 +29,7 @@ import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 import { appendResponses, appendSession, type SessionRecord } from "./store";
 import { lineStrip, playBail, playLanding, trickName } from "./trickline";
+import { playTrick } from "./trick-anim";
 import { revealSheet } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
@@ -73,6 +74,14 @@ export const sessionScreen = (app: App): HTMLElement => {
   let bonus: ElapsedProblem | null = null;
   let bonusLeft = 0;
   let finished = false;
+
+  // The rider: the newest creature he owns, or a cameo of the one he is
+  // saving for. Chosen once per session so it does not flicker between items.
+  const rider = (() => {
+    const owned = app.meta.owned;
+    const mine = owned.length > 0 ? creatureById(owned[owned.length - 1]!) : null;
+    return mine ?? nextLocked(app.meta.owned) ?? ROSTER[0]!;
+  })();
 
   const pad: Keypad = keypad({
     maxDigits: 3,
@@ -168,8 +177,12 @@ export const sessionScreen = (app: App): HTMLElement => {
       // the law the whole design rests on.
       coins += COIN_PER_TRICK;
       landed += 1;
+      // The chime sounds and the trick plays out BEFORE the next problem is
+      // revealed, and both are identical for a retrieved and a derived answer.
+      sfx.chime();
       sfx.land();
-      await playLanding(stage, trickName(landed - 1));
+      if (app.meta.animations) await playTrick(stage, rider, landed - 1, trickName(landed - 1));
+      else await playLanding(stage, trickName(landed - 1));
       if (landed >= LINE_LENGTH) {
         coins += COIN_PER_LINE;
         landed = 0;

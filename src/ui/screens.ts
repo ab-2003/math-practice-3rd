@@ -11,8 +11,11 @@ const coinChip = (n: number): HTMLElement =>
   el("div", { class: "coins" }, el("span", { text: "◆" }), el("span", { text: String(n) }));
 
 /** A small round button, used for the corner controls. */
-const iconBtn = (label: string, title: string, fn: () => void): HTMLElement => {
-  const b = el("button", { type: "button", class: "btn small ghost", "aria-label": title, title }, el("span", { text: label }));
+const iconBtn = (label: string, title: string, fn: () => void, probe?: string): HTMLElement => {
+  const b = el("button", {
+    type: "button", class: "btn small ghost", "aria-label": title, title,
+    ...(probe === undefined ? {} : { "data-probe": probe }),
+  }, el("span", { text: label }));
   on(b, "click", fn);
   return b;
 };
@@ -24,11 +27,18 @@ export const homeScreen = (app: App): HTMLElement => {
   bar.append(coinChip(app.meta.coins));
   bar.append(el("div", { class: "grow" }));
   if (app.meta.streak > 1) bar.append(el("span", { class: "pill", text: `${app.meta.streak} day streak` }));
+  // Two kid controls, side by side: sound, and the trick animations.
+  bar.append(iconBtn(app.meta.animations ? "🛹" : "💤",
+    app.meta.animations ? "Turn trick animations off" : "Turn trick animations on", () => {
+      app.meta.animations = !app.meta.animations;
+      void app.save();
+      app.refresh();
+    }, "anim-toggle"));
   bar.append(iconBtn(app.meta.muted ? "🔇" : "🔊", app.meta.muted ? "Unmute" : "Mute", () => {
     app.meta.muted = !app.meta.muted;
     void app.save();
     app.refresh();
-  }));
+  }, "mute-toggle"));
   bar.append(iconBtn("⚙", "Grown-ups", () => app.go("dashboard")));
   root.append(bar);
 

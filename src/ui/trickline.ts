@@ -34,8 +34,11 @@ const deck = (state: "done" | "now" | "todo"): SVGElement => {
   return g;
 };
 
-/** The row of five decks that fills as he lands tricks. */
+/** The row of five decks that fills as he lands tricks. On a phone the five
+ *  names collided and shoved OLLIE off the left edge, so narrow screens show
+ *  the decks alone plus ONE label: the trick he is on. */
 export const lineStrip = (landed: number): HTMLElement => {
+  const wrap = el("div", { class: "line-wrap" });
   const row = el("div", { class: "line-strip", "aria-label": `${landed} of ${LINE_LENGTH} tricks landed` });
   for (let i = 0; i < LINE_LENGTH; i++) {
     const state = i < landed ? "done" : i === landed ? "now" : "todo";
@@ -43,7 +46,9 @@ export const lineStrip = (landed: number): HTMLElement => {
     cell.append(el("span", { class: "trick-name", text: TRICKS[i] ?? "" }));
     row.append(cell);
   }
-  return row;
+  wrap.append(row);
+  wrap.append(el("div", { class: "line-now", text: TRICKS[Math.min(landed, LINE_LENGTH - 1)] ?? "" }));
+  return wrap;
 };
 
 export const trickName = (index: number): string => TRICKS[index % TRICKS.length] ?? "TRICK";

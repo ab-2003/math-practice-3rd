@@ -119,6 +119,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 
 .problem {
+  animation: p-in 190ms ease-out;
   font-size: clamp(56px, 15vw, 128px); font-weight: 900; letter-spacing: 0.02em;
   text-align: center; line-height: 1; text-shadow: 0 6px 0 var(--ink);
 }
@@ -147,6 +148,11 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .landing { color: var(--acid); animation: land 620ms ease-out forwards; }
 .bail { color: var(--orange); animation: bail 520ms ease-out forwards; }
+@keyframes p-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @keyframes land {
   0% { opacity: 0; transform: translate(-50%, 26px) scale(0.7) rotate(-6deg); }
   35% { opacity: 1; transform: translate(-50%, -6px) scale(1.12) rotate(2deg); }
@@ -302,5 +308,74 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .session .keypad { align-self: center; max-width: 380px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing, .bail, .reveal .creature { animation-duration: 1ms; }
+  .landing, .bail, .reveal .creature, .trick-rider, .trick-flip, .trick-deck, .problem { animation-duration: 1ms; }
+}
+
+/* ---------- the trick, performed ---------- */
+/* Fixed duration always: an animation that ran faster when he answered faster
+   would be a timer wearing a costume. */
+
+.trick-run { position: absolute; inset: -30px 0; overflow: hidden; pointer-events: none; z-index: 5; }
+/* The rider takes the middle of the stage, not a sliver under the text. */
+.trick-rider {
+  position: absolute; top: 50%; margin-top: -40px; left: -170px; width: 152px;
+  animation: t-ride 760ms cubic-bezier(0.2, 0, 0.8, 1) forwards;
+}
+.stage.riding .problem, .stage.riding .word-problem { opacity: 0.08; transition: opacity 120ms; }
+.trick-flip { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 78%; }
+.trick-creature { width: 100%; height: auto; }
+.trick-deck { width: 96px; margin-top: -18px; }
+.trick-rail {
+  position: absolute; left: 16%; right: 16%; top: 50%; margin-top: 80px; height: 7px;
+  border-radius: 4px; background: var(--panel-2); border: 3px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+@keyframes t-ride { from { left: -140px; } to { left: 104%; } }
+
+/* ollie: a clean hop */
+.trick-0 .trick-flip { animation: t-ollie 760ms ease-in-out; }
+@keyframes t-ollie {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  38% { transform: translateY(-56px) rotate(-11deg); }
+  70% { transform: translateY(-18px) rotate(5deg); }
+}
+
+/* kickflip: the hop, while the board spins its own full turn */
+.trick-1 .trick-flip { animation: t-ollie 760ms ease-in-out; }
+.trick-1 .trick-deck { animation: t-deckspin 420ms linear 160ms; }
+@keyframes t-deckspin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* grind: up onto the rail, hold it, drop off */
+.trick-2 .trick-flip { animation: t-grind 760ms ease-in-out; }
+@keyframes t-grind {
+  0% { transform: translateY(0) rotate(0); }
+  22% { transform: translateY(-64px) rotate(-7deg); }
+  64% { transform: translateY(-64px) rotate(-7deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+/* 360 spin */
+.trick-3 .trick-flip { animation: t-360 760ms ease-in-out; }
+@keyframes t-360 {
+  0% { transform: translateY(0) rotate(0); }
+  45% { transform: translateY(-66px) rotate(200deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+
+/* backflip: the big one, highest arc, backwards */
+.trick-4 .trick-flip { animation: t-back 760ms ease-in-out; }
+@keyframes t-back {
+  0% { transform: translateY(0) rotate(0); }
+  45% { transform: translateY(-84px) rotate(-200deg); }
+  100% { transform: translateY(0) rotate(-360deg); }
+}
+
+/* One label under the strip on phones; five names only where they fit. */
+.line-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.line-now { display: none; text-align: center; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; color: var(--orange); text-transform: uppercase; }
+@media (max-width: 560px) {
+  .trick-name { display: none; }
+  .line-now { display: block; }
+  .line-cell { min-width: 0; }
 }
