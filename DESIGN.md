@@ -451,6 +451,18 @@ once, lives in the locker, and any owned monster wears any owned helmet from
 its card, where the art updates the moment he taps it. The rider wears his
 helmet through every solo trick and every victory lap.
 
+**Shop life and shop manners (0.8.1).** The gear rack stands on display but
+SHUT until the first monster ("Helmets need heads. Pick your first monster
+and the rack opens"), because gear for a crew you do not have is noise on day
+one. Every purchase, monster or helmet, runs through an explicit confirm that
+names the price, the balance, and what would be left, with Not-yet as the
+cancel; probes prove the cancel path moves nothing. And the shop BREATHES:
+every monster does a tiny idle on a ~5s cycle, staggered per tile so the crew
+never moves in lockstep. Each dragon breathes its own element (ember fire,
+ice shards, leaf-spray, void wisps, frost crystals, gold sparkles; the probe
+asserts all six breaths differ), and PUCKJAW fires a slap shot, puck and
+speed lines and all. Honours prefers-reduced-motion by standing still.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -619,6 +631,9 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.8.1 - shop life and shop manners.** The rack locked until the
+      first monster; explicit buy confirms with clean cancels; staggered
+      idle animations, six distinct dragon breaths, and PUCKJAW's slap shot.
 - [x] **0.8.0 - the open shop and the gear rack.** Twenty monsters on open
       display, bought in any order (no more mysteries, no more auto-ladder);
       six new dragons plus a hockey bruiser and an inline speedster; twenty

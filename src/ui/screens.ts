@@ -124,6 +124,7 @@ export const collectionScreen = (app: App): HTMLElement => {
   root.append(el("h2", { text: "The Crew" }));
 
   const grid = el("div", { class: "roster" });
+  let tileIndex = 0;
   for (const c of ROSTER) {
     const owned = app.meta.owned.includes(c.id);
     const level = app.meta.levels[c.id] ?? 1;
@@ -131,7 +132,9 @@ export const collectionScreen = (app: App): HTMLElement => {
     // price, and he buys whichever one he wants, in any order.
     const helm = app.meta.gear[c.id] !== undefined ? helmetById(app.meta.gear[c.id]!) : undefined;
     const tile = el("div", { class: `mon${owned ? "" : " shop-locked"}`, "data-mon": c.id });
-    tile.append(creatureSvg(c, { level, ...(owned && helm ? { helmet: helm } : {}) }));
+    // Staggered so they never move in lockstep; near-misses are fine.
+    const idle = ((tileIndex++) * 0.73) % 5.2;
+    tile.append(creatureSvg(c, { level, idle, ...(owned && helm ? { helmet: helm } : {}) }));
     tile.append(el("div", { class: "mon-name", text: owned ? (app.meta.names[c.id] ?? c.name) : c.name }));
     tile.append(owned
       ? el("div", { class: "mon-sub", text: `Level ${level}` })
@@ -145,16 +148,24 @@ export const collectionScreen = (app: App): HTMLElement => {
   root.append(grid);
 
   // THE GEAR RACK: twenty helmets, bought once, worn by anyone he owns.
+  // Locked until the first monster: gear for a crew you do not have yet is
+  // just noise on day one (Andy 2026-09-01).
+  const rackOpen = app.meta.owned.length > 0;
   root.append(el("h2", { text: "The Gear Rack", style: "margin-top:18px" }));
-  root.append(el("p", { class: "note", text: "Buy a helmet once and any of the crew can wear it. Put it on from a monster's card." }));
-  const rack = el("div", { class: "gear-rack" });
+  root.append(el("p", { class: "note", "data-probe": "rack-note", text: rackOpen
+    ? "Buy a helmet once and any of the crew can wear it. Put it on from a monster's card."
+    : "Helmets need heads. Pick your first monster and the rack opens." }));
+  const rack = el("div", { class: `gear-rack${rackOpen ? "" : " rack-locked"}` });
   for (const h of HELMETS) {
     const has = app.meta.helmetsOwned.includes(h.id);
-    const t = el("button", { type: "button", class: `helm-tile${has ? " owned" : ""}`, "data-helm": h.id });
+    const t = el("button", {
+      type: "button", class: `helm-tile${has ? " owned" : ""}`, "data-helm": h.id,
+      ...(rackOpen ? {} : { disabled: true }),
+    });
     t.append(helmetIcon(h));
     t.append(el("span", { class: "helm-name", text: h.name }));
     t.append(el("span", { class: "mon-sub", text: has ? "owned" : `◆ ${h.cost}` }));
-    on(t, "click", () => helmSheet(app, h));
+    on(t, "click", () => { if (app.meta.owned.length > 0) helmSheet(app, h); });
     rack.append(t);
   }
   root.append(rack);
@@ -171,8 +182,10 @@ const helmSheet = (app: App, h: Helmet): void => {
   }
   const affordable = app.meta.coins >= h.cost;
   sheet({
-    title: h.name,
-    body: affordable ? `${h.cost} coins, and you have ${app.meta.coins}.` : `${h.cost} coins. You have ${app.meta.coins}, so keep landing tricks.`,
+    title: affordable ? `Buy ${h.name}?` : h.name,
+    body: affordable
+      ? `${h.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - h.cost} left.`
+      : `${h.cost} coins. You have ${app.meta.coins}, so keep landing tricks.`,
     cancel: "Not yet",
     ...(affordable ? {
       confirm: `Buy ◆${h.cost}`,
@@ -194,8 +207,11 @@ const buySheet = (app: App, id: string): void => {
   const body = el("div", { class: "reveal" });
   body.append(creatureSvg(c));
   body.append(el("p", { class: "mon-lore", text: c.lore }));
+  body.append(el("p", { class: "note", text: affordable
+    ? `${c.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - c.cost} left.`
+    : `${c.cost} coins. You have ${app.meta.coins}, so keep landing tricks.` }));
   sheet({
-    title: c.name,
+    title: affordable ? `Buy ${c.name}?` : c.name,
     body,
     cancel: "Not yet",
     ...(affordable ? {

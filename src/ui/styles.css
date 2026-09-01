@@ -608,3 +608,34 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .gear-pick .helm-mini { width: 46px; }
 .gear-pick.sel { border-color: var(--acid); box-shadow: 0 0 0 2px rgba(182, 255, 60, 0.35); color: var(--text); }
+
+/* The rack before the first monster: on display, but shut. */
+.gear-rack.rack-locked .helm-tile {
+  opacity: 0.4; filter: grayscale(0.7); cursor: default; box-shadow: none;
+}
+.gear-rack.rack-locked .helm-tile:active { transform: none; }
+
+/* ---------- the shop breathes: tiny idles on a five second cycle ---------- */
+.creature.idle { animation: idle-bob 5.2s ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+.creature.idle-raptor { animation-name: idle-hop; }
+.creature.idle-serpent { animation-name: idle-sway; }
+.creature.idle-titan { animation-name: idle-breathe; }
+.creature.idle-horned { animation-name: idle-nod; }
+.creature.idle-dragon { animation-name: idle-rise; }
+@keyframes idle-bob { 0%, 8%, 100% { transform: translateY(0); } 3% { transform: translateY(4px); } 5.5% { transform: translateY(-3px); } }
+@keyframes idle-hop { 0%, 9%, 100% { transform: translateY(0); } 4% { transform: translateY(-9px) rotate(-2deg); } }
+@keyframes idle-sway { 0%, 10%, 100% { transform: rotate(0); } 3% { transform: rotate(2.4deg); } 7% { transform: rotate(-2deg); } }
+@keyframes idle-breathe { 0%, 10%, 100% { transform: scale(1); } 5% { transform: scale(1.035); } }
+@keyframes idle-nod { 0%, 9%, 100% { transform: rotate(0); } 4% { transform: rotate(3deg) translateY(2px); } }
+@keyframes idle-rise { 0%, 10%, 100% { transform: translateY(0); } 4% { transform: translateY(-6px) rotate(1.5deg); } }
+/* The dragon's puff rides the same clock as its rise. */
+.flame { opacity: 0; animation: flame-puff 5.2s ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes flame-puff { 0%, 2.2%, 9%, 100% { opacity: 0; } 3.5% { opacity: 1; } 7% { opacity: 0.8; } }
+/* The slap shot: the puck fires out and fades, on the same idle clock. */
+.puck-shot ellipse, .puck-shot path { animation: puck-fly 5.2s ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.puck-shot { opacity: 0; animation: puck-appear 5.2s linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes puck-appear { 0%, 2.4%, 9%, 100% { opacity: 0; } 3.2% { opacity: 1; } 7.5% { opacity: 0.9; } }
+@keyframes puck-fly { 0%, 2.8% { transform: translateX(0); } 8.5% { transform: translateX(54px); } 8.6%, 100% { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .creature.idle, .flame, .puck-shot { animation: none; }
+}

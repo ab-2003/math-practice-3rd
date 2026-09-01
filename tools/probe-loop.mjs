@@ -116,6 +116,25 @@ await step("the shop shows all twenty monsters by name, no mysteries", async () 
   must(!text.includes("???"), "a monster is still a mystery");
   must(text.includes("CINDERWYRM") && text.includes("GILDEDWYRM"), "the dragons are not on display");
   must((await page.$$(".helm-tile")).length === 20, "the gear rack is not twenty helmets");
+  // The shop breathes: idle animations exist and are STAGGERED, and the
+  // dragons carry their fire.
+  const delays = await page.evaluate(() =>
+    [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
+  must(delays.length === 20, `${delays.length} idle monsters, wanted 20`);
+  must(new Set(delays).size >= 6, "the idles all fire in lockstep");
+  must((await page.$$(".roster .flame")).length === 6, "the six dragons are not breathing");
+  const breaths = await page.evaluate(() =>
+    [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
+  must(new Set(breaths).size === 6, "the six dragons breathe the same breath");
+  must(await page.$('[data-mon="puckjaw"] .puck-shot') !== null, "PUCKJAW lost his slap shot");
+  // With no monsters yet, the rack is on display but shut: gray tiles, a
+  // wink of copy, and not a single tappable helmet.
+  if (await page.evaluate(() => window.__app.meta().owned.length) === 0) {
+    must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");
+    must((await page.$$(".helm-tile[disabled]")).length === 20, "a helmet is tappable before the first monster");
+    const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
+    must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
+  }
   await page.click('[data-probe="back"]');
   await page.waitForSelector('[data-probe="start"]');
 });
@@ -564,6 +583,16 @@ await step("he buys the dragon he WANTS, not the cheapest", async () => {
     window.__app.go("collection");
   });
   await page.waitForTimeout(250);
+  // First: the CONFIRM. Open the sheet, change his mind, spend nothing.
+  await page.click('[data-mon="cinderwyrm"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  must(((await page.textContent(".sheet")) ?? "").includes("left"), "the confirm does not say what remains");
+  await page.click(".sheet .btn.ghost"); // Not yet
+  await page.waitForTimeout(250);
+  {
+    const m0 = await page.evaluate(() => window.__app.meta());
+    must(m0.coins === 5000 && m0.owned.length === 0, "Not-yet moved money or monsters");
+  }
   await page.click('[data-mon="cinderwyrm"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   await page.click(".sheet .btn.go"); // Buy
@@ -574,9 +603,18 @@ await step("he buys the dragon he WANTS, not the cheapest", async () => {
   must(m.owned.includes("cinderwyrm"), "the chosen dragon was not bought");
   must(!m.owned.includes("grindjaw"), "the shop bought the cheapest instead of his pick");
   must(m.coins === 5000 - 350, `coins went to ${m.coins}, wanted 4650`);
+  // And the first purchase opens the rack.
+  must(await page.$(".gear-rack.rack-locked") === null, "the rack stayed locked after his first monster");
+  must((await page.$$(".helm-tile[disabled]")).length === 0, "helmets still disabled after his first monster");
 });
 
 await step("a helmet is bought once and lands on the monster he puts it on", async () => {
+  // The helmet confirm cancels clean too.
+  await page.click('[data-helm="cap-fire"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  await page.click(".sheet .btn.ghost"); // Not yet
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => window.__app.meta().helmetsOwned.length) === 0, "Not-yet bought a helmet");
   await page.click('[data-helm="cap-fire"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   await page.click(".sheet .btn.go"); // Buy

@@ -270,11 +270,20 @@ export const helmetIcon = (h: Helmet): SVGElement => {
   return root;
 };
 
-export const creatureSvg = (c: Creature, opts: { level?: number; helmet?: Helmet } = {}): SVGElement => {
+export const creatureSvg = (
+  c: Creature,
+  opts: { level?: number; helmet?: Helmet; idle?: number } = {},
+): SVGElement => {
   const lvl = opts.level ?? 1;
   const plan = PLANS[c.silhouette];
   const [body, , glow] = c.palette;
-  const root = svg("svg", { viewBox: "-14 -6 246 214", class: "creature", role: "img", "aria-label": c.name });
+  const root = svg("svg", {
+    viewBox: "-14 -6 246 214", role: "img", "aria-label": c.name,
+    // Shop tiles breathe: a tiny idle every ~5s, staggered per tile so the
+    // crew never moves in lockstep. Everywhere else the art stands still.
+    class: `creature${opts.idle !== undefined ? ` idle idle-${c.silhouette}` : ""}`,
+    ...(opts.idle !== undefined ? { style: `--idle-delay:${opts.idle.toFixed(2)}s` } : {}),
+  });
 
   if (lvl >= 10) {
     root.append(svg("ellipse", { cx: 100, cy: 108, rx: 116, ry: 106, fill: "#B6FF3C", opacity: 0.13 }));
@@ -308,6 +317,62 @@ export const creatureSvg = (c: Creature, opts: { level?: number; helmet?: Helmet
 
   root.append(...horns(c, plan, lvl >= 7));
   root.append(...face(c, plan, lvl >= 4));
+
+  // Dragons breathe on their idle beat, and EACH BREATHES ITS OWN ELEMENT
+  // (Andy 2026-09-01): ember fire, ice shards, leaf-spray, void wisps, frost
+  // crystals, gold sparkles. Same clock, different weather.
+  if (opts.idle !== undefined && c.silhouette === "dragon") {
+    const f = plan.face;
+    const fx = f.x + 62 * f.scale;
+    const fy = f.y + 26 * f.scale;
+    const flame = svg("g", { class: "flame", transform: `translate(${fx} ${fy})` });
+    const jag = (d: string, fill: string): SVGElement =>
+      svg("path", { d, fill, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" });
+    switch (c.id) {
+      case "tidalwyrm": // ice water: sharp shards and a droplet spray
+        flame.append(jag("M2 0 L26 -10 L18 0 L34 -2 L24 6 L30 14 L2 10 Z", "#35E6FF"));
+        flame.append(svg("circle", { cx: 30, cy: -12, r: 3.5, fill: "#C8DDFF", stroke: INK, "stroke-width": 2 }));
+        flame.append(svg("circle", { cx: 36, cy: 8, r: 2.8, fill: "#FFFFFF", stroke: INK, "stroke-width": 2 }));
+        break;
+      case "mosswing": // a spray of leaves
+        flame.append(jag("M2 2 L18 -6 Q26 -10 24 -2 Q32 -6 30 4 Q38 2 32 10 L4 10 Z", "#4FC24F"));
+        flame.append(svg("ellipse", { cx: 30, cy: -10, rx: 5, ry: 3, fill: "#D8F7C8", stroke: INK, "stroke-width": 2, transform: "rotate(-24 30 -10)" }));
+        flame.append(svg("ellipse", { cx: 36, cy: 6, rx: 4.4, ry: 2.6, fill: "#8FE08F", stroke: INK, "stroke-width": 2, transform: "rotate(18 36 6)" }));
+        break;
+      case "nightwyrm": // void wisps and two small stars
+        flame.append(jag("M2 2 Q16 -8 22 0 Q34 -6 30 6 Q38 10 26 12 Q12 14 2 8 Z", "#6B4BD6"));
+        flame.append(svg("path", { d: "M32 -10 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 Z", fill: "#D9CCFF", stroke: INK, "stroke-width": 1.6 }));
+        flame.append(svg("path", { d: "M38 8 l1.5 3 l3 1.5 l-3 1.5 l-1.5 3 l-1.5 -3 l-3 -1.5 l3 -1.5 Z", fill: "#FFFFFF", stroke: INK, "stroke-width": 1.4 }));
+        break;
+      case "glacierwing": // a frost crystal burst
+        flame.append(jag("M2 0 L20 -4 L26 -14 L30 -4 L42 0 L30 4 L26 14 L20 6 Z", "#CFEFFF"));
+        flame.append(svg("path", { d: "M14 -8 L18 0 L14 8 M34 -8 L30 0 L34 8", fill: "none", stroke: "#FFFFFF", "stroke-width": 2.4, "stroke-linecap": "round" }));
+        break;
+      case "gildedwyrm": // pure treasure: three four-point sparkles
+        for (const [sx, sy, r] of [[10, 0, 9], [26, -8, 6], [32, 8, 7]] as const) {
+          flame.append(svg("path", {
+            d: `M${sx} ${sy - r} L${sx + r * 0.32} ${sy - r * 0.32} L${sx + r} ${sy} L${sx + r * 0.32} ${sy + r * 0.32} L${sx} ${sy + r} L${sx - r * 0.32} ${sy + r * 0.32} L${sx - r} ${sy} L${sx - r * 0.32} ${sy - r * 0.32} Z`,
+            fill: "#FFE14D", stroke: INK, "stroke-width": 2,
+          }));
+        }
+        break;
+      default: // cinderwyrm: the classic ember fire
+        flame.append(jag("M2 0 L30 -8 L20 2 L34 6 L18 10 L26 18 L2 10 Z", "#FF8A1F"));
+        flame.append(svg("path", { d: "M4 2 L20 -2 L14 4 L22 8 L6 8 Z", fill: "#FFE14D" }));
+    }
+    root.append(flame);
+  }
+
+  // PUCKJAW's idle is a slap shot: a puck rockets off with speed lines.
+  if (opts.idle !== undefined && c.id === "puckjaw") {
+    const f = plan.face;
+    const px = f.x + 58 * f.scale;
+    const py = f.y + 30 * f.scale;
+    const shot = svg("g", { class: "puck-shot", transform: `translate(${px} ${py})` });
+    shot.append(svg("ellipse", { cx: 10, cy: 0, rx: 8, ry: 4.6, fill: INK, stroke: "#E4F2FC", "stroke-width": 2.4 }));
+    shot.append(svg("path", { d: "M-4 -3 L-16 -3 M-2 3 L-12 3", fill: "none", stroke: "#8FB7D6", "stroke-width": 2.6, "stroke-linecap": "round" }));
+    root.append(shot);
+  }
 
   if (opts.helmet) {
     const f = plan.face;
