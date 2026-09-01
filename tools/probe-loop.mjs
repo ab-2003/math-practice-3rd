@@ -126,7 +126,10 @@ await step("the shop shows all twenty monsters by name, no mysteries", async () 
   const breaths = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
   must(new Set(breaths).size === 6, "the six dragons breathe the same breath");
-  must(await page.$('[data-mon="puckjaw"] .puck-shot') !== null, "PUCKJAW lost his slap shot");
+  must(await page.$('[data-mon="puckjaw"] .puck-shot .stick') !== null, "PUCKJAW lost his stick");
+  const wings = await page.evaluate(() =>
+    [...document.querySelectorAll(".roster .wings")].map((w) => w.getAttribute("d")));
+  must(wings.length === 6 && new Set(wings).size === 6, "the six dragons are palette swaps, not forms");
   // With no monsters yet, the rack is on display but shut: gray tiles, a
   // wink of copy, and not a single tappable helmet.
   if (await page.evaluate(() => window.__app.meta().owned.length) === 0) {
@@ -587,6 +590,7 @@ await step("he buys the dragon he WANTS, not the cheapest", async () => {
   await page.click('[data-mon="cinderwyrm"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   must(((await page.textContent(".sheet")) ?? "").includes("left"), "the confirm does not say what remains");
+  must(await page.$(".sheet .creature.idle-fast") !== null, "the card art is not performing its fast loop");
   await page.click(".sheet .btn.ghost"); // Not yet
   await page.waitForTimeout(250);
   {

@@ -205,7 +205,9 @@ const buySheet = (app: App, id: string): void => {
   if (!c) return;
   const affordable = app.meta.coins >= c.cost;
   const body = el("div", { class: "reveal" });
-  body.append(creatureSvg(c));
+  // On a card the monster performs on a FAST loop: act, breathe for a couple
+  // of seconds, act again. The shop saunters; the spotlight does not.
+  body.append(creatureSvg(c, { idle: 0.3, fastIdle: true }));
   body.append(el("p", { class: "mon-lore", text: c.lore }));
   body.append(el("p", { class: "note", text: affordable
     ? `${c.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - c.cost} left.`
@@ -248,7 +250,7 @@ const monsterSheet = (app: App, id: string): void => {
     const w = wornId();
     return w !== undefined ? helmetById(w) : undefined;
   };
-  let bigArt = creatureSvg(c, { level, ...(worn() ? { helmet: worn()! } : {}) });
+  let bigArt = creatureSvg(c, { level, idle: 0.3, fastIdle: true, ...(worn() ? { helmet: worn()! } : {}) });
   body.append(bigArt);
   body.append(el("p", { class: "mon-lore", text: c.lore }));
   body.append(el("div", { class: "mon-sub", text: `Level ${level} of ${MAX_LEVEL}` }));
@@ -258,7 +260,7 @@ const monsterSheet = (app: App, id: string): void => {
   if (app.meta.helmetsOwned.length > 0) {
     const row = el("div", { class: "gear-row" });
     const redraw = (): void => {
-      const fresh = creatureSvg(c, { level, ...(worn() ? { helmet: worn()! } : {}) });
+      const fresh = creatureSvg(c, { level, idle: 0.3, fastIdle: true, ...(worn() ? { helmet: worn()! } : {}) });
       bigArt.replaceWith(fresh);
       bigArt = fresh;
       for (const t of Array.from(row.children)) {

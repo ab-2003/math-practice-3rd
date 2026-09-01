@@ -463,6 +463,20 @@ ice shards, leaf-spray, void wisps, frost crystals, gold sparkles; the probe
 asserts all six breaths differ), and PUCKJAW fires a slap shot, puck and
 speed lines and all. Honours prefers-reduced-motion by standing still.
 
+**Character acting (0.8.2, Andy's direction).** The idles stopped being
+"little dances." Every act got bigger and in-character: brutes stomp with
+squash, raptors leap, serpents cut a real S, titans rear up, horned ones
+charge, dragons FLAP. The six dragons are six FORMS now, not palette swaps:
+jagged bat wings on the ember, smooth fins and no legs on the serpentine sea
+dragon, scalloped leaf wings, swept night-hunter wings, many-pointed crystal
+wings, and tall regal wings with a raised head on the gold; the probe asserts
+all six wing paths differ. Flames grew ~1.6x and angle 40 degrees down-range.
+PUCKJAW takes a full slapper: stick winds up and swings, impact star pops,
+puck rockets away; BLADEBACK flashes speed streaks through its leap. And on a
+DETAIL CARD the monster performs on a fast loop (act, a beat or two of rest,
+act again) so the one being looked at is the one showing off. All of it on
+one idle clock, staggered in the shop, still under prefers-reduced-motion.
+
 Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
@@ -631,6 +645,10 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.8.2 - character acting.** Bigger in-character idles, six distinct
+      dragon FORMS, down-angled 1.6x flames, PUCKJAW's full stick-and-puck
+      slapper, BLADEBACK's speed streaks, and fast-loop performance on the
+      detail cards.
 - [x] **0.8.1 - shop life and shop manners.** The rack locked until the
       first monster; explicit buy confirms with clean cancels; staggered
       idle animations, six distinct dragon breaths, and PUCKJAW's slap shot.

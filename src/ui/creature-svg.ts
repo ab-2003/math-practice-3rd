@@ -105,6 +105,40 @@ const PLANS: Record<Silhouette, Plan> = {
   },
 };
 
+/**
+ * Six dragons, six FORMS (Andy 2026-09-01): not palette swaps. Each overrides
+ * the base dragon's wings at minimum, and most reshape body and head too:
+ * bat-winged ember, fin-winged sea serpent, leaf-winged glider, swept-wing
+ * night hunter, crystal-winged glacier, high-winged regal gold.
+ */
+const DRAGON_VARIANTS: Record<string, Partial<Plan>> = {
+  cinderwyrm: {}, // the base dragon IS the ember: jagged bat wings
+  tidalwyrm: {
+    body: "M24 150 C36 118 64 116 78 96 C92 76 118 72 140 84 C158 94 162 118 166 150 Z",
+    legs: [],
+    wings: "M70 96 C40 60 44 28 78 44 C86 20 116 24 118 52 C138 36 152 52 146 88 Z",
+  },
+  mosswing: {
+    body: "M36 152 L44 108 L76 86 L116 84 L146 98 L160 120 L164 152 Z",
+    wings: "M66 96 L30 34 Q52 44 60 36 Q64 18 84 30 Q96 10 108 32 Q124 20 128 44 Q146 40 142 90 Z",
+  },
+  nightwyrm: {
+    body: "M42 152 L52 118 L80 98 L114 92 L142 102 L154 122 L158 152 Z",
+    wings: "M68 96 L14 40 L64 66 L54 18 L92 56 L120 30 L138 88 Z",
+    head: "M132 66 L188 48 L200 72 L184 88 L136 92 Z",
+    face: { x: 146, y: 56, scale: 1 },
+  },
+  glacierwing: {
+    body: "M34 152 L40 110 L70 90 L114 86 L148 100 L162 122 L168 152 Z",
+    wings: "M66 96 L34 22 L64 52 L80 12 L96 50 L120 18 L128 54 L150 34 L146 90 Z",
+  },
+  gildedwyrm: {
+    wings: "M64 94 L36 14 L72 50 L98 8 L118 48 L150 16 L148 88 Z",
+    head: "M128 62 L186 44 L198 70 L182 86 L132 90 Z",
+    face: { x: 142, y: 52, scale: 1 },
+  },
+};
+
 const poly = (d: string, fill: string, w = SW): SVGElement =>
   svg("path", { d, fill, stroke: INK, "stroke-width": w, "stroke-linejoin": "round" });
 
@@ -272,16 +306,16 @@ export const helmetIcon = (h: Helmet): SVGElement => {
 
 export const creatureSvg = (
   c: Creature,
-  opts: { level?: number; helmet?: Helmet; idle?: number } = {},
+  opts: { level?: number; helmet?: Helmet; idle?: number; fastIdle?: boolean } = {},
 ): SVGElement => {
   const lvl = opts.level ?? 1;
-  const plan = PLANS[c.silhouette];
+  const plan: Plan = { ...PLANS[c.silhouette], ...(DRAGON_VARIANTS[c.id] ?? {}) };
   const [body, , glow] = c.palette;
   const root = svg("svg", {
     viewBox: "-14 -6 246 214", role: "img", "aria-label": c.name,
     // Shop tiles breathe: a tiny idle every ~5s, staggered per tile so the
     // crew never moves in lockstep. Everywhere else the art stands still.
-    class: `creature${opts.idle !== undefined ? ` idle idle-${c.silhouette}` : ""}`,
+    class: `creature${opts.idle !== undefined ? ` idle idle-${c.silhouette}` : ""}${opts.fastIdle === true ? " idle-fast" : ""}`,
     ...(opts.idle !== undefined ? { style: `--idle-delay:${opts.idle.toFixed(2)}s` } : {}),
   });
 
@@ -292,7 +326,9 @@ export const creatureSvg = (
 
   root.append(...tail(c, plan));
   if (plan.wings !== undefined) {
-    root.append(poly(plan.wings, c.palette[2], SW));
+    const w = poly(plan.wings, c.palette[2], SW);
+    w.classList.add("wings");
+    root.append(w);
   }
   root.append(...crest(c, plan));
   for (const l of plan.legs) root.append(poly(l, body));
@@ -323,9 +359,10 @@ export const creatureSvg = (
   // crystals, gold sparkles. Same clock, different weather.
   if (opts.idle !== undefined && c.silhouette === "dragon") {
     const f = plan.face;
-    const fx = f.x + 62 * f.scale;
-    const fy = f.y + 26 * f.scale;
-    const flame = svg("g", { class: "flame", transform: `translate(${fx} ${fy})` });
+    const fx = f.x + 60 * f.scale;
+    const fy = f.y + 30 * f.scale;
+    // Bigger, and angled down-range like a real breath, not a whisper.
+    const flame = svg("g", { class: "flame", transform: `translate(${fx} ${fy}) rotate(40) scale(1.6)` });
     const jag = (d: string, fill: string): SVGElement =>
       svg("path", { d, fill, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" });
     switch (c.id) {
@@ -363,15 +400,28 @@ export const creatureSvg = (
     root.append(flame);
   }
 
-  // PUCKJAW's idle is a slap shot: a puck rockets off with speed lines.
+  // PUCKJAW takes a BIG SLAPPER: stick winds up and swings, the puck
+  // rockets off low and fast, and the impact star pops at contact.
   if (opts.idle !== undefined && c.id === "puckjaw") {
-    const f = plan.face;
-    const px = f.x + 58 * f.scale;
-    const py = f.y + 30 * f.scale;
-    const shot = svg("g", { class: "puck-shot", transform: `translate(${px} ${py})` });
-    shot.append(svg("ellipse", { cx: 10, cy: 0, rx: 8, ry: 4.6, fill: INK, stroke: "#E4F2FC", "stroke-width": 2.4 }));
-    shot.append(svg("path", { d: "M-4 -3 L-16 -3 M-2 3 L-12 3", fill: "none", stroke: "#8FB7D6", "stroke-width": 2.6, "stroke-linecap": "round" }));
+    const shot = svg("g", { class: "puck-shot", transform: "translate(168 150)" });
+    const stick = svg("g", { class: "stick" });
+    stick.append(svg("path", { d: "M0 -34 L10 26", fill: "none", stroke: "#C98A3A", "stroke-width": 7, "stroke-linecap": "round" }));
+    stick.append(svg("path", { d: "M10 26 L30 32", fill: "none", stroke: INK, "stroke-width": 9, "stroke-linecap": "round" }));
+    shot.append(stick);
+    shot.append(svg("path", { class: "smack", d: "M30 22 l6 -10 l2 10 l10 -4 l-6 9 l9 4 l-11 2 z", fill: "#FFE14D", stroke: INK, "stroke-width": 2.4 }));
+    const puck = svg("g", { class: "puck" });
+    puck.append(svg("ellipse", { cx: 0, cy: 0, rx: 9, ry: 5.2, fill: INK, stroke: "#E4F2FC", "stroke-width": 2.6 }));
+    puck.append(svg("path", { d: "M-14 -4 L-30 -7 M-13 3 L-26 6", fill: "none", stroke: "#8FB7D6", "stroke-width": 2.6, "stroke-linecap": "round" }));
+    puck.setAttribute("transform", "translate(32 30)");
+    shot.append(puck);
     root.append(shot);
+  }
+
+  // BLADEBACK's idle is a speed burst: hot streaks trail the lean.
+  if (opts.idle !== undefined && c.id === "bladeback") {
+    const dash = svg("g", { class: "dash" });
+    dash.append(svg("path", { d: "M52 110 L10 104 M58 130 L4 128 M52 148 L14 152", fill: "none", stroke: "#FF3D8B", "stroke-width": 5, "stroke-linecap": "round" }));
+    root.append(dash);
   }
 
   if (opts.helmet) {

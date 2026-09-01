@@ -615,27 +615,88 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .gear-rack.rack-locked .helm-tile:active { transform: none; }
 
-/* ---------- the shop breathes: tiny idles on a five second cycle ---------- */
-.creature.idle { animation: idle-bob 5.2s ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
-.creature.idle-raptor { animation-name: idle-hop; }
-.creature.idle-serpent { animation-name: idle-sway; }
-.creature.idle-titan { animation-name: idle-breathe; }
-.creature.idle-horned { animation-name: idle-nod; }
-.creature.idle-dragon { animation-name: idle-rise; }
-@keyframes idle-bob { 0%, 8%, 100% { transform: translateY(0); } 3% { transform: translateY(4px); } 5.5% { transform: translateY(-3px); } }
-@keyframes idle-hop { 0%, 9%, 100% { transform: translateY(0); } 4% { transform: translateY(-9px) rotate(-2deg); } }
-@keyframes idle-sway { 0%, 10%, 100% { transform: rotate(0); } 3% { transform: rotate(2.4deg); } 7% { transform: rotate(-2deg); } }
-@keyframes idle-breathe { 0%, 10%, 100% { transform: scale(1); } 5% { transform: scale(1.035); } }
-@keyframes idle-nod { 0%, 9%, 100% { transform: rotate(0); } 4% { transform: rotate(3deg) translateY(2px); } }
-@keyframes idle-rise { 0%, 10%, 100% { transform: translateY(0); } 4% { transform: translateY(-6px) rotate(1.5deg); } }
-/* The dragon's puff rides the same clock as its rise. */
-.flame { opacity: 0; animation: flame-puff 5.2s ease-out infinite; animation-delay: var(--idle-delay, 0s); }
-@keyframes flame-puff { 0%, 2.2%, 9%, 100% { opacity: 0; } 3.5% { opacity: 1; } 7% { opacity: 0.8; } }
-/* The slap shot: the puck fires out and fades, on the same idle clock. */
-.puck-shot ellipse, .puck-shot path { animation: puck-fly 5.2s ease-out infinite; animation-delay: var(--idle-delay, 0s); }
-.puck-shot { opacity: 0; animation: puck-appear 5.2s linear infinite; animation-delay: var(--idle-delay, 0s); }
-@keyframes puck-appear { 0%, 2.4%, 9%, 100% { opacity: 0; } 3.2% { opacity: 1; } 7.5% { opacity: 0.9; } }
-@keyframes puck-fly { 0%, 2.8% { transform: translateX(0); } 8.5% { transform: translateX(54px); } 8.6%, 100% { transform: translateX(0); } }
+/* ---------- the shop performs: in-character acts on one idle clock ---------
+   The act lives in the first ~22% of the cycle, then the creature rests.
+   Cards run the same acts on a fast loop: act, pause a beat or two, repeat. */
+.creature.idle {
+  --idle-cycle: 4.8s;
+  overflow: visible;
+  animation: idle-stomp var(--idle-cycle) ease-in-out infinite;
+  animation-delay: var(--idle-delay, 0s);
+}
+.creature.idle-fast { --idle-cycle: 2.6s; }
+.creature.idle-raptor { animation-name: idle-leap; }
+.creature.idle-serpent { animation-name: idle-slither; }
+.creature.idle-titan { animation-name: idle-roarup; }
+.creature.idle-horned { animation-name: idle-charge; }
+.creature.idle-dragon { animation-name: idle-flap; }
+@keyframes idle-stomp {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateY(8px) scaleY(0.93); }
+  11% { transform: translateY(-10px); }
+  16% { transform: translateY(3px) scaleY(0.97); }
+}
+@keyframes idle-leap {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateY(6px) scaleY(0.9); }
+  12% { transform: translateY(-18px) rotate(-5deg); }
+  18% { transform: translateY(0) rotate(1deg); }
+}
+@keyframes idle-slither {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: rotate(5deg) translateX(6px); }
+  10% { transform: rotate(-5deg) translateX(-6px); }
+  16% { transform: rotate(3deg) translateX(3px); }
+}
+@keyframes idle-roarup {
+  0%, 22%, 100% { transform: none; }
+  6% { transform: scale(1.07) translateY(-6px) rotate(-1.5deg); }
+  13% { transform: scale(1.04) translateY(-3px) rotate(1deg); }
+}
+@keyframes idle-charge {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateX(-8px) rotate(2.5deg); }
+  11% { transform: translateX(12px) rotate(-5deg); }
+  16% { transform: translateX(2px); }
+}
+@keyframes idle-flap {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateY(3px) scaleY(0.96); }
+  11% { transform: translateY(-16px) rotate(2.5deg); }
+  17% { transform: translateY(-5px); }
+}
+/* The breath rides the flap: swells in as the dragon rises. */
+.flame {
+  opacity: 0;
+  animation: flame-puff var(--idle-cycle, 4.8s) ease-out infinite;
+  animation-delay: var(--idle-delay, 0s);
+}
+.idle-fast .flame { animation-duration: 2.6s; }
+@keyframes flame-puff { 0%, 8%, 22%, 100% { opacity: 0; } 11% { opacity: 1; } 18% { opacity: 0.85; } }
+/* The slapper: wind-up, swing, crack, puck away. */
+.puck-shot .stick { transform-box: fill-box; transform-origin: 15% 8%; animation: stick-swing var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.idle-fast + * .stick { animation-duration: 2.6s; }
+@keyframes stick-swing {
+  0%, 100% { transform: rotate(-10deg); }
+  4% { transform: rotate(-58deg); }
+  7% { transform: rotate(-58deg); }
+  10% { transform: rotate(34deg); }
+  16% { transform: rotate(12deg); }
+  24% { transform: rotate(-10deg); }
+}
+.puck-shot .puck { opacity: 0; animation: puck-rocket var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes puck-rocket {
+  0%, 9%, 100% { opacity: 0; transform: translate(0, 0); }
+  10.5% { opacity: 1; transform: translate(4px, 0); }
+  20% { opacity: 0; transform: translate(88px, 14px); }
+}
+.puck-shot .smack { opacity: 0; animation: smack-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes smack-pop { 0%, 9%, 14%, 100% { opacity: 0; } 10.5% { opacity: 1; } }
+/* BLADEBACK's streaks flash through the leap. */
+.dash { opacity: 0; animation: dash-flash var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes dash-flash { 0%, 8%, 20%, 100% { opacity: 0; } 11% { opacity: 1; } 16% { opacity: 0.6; } }
+/* Sub-animations inherit the fast lane inside a card. */
+.idle-fast .stick, .idle-fast .puck, .idle-fast .smack, .idle-fast .dash { animation-duration: 2.6s; }
 @media (prefers-reduced-motion: reduce) {
-  .creature.idle, .flame, .puck-shot { animation: none; }
+  .creature.idle, .flame, .puck-shot .stick, .puck-shot .puck, .puck-shot .smack, .dash { animation: none; }
 }
