@@ -11,9 +11,12 @@
  * in a bundle small enough to live offline.
  */
 
-export type Silhouette = "brute" | "raptor" | "plated" | "horned" | "serpent" | "titan" | "dragon";
+export type Silhouette =
+  | "brute" | "raptor" | "plated" | "horned" | "serpent" | "titan" | "dragon"
+  // THE KAIJU SIX (0.18.0): hybrids, not elements.
+  | "hoops" | "ace" | "wolf" | "panda" | "hydra" | "chameleon";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
-export type Tail = "club" | "blade" | "whip" | "spike";
+export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
 export interface Creature {
   readonly id: string;
@@ -30,6 +33,8 @@ export interface Creature {
   /** In-character lines for the end of a run. The lore was trapped in the
    *  shop; this is the monster talking to him where it counts. */
   readonly voice: readonly [string, string];
+  /** THE KAIJU SIX wear a tag in the shop: they are the bonus crew. */
+  readonly kaiju?: true;
 }
 
 /**
@@ -140,6 +145,41 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "dragon", crest: "sail", tail: "blade", eyes: 2, horns: 5,
     palette: ["#F5C542", "#4A3200", "#FFF3C4"] ,
     voice: ["Hoarded another perfect landing.", "Gold does not bail. Neither did I."] },
+  // THE KAIJU SIX (Andy, 2026-09-02): "cool bonus creatures for the kids to
+  // work towards", hybrids rather than elements. Our own inventions; the
+  // only borrowing is the idea of a giant monster, which belongs to nobody.
+  // SKYHOOK is the cheap door in at 150; the rest are a real save. They sit
+  // before VOIDWYRM, who keeps the last tile because that one is Kallen's.
+  { id: "skyhook", name: "SKYHOOK", cost: 150, kaiju: true,
+    lore: "Tall enough to dunk without jumping. Shoots anyway, for style.",
+    silhouette: "hoops", crest: "none", tail: "whip", eyes: 2, horns: 0,
+    palette: ["#2FBF8F", "#063A2A", "#CFFFE9"] ,
+    voice: ["Nothing but net. Nothing but rail.", "Swish. That is what a landing sounds like."] },
+  { id: "pandamonium", name: "PANDAMONIUM", cost: 350, kaiju: true,
+    lore: "Spins its tail so fast the whole park leans. Never spills its snack.",
+    silhouette: "panda", crest: "none", tail: "ring", eyes: 2, horns: 0,
+    palette: ["#D9552A", "#3A1408", "#FFE7D1"] ,
+    voice: ["Tail spin, trick, snack. In that order.", "The whole park leaned. I did not."] },
+  { id: "machfang", name: "MACHFANG", cost: 450, kaiju: true,
+    lore: "Keeps a fighter jet behind the halfpipe. Takes off between tricks.",
+    silhouette: "ace", crest: "spikes", tail: "blade", eyes: 2, horns: 2,
+    palette: ["#8A94A6", "#1A2230", "#FF8A1F"] ,
+    voice: ["Cleared for takeoff. Cleared for landing.", "That line had afterburners."] },
+  { id: "moonhowl", name: "MOONHOWL", cost: 550, kaiju: true,
+    lore: "Howls at the moon after every run. The moon has started howling back.",
+    silhouette: "wolf", crest: "none", tail: "bush", eyes: 2, horns: 0,
+    palette: ["#EEF4FA", "#1C2A3A", "#9EC7FF"] ,
+    voice: ["The moon heard that landing.", "One howl per line. House rules."] },
+  { id: "chromaleon", name: "CHROMALEON", cost: 700, kaiju: true,
+    lore: "Changes colour mid-trick. Judges have never agreed on what they saw.",
+    silhouette: "chameleon", crest: "sail", tail: "curl", eyes: 2, horns: 1,
+    palette: ["#7BD64A", "#123A0E", "#F6FFB0"] ,
+    voice: ["Which colour landed it? All of them.", "The judges saw six riders. All me."] },
+  { id: "triomaw", name: "TRIOMAW", cost: 950, kaiju: true,
+    lore: "Three heads, one board. They argue about every trick and land it anyway.",
+    silhouette: "hydra", crest: "none", tail: "spike", eyes: 2, horns: 1,
+    palette: ["#9C4DFF", "#25083F", "#E6D1FF"] ,
+    voice: ["Three votes. Three landings. Same trick.", "Left head called it. Middle head landed it."] },
   // Kallen's commission (2026-09-01): the VOID DRAGON. Last in the shop on
   // purpose, because he is the special one.
   { id: "voidwyrm", name: "VOIDWYRM", cost: 500,
@@ -153,6 +193,34 @@ export const MAX_LEVEL = 10;
 
 /** What the next level costs. Flat-ish so levelling never blocks unlocking. */
 export const levelCost = (currentLevel: number): number => 40 * currentLevel;
+
+/** Can this monster go up a level with these coins? The shop tile wears a
+ *  badge when it can (Andy, 2026-09-02: the mechanic was under-surfaced). */
+export const canLevelUp = (level: number, coins: number): boolean =>
+  level < MAX_LEVEL && coins >= levelCost(level);
+
+/**
+ * WHAT A LEVEL BUYS, in words the confirm sheet can say. Levels are for
+ * looks and nothing else: the maths, the coins and the tricks never change
+ * with level, and the sheet says so. Every level changes something the eye
+ * can see (the number on the star goes up), and some levels bring a perk.
+ */
+export const LEVEL_PERKS: ReadonlyArray<{ level: number; perk: string }> = [
+  { level: 2, perk: "a star sticker on its flank" },
+  { level: 3, perk: "its level number on the star" },
+  { level: 4, perk: "eyes that glow" },
+  { level: 7, perk: "gold horns" },
+  { level: 10, perk: "an aura all around it" },
+];
+
+/** What reaching `level` brings for this monster: the perk, else the number
+ *  on the star ticking up. Hornless monsters get a gold star at 7. */
+export const levelBrings = (c: Creature, level: number): string => {
+  const perk = LEVEL_PERKS.find((p) => p.level === level)?.perk;
+  if (perk === undefined) return `the number on its star goes up to ${level}`;
+  if (level === 7 && c.horns === 0) return "a gold star";
+  return perk;
+};
 
 export const creatureById = (id: string): Creature | undefined =>
   ROSTER.find((c) => c.id === id);

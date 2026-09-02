@@ -468,6 +468,9 @@ or Keep saving. Home also carries a progress bar toward the next monster.
 **Levels are visible.** LEVEL UP used to buy an invisible number, which
 teaches a child the economy cheats. Now: deck-sticker star at 2, glowing eyes
 at 4, gold horns at 7, an aura at 10, drawn by the same parametric renderer.
+Since 0.18.0 the star carries the level number from 3 up, so EVERY level
+changes something the eye can see, and the shop says when a level is in
+reach (SS9h).
 
 **He picks who rides.** SEND OUT on any owned monster; a RIDING badge in the
 collection; the home hero is the rider. Agency turns the collection into a
@@ -864,6 +867,57 @@ periodic backup rather than a menu item nobody finds.
 
 # PART V - VERIFICATION
 
+## 9h. The Kaiju six, the pilot's lid, and the spend law (0.18.0)
+
+Andy, 2026-09-02: "let's add more monsters! Kaiju-style ... we can make up
+our own so we're not copping Godzilla ... lean away from the existing
+elements and focus on different hybrids." And, in the same breath, that the
+level mechanic was under-surfaced.
+
+**Six new forms, six new acts.** Each kaiju is its own SILHOUETTE in the
+renderer (`hoops`, `ace`, `wolf`, `panda`, `hydra`, `chameleon`), not a
+palette swap of an old plan, and each performs an act on the shop's idle
+clock the way PUCKJAW takes a slapshot:
+
+| monster | cost | the act |
+| --- | --- | --- |
+| SKYHOOK (tall) | 150 | the rim swings in, the ball leaves the raised hand, arcs, drops through, the net swishes. The ball is basketball orange, `#EE6730`, seams in ink. |
+| PANDAMONIUM | 350 | a hop and the ringed tail spins two full turns behind a dashed blur |
+| MACHFANG | 450 | a fighter jet fades in around him (fuselage and wings behind, canopy over), the afterburner flares, and the whole rig climbs off the tile before rolling back |
+| MOONHOWL | 550 | the moon rises, the head tips back, three rings of howl ride out of the muzzle |
+| CHROMALEON | 700 | the hue sweeps the whole wheel and back; the tongue zaps a fly off the edge of the tile |
+| TRIOMAW | 950 | three heads on three necks snap one after another, a chomp star at each bite |
+
+SKYHOOK is the 150-coin door in, as asked; the rest are a real save. They
+sit before VOIDWYRM, who keeps the last tile because that one is Kallen's.
+Each wears a KAIJU tag in the shop. The renderer grew `arms`, three tail
+kinds (bush, ring, curl), a head GROUP so an act can move a head, and the
+hydra's two extra heads with their own necks, horns and jaws.
+
+**The pilot's lid.** Two helmets, JET ACE and NIGHT ACE (130), shape
+`pilot`: deep shell, tinted visor, mask clip, chin strap. Eleven shapes in
+two colourways each, the rack's rule kept.
+
+**The level is surfaced.** When the wallet covers a monster's next level,
+its tile says LEVEL UP ▲ on the "Level N" line, pulsing gently. The card
+carries a Level up button whether or not he can pay, because the sheet
+behind it is also where the ladder is explained: the monster drawn AT the
+level it would reach, "Level 2 brings a star sticker on its flank", the
+whole ladder with the next perk lit and the earned ones ticked, the plain
+fact that levels are for looks and the maths never changes with level, and
+the price line. Hornless monsters get a gold star at 7, having no horns to
+gild. The card closes to make room and reopens after, at the new level, so
+the change is SEEN.
+
+**THE SPEND LAW.** Any spend of coins requires confirmation. Every road that
+lowers the wallet (a monster, a helmet, a board, a level) passes through one
+gate, `ui/spend.ts`, which shows the price and what would remain, offers a
+Not-yet that costs nothing, and re-checks the wallet at the moment of truth.
+`ui/spend.test.ts` reads every source file and fails if anything else
+lowers `.coins`; the shop probe walks the gate for a level (badge, sheet,
+Not-yet spends nothing, confirm spends exactly the cost, the broke sheet
+offers only a way back).
+
 ## Unit test law
 
 Every behaviour change lands with its test in the same commit, beside the code
@@ -941,11 +995,19 @@ zero image requests.
   with `input`, `textarea` and `select` exempted first.
 - **Never redirect a build to `/dev/null`.**
 - **No em-dashes in user-facing copy.**
+- **Any spend of coins requires confirmation** (Andy, 2026-09-02). The one
+  place the wallet goes down is the confirm gate in `ui/spend.ts`;
+  `spend.test.ts` proves nothing else lowers it.
 
 ---
 
 # PART VI - THE LADDER
 
+- [x] **0.18.0 - The Kaiju six, the pilot's lid, and the spend law.** SS9h:
+      six original hybrid kaiju with bespoke acts (SKYHOOK's jump shot at
+      150, the rest above it), two pilot helmets, LEVEL UP surfaced on the
+      tile and explained on a confirm sheet, and the law that every coin
+      spend passes one gate.
 - [x] **0.17.3 - Monster Shop.** The home button says what it is: a shop, with the count.
 - [x] **0.17.2 - Get Parent App.** A button in the grown-ups' top bar, on
       the kid's app, opens a sheet with the door's link (this origin plus

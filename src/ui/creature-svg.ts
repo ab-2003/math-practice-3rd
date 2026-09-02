@@ -36,6 +36,9 @@ interface Plan {
   tailAnchor: [number, number];
   /** Bat-wing fan drawn behind the body. Dragons only. */
   wings?: string;
+  /** Arms drawn over the body in the body colour. The kaiju that hold
+   *  things (a ball, a snack) have them; everyone else is all shoulder. */
+  arms?: string[];
 }
 
 const PLANS: Record<Silhouette, Plan> = {
@@ -102,6 +105,69 @@ const PLANS: Record<Silhouette, Plan> = {
     legs: ["M64 168 L52 192 L88 192 L90 168 Z", "M116 168 L112 192 L146 192 L140 168 Z"],
     spine: [[54, 140], [58, 96], [86, 64], [124, 60]],
     tailAnchor: [50, 158],
+  },
+
+  // THE KAIJU SIX (0.18.0). Hybrids, each its own mass.
+  // SKYHOOK: the tallest thing in the shop. A narrow tower of a body on
+  // stilt legs, one arm up with the ball, the head well under the rim.
+  hoops: {
+    body: "M74 176 L70 92 L84 44 L116 34 L140 56 L138 108 L128 176 Z",
+    head: "M104 20 L154 8 L168 30 L154 50 L108 52 Z",
+    face: { x: 116, y: 22, scale: 0.9 },
+    legs: ["M78 168 L66 200 L92 200 L96 168 Z", "M114 168 L108 200 L136 200 L132 168 Z"],
+    spine: [[72, 150], [76, 90], [92, 50], [120, 36]],
+    tailAnchor: [72, 160],
+    arms: ["M136 70 L162 44 L176 52 L150 82 Z", "M76 96 L54 130 L64 138 L88 106 Z"],
+  },
+  // MACHFANG: compact and swept back, built to sit in a cockpit. Broad
+  // shoulders, short legs, a head that leans into the wind.
+  ace: {
+    body: "M40 154 L46 110 L74 86 L120 80 L154 96 L166 124 L160 154 Z",
+    head: "M136 74 L192 62 L202 88 L184 104 L138 104 Z",
+    face: { x: 150, y: 74, scale: 0.98 },
+    legs: ["M58 148 L52 180 L82 180 L84 148 Z", "M120 148 L118 180 L150 180 L146 148 Z"],
+    spine: [[50, 130], [70, 92], [112, 80], [148, 92]],
+    tailAnchor: [42, 142],
+  },
+  // MOONHOWL: four legs, a deep chest, a long muzzle raised to the sky, a
+  // ruff like a snowdrift.
+  wolf: {
+    body: "M30 150 L36 112 L62 96 L104 92 L138 100 L160 116 L164 150 Z",
+    head: "M138 72 L198 56 L210 80 L192 100 L144 104 Z",
+    face: { x: 150, y: 70, scale: 0.92 },
+    legs: ["M42 144 L34 184 L56 184 L64 144 Z", "M66 146 L62 184 L84 184 L90 146 Z", "M112 146 L108 184 L130 184 L136 146 Z", "M136 144 L136 184 L158 184 L160 144 Z"],
+    spine: [[40, 122], [66, 100], [104, 92], [136, 100]],
+    tailAnchor: [32, 140],
+  },
+  // PANDAMONIUM: round and low, all belly and tail. Short legs, big paws.
+  panda: {
+    body: "M44 160 L40 120 L62 90 L110 80 L152 94 L168 126 L164 160 Z",
+    head: "M118 66 L176 56 L188 82 L170 100 L120 100 Z",
+    face: { x: 132, y: 68, scale: 1 },
+    legs: ["M56 154 L48 184 L82 184 L84 154 Z", "M118 154 L114 184 L150 184 L148 154 Z"],
+    spine: [[46, 130], [66, 96], [110, 82], [150, 96]],
+    tailAnchor: [46, 148],
+    arms: ["M150 110 L176 122 L172 134 L146 126 Z"],
+  },
+  // TRIOMAW: a coiled base with three necks. The main head takes the
+  // serpent's place; the other two are grown in the renderer.
+  hydra: {
+    body: "M14 160 L22 126 L50 110 L86 108 L104 92 L118 108 L150 110 L176 128 L184 160 Z",
+    head: "M128 52 L184 44 L196 68 L178 84 L132 82 Z",
+    face: { x: 142, y: 56, scale: 1 },
+    legs: [],
+    spine: [[26, 134], [60, 114], [104, 104], [150, 116]],
+    tailAnchor: [16, 150],
+  },
+  // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
+  // the tail curling behind.
+  chameleon: {
+    body: "M40 152 L48 118 L80 100 L128 96 L160 108 L172 132 L168 152 Z",
+    head: "M138 78 L196 70 L206 96 L188 112 L142 112 Z",
+    face: { x: 152, y: 80, scale: 0.95 },
+    legs: ["M52 146 L36 184 L62 184 L74 146 Z", "M132 146 L128 184 L156 184 L160 146 Z"],
+    spine: [[50, 128], [80, 102], [124, 96], [156, 106]],
+    tailAnchor: [42, 140],
   },
 };
 
@@ -274,8 +340,34 @@ const tail = (c: Creature, plan: Plan): SVGElement[] => {
   if (c.tail === "club") out.push(svg("circle", { cx: tx, cy: ty - 6, r: 16, fill: accent, stroke: INK, "stroke-width": SW }));
   else if (c.tail === "blade") out.push(poly(`M${tx} ${ty + 6} L${tx - 16} ${ty - 26} L${tx + 16} ${ty - 12} Z`, accent));
   else if (c.tail === "spike") out.push(poly(`M${tx - 9} ${ty + 4} L${tx + 1} ${ty - 32} L${tx + 11} ${ty + 2} Z`, accent));
-  else out.push(svg("path", { d: `M${tx} ${ty} L${tx + 14} ${ty - 18} L${tx - 4} ${ty - 30}`, fill: "none", stroke: body, "stroke-width": 7, "stroke-linecap": "round" }));
+  else if (c.tail === "bush") {
+    // The wolf's brush: a jagged tuft, light-tipped.
+    out.push(poly(`M${tx + 8} ${ty + 10} L${tx - 14} ${ty - 2} L${tx - 8} ${ty - 22} L${tx - 20} ${ty - 34} L${tx + 2} ${ty - 40} L${tx + 14} ${ty - 22} L${tx + 18} ${ty - 6} Z`, body, SW - 1));
+    out.push(poly(`M${tx - 8} ${ty - 22} L${tx - 20} ${ty - 34} L${tx + 2} ${ty - 40} L${tx + 6} ${ty - 28} Z`, c.palette[2], 3));
+  } else if (c.tail === "curl") {
+    // The chameleon's coil: a spiral that reads from across the room.
+    out.push(svg("path", { d: `M${tx} ${ty} c-22 -18 -2 -44 18 -30 c12 10 0 26 -10 18 c-6 -6 2 -12 6 -8`, fill: "none", stroke: INK, "stroke-width": 13, "stroke-linecap": "round" }));
+    out.push(svg("path", { d: `M${tx} ${ty} c-22 -18 -2 -44 18 -30 c12 10 0 26 -10 18 c-6 -6 2 -12 6 -8`, fill: "none", stroke: accent, "stroke-width": 6, "stroke-linecap": "round" }));
+  } else out.push(svg("path", { d: `M${tx} ${ty} L${tx + 14} ${ty - 18} L${tx - 4} ${ty - 30}`, fill: "none", stroke: body, "stroke-width": 7, "stroke-linecap": "round" }));
   return out;
+};
+
+/** PANDAMONIUM's ringed tail: its own rig, so it can SPIN. Drawn as a fat
+ *  rounded wedge from the anchor up and back, banded in the light colour. */
+const ringTail = (c: Creature, plan: Plan): SVGElement => {
+  const [body, , light] = c.palette;
+  const [ax, ay] = plan.tailAnchor;
+  const g = svg("g", { class: "ringtail" });
+  g.append(svg("path", { d: `M${ax + 6} ${ay + 8} L${ax - 44} ${ay - 22} Q${ax - 60} ${ay - 34} ${ax - 50} ${ay - 52} Q${ax - 38} ${ay - 66} ${ax - 26} ${ay - 52} L${ax + 10} ${ay - 12} Z`, fill: body, stroke: INK, "stroke-width": SW, "stroke-linejoin": "round" }));
+  for (const [t, w] of [[0.25, 9], [0.55, 9], [0.85, 8]] as const) {
+    const x1 = ax + 6 - t * 50;
+    const y1 = ay + 8 - t * 30;
+    const x2 = ax + 10 - t * 36;
+    const y2 = ay - 12 - t * 40;
+    g.append(svg("line", { x1, y1, x2, y2, stroke: light, "stroke-width": w, "stroke-linecap": "round" }));
+  }
+  g.append(svg("circle", { class: "spin-blur", cx: ax - 22, cy: ay - 26, r: 40, fill: "none", stroke: light, "stroke-width": 5, "stroke-dasharray": "14 10", opacity: 0 }));
+  return g;
 };
 
 const horns = (c: Creature, plan: Plan, gold: boolean): SVGElement[] => {
@@ -370,6 +462,15 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       out.push(svg("path", { d: "M-8 -30 L8 -30 L20 12 L-20 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
       out.push(svg("rect", { x: -14, y: -12, width: 28, height: 8, fill: accent, stroke: INK, "stroke-width": 3 }));
       break;
+    case "pilot":
+      // The flight helmet: a deep shell, a tinted visor dropped over the
+      // eyes, the oxygen-mask clip at the cheek, a chin strap.
+      out.push(svg("path", { d: "M-28 6 A 28 24 0 0 1 28 6 L 28 16 L -28 16 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { class: "visor", d: "M-24 8 L26 8 L22 24 Q0 30 -20 22 Z", fill: accent, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round", opacity: 0.92 }));
+      out.push(svg("path", { d: "M-18 12 L14 12", stroke: "#FFFFFF", "stroke-width": 2.4, "stroke-linecap": "round", opacity: 0.7 }));
+      out.push(svg("rect", { x: 20, y: 18, width: 12, height: 9, rx: 3, fill: shell, stroke: INK, "stroke-width": 3 }));
+      out.push(svg("path", { d: "M-26 16 L-22 30 L20 30", fill: "none", stroke: INK, "stroke-width": 3.5, "stroke-linecap": "round" }));
+      break;
   }
   return out;
 };
@@ -403,7 +504,8 @@ export const creatureSvg = (
     root.append(svg("ellipse", { cx: 100, cy: 108, rx: 98, ry: 90, fill: "#B6FF3C", opacity: 0.11 }));
   }
 
-  root.append(...tail(c, plan));
+  if (c.tail === "ring") root.append(ringTail(c, plan));
+  else root.append(...tail(c, plan));
   if (plan.wings !== undefined) {
     const w = poly(plan.wings, c.palette[2], SW);
     w.classList.add("wings");
@@ -433,21 +535,57 @@ export const creatureSvg = (
     }
   }
 
-  root.append(poly(plan.head, body, SW + 1));
+  for (const a of plan.arms ?? []) root.append(poly(a, body, SW - 1));
+  // The head is one GROUP so an act can move it (TRIOMAW's heads snap).
+  const headG = svg("g", { class: "head head-m" });
+  headG.append(poly(plan.head, body, SW + 1));
+  // PANDAMONIUM wears the red panda's cream mask; the eyes sit on it.
+  if (c.id === "pandamonium") headG.append(poly("M132 64 L170 60 L177 82 L164 95 L134 93 Z", c.palette[2], 3));
   if (lvl >= 2) {
-    // The deck-sticker star, planted on the flank.
+    // The deck-sticker star, planted on the flank. From level 3 it carries
+    // the level number, so every level-up changes something the eye can
+    // see. Gold at 7 for the hornless, who have no horns to gild.
     const sx = plan.spine[1]?.[0] ?? 70;
     const sy = (plan.spine[1]?.[1] ?? 110) + 34;
+    const r0 = lvl >= 3 ? 16 : 13;
     const pts = Array.from({ length: 10 }, (_, i) => {
-      const r = i % 2 === 0 ? 13 : 5.5;
+      const r = i % 2 === 0 ? r0 : r0 * 0.42;
       const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
       return `${sx + Math.cos(a) * r},${sy + Math.sin(a) * r}`;
     }).join(" ");
-    root.append(svg("polygon", { points: pts, fill: c.palette[2], stroke: INK, "stroke-width": 3 }));
+    const star = svg("g", { class: "lvl-star" });
+    star.append(svg("polygon", { points: pts, fill: lvl >= 7 && c.horns === 0 ? "#FFD84A" : c.palette[2], stroke: INK, "stroke-width": 3 }));
+    if (lvl >= 3) star.append(svg("text", { x: sx, y: sy + 4.5, "text-anchor": "middle", "font-size": 13, "font-weight": 900, fill: INK, class: "lvl-num" }, String(lvl)));
+    root.append(star);
   }
 
-  root.append(...horns(c, plan, lvl >= 7));
-  root.append(...face(c, plan, lvl >= 4));
+  headG.append(...horns(c, plan, lvl >= 7));
+  headG.append(...face(c, plan, lvl >= 4));
+  root.append(headG);
+
+  // TRIOMAW grows two more heads off the coil, each with its own neck,
+  // horn and jaw, drawn behind the main one. Three groups, three snaps.
+  if (c.id === "triomaw") {
+    const extra = (cls: string, dx: number, dy: number, sc: number, neck: string): void => {
+      const outer = svg("g", { transform: `translate(${dx} ${dy}) scale(${sc})` });
+      const g = svg("g", { class: `head ${cls}` });
+      g.append(svg("path", { d: neck, fill: "none", stroke: INK, "stroke-width": 30, "stroke-linecap": "round" }));
+      g.append(svg("path", { d: neck, fill: "none", stroke: body, "stroke-width": 18, "stroke-linecap": "round" }));
+      g.append(poly(plan.head, body, SW + 1));
+      g.append(...horns(c, plan, lvl >= 7));
+      g.append(...face(c, plan, lvl >= 4));
+      outer.append(g);
+      root.insertBefore(outer, headG);
+    };
+    extra("head-l", -64, 16, 0.8, "M150 100 Q168 130 190 150");
+    extra("head-t", -22, -36, 0.85, "M150 100 Q160 140 170 190");
+    const neckM = "M150 92 Q140 120 120 128";
+    headG.prepend(svg("path", { d: neckM, fill: "none", stroke: body, "stroke-width": 18, "stroke-linecap": "round" }));
+    headG.prepend(svg("path", { d: neckM, fill: "none", stroke: INK, "stroke-width": 30, "stroke-linecap": "round" }));
+    for (const [cx, cy, cls] of [[124, 78, "chomp chomp-l"], [206, 82, "chomp chomp-m"], [150, 36, "chomp chomp-t"]] as const) {
+      root.append(svg("path", { class: cls, d: `M${cx} ${cy - 9} l3 6 l7 -1 l-4 5 l4 6 l-7 -2 l-3 6 l-3 -6 l-7 2 l4 -6 l-4 -5 l7 1 z`, fill: "#FFE14D", stroke: INK, "stroke-width": 2, opacity: 0 }));
+    }
+  }
 
   // VOIDWYRM performs on his own patch of COSMOS: a deep-space halo that
   // fades in for the act, stars twinkling in alternation, one comet.
@@ -723,6 +861,73 @@ export const creatureSvg = (
     const dash = svg("g", { class: "dash" });
     dash.append(svg("path", { d: "M52 110 L10 104 M58 130 L4 128 M52 148 L14 152", fill: "none", stroke: "#FF3D8B", "stroke-width": 5, "stroke-linecap": "round" }));
     root.append(dash);
+  }
+
+  // SKYHOOK shoots hoops: the rim swings in at the top right, the ball
+  // leaves the raised hand, arcs, drops through, and the net swishes.
+  // The ball is BASKETBALL ORANGE (Andy), seams in ink.
+  if (opts.idle !== undefined && c.id === "skyhook") {
+    const rig = svg("g", { class: "hoops-rig" });
+    const hoop = svg("g", { class: "hoop" });
+    hoop.append(svg("rect", { x: 206, y: 2, width: 8, height: 46, rx: 2, fill: "#EDF2F7", stroke: INK, "stroke-width": 3.5 }));
+    hoop.append(svg("rect", { x: 182, y: 12, width: 24, height: 18, rx: 2, fill: "none", stroke: "#FF3D3D", "stroke-width": 3 }));
+    hoop.append(svg("path", { d: "M172 32 L208 32", stroke: "#FF6A00", "stroke-width": 5, "stroke-linecap": "round" }));
+    const net = svg("path", { class: "net", d: "M174 34 L178 56 L202 56 L206 34 M182 34 L184 56 M190 34 L190 56 M198 34 L196 56 M176 44 L204 44", fill: "none", stroke: "#FFFFFF", "stroke-width": 2, "stroke-linecap": "round", opacity: 0.9 });
+    hoop.append(net);
+    rig.append(hoop);
+    const ball = svg("g", { class: "ball" });
+    ball.append(svg("circle", { cx: 168, cy: 44, r: 12, fill: "#EE6730", stroke: INK, "stroke-width": 3 }));
+    ball.append(svg("path", { d: "M156 44 L180 44 M168 32 L168 56 M159 36 Q168 44 159 52 M177 36 Q168 44 177 52", fill: "none", stroke: INK, "stroke-width": 2 }));
+    rig.append(ball);
+    root.append(rig);
+  }
+
+  // MACHFANG's jet: fuselage and wings behind him, the canopy over him,
+  // afterburner lit; then the whole creature (jet and all) rockets off the
+  // tile and comes back for another go. The takeoff is the root's idle.
+  if (opts.idle !== undefined && c.id === "machfang") {
+    const back = svg("g", { class: "jet jet-back" });
+    back.append(svg("path", { d: "M8 150 L60 128 L196 124 L232 140 L206 160 L40 164 Z", fill: "#3A4656", stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+    back.append(svg("path", { d: "M12 134 L2 88 L26 92 L54 130 Z", fill: "#55657A", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+    back.append(svg("path", { d: "M92 150 L30 178 L60 178 L130 154 Z", fill: "#55657A", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+    back.append(svg("path", { d: "M176 128 L226 138", stroke: "#FF8A1F", "stroke-width": 3, "stroke-linecap": "round" }));
+    const burner = svg("g", { class: "burner" });
+    burner.append(svg("path", { d: "M10 148 L-46 152 L-20 158 L-52 164 L8 162 Z", fill: "#FF8A1F", stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+    burner.append(svg("path", { d: "M8 152 L-26 155 L-14 158 L-30 161 L6 159 Z", fill: "#FFE14D" }));
+    back.append(burner);
+    root.prepend(back);
+    const front = svg("g", { class: "jet jet-front" });
+    front.append(svg("path", { d: "M52 112 Q64 78 120 74 Q160 74 166 108 L166 126 L52 126 Z", fill: "#9EE8FF", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round", opacity: 0.55 }));
+    front.append(svg("path", { d: "M64 108 Q80 88 118 84", fill: "none", stroke: "#FFFFFF", "stroke-width": 3, "stroke-linecap": "round", opacity: 0.8 }));
+    root.append(front);
+  }
+
+  // MOONHOWL: the moon rises, the head tips back (the root's idle), and the
+  // howl rings ride out of the muzzle one after another.
+  if (opts.idle !== undefined && c.id === "moonhowl") {
+    const rig = svg("g", { class: "moonrig" });
+    const moon = svg("g", { class: "moon" });
+    moon.append(svg("circle", { cx: 36, cy: 34, r: 34, fill: "#9EC7FF", opacity: 0.22 }));
+    moon.append(svg("circle", { cx: 36, cy: 34, r: 22, fill: "#FFF8CC", stroke: INK, "stroke-width": 4 }));
+    moon.append(svg("circle", { cx: 28, cy: 28, r: 4, fill: "#E6E0B8" }));
+    moon.append(svg("circle", { cx: 44, cy: 40, r: 3, fill: "#E6E0B8" }));
+    rig.append(moon);
+    for (const [k, r] of [[1, 12], [2, 22], [3, 32]] as const) {
+      rig.append(svg("path", { class: `howl howl-${k}`, d: `M${206 - r * 0.3} ${58 - r} A ${r} ${r} 0 0 1 ${206 - r * 0.3} ${58 + r}`, fill: "none", stroke: "#9EC7FF", "stroke-width": 4, "stroke-linecap": "round", opacity: 0 }));
+    }
+    root.append(rig);
+  }
+
+  // CHROMALEON: the colour shift is the root's idle (a hue sweep); the
+  // tongue zaps a fly off the edge of the tile and the fly is gone.
+  if (opts.idle !== undefined && c.id === "chromaleon") {
+    const rig = svg("g", { class: "tonguerig" });
+    const fly = svg("g", { class: "fly" });
+    fly.append(svg("ellipse", { cx: 226, cy: 56, rx: 5, ry: 3.5, fill: INK }));
+    fly.append(svg("path", { d: "M222 52 l-4 -6 M230 52 l4 -6", fill: "none", stroke: INK, "stroke-width": 2, "stroke-linecap": "round" }));
+    rig.append(fly);
+    rig.append(svg("path", { class: "tongue", d: "M198 96 L224 58", fill: "none", stroke: "#FF3D8B", "stroke-width": 6, "stroke-linecap": "round" }));
+    root.append(rig);
   }
 
   if (opts.helmet) {

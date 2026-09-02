@@ -1,5 +1,5 @@
 import { boardFor, BOARDS, ownedBoards, PLAIN_BOARD, type Board } from "../core/boards";
-import { cheapestLocked, creatureById, levelCost, MAX_LEVEL, ROSTER, type Creature } from "../core/creatures";
+import { canLevelUp, cheapestLocked, creatureById, levelBrings, levelCost, MAX_LEVEL, ROSTER, type Creature } from "../core/creatures";
 import { HELMETS, helmetById, type Helmet } from "../core/gear";
 import { boardSvg } from "./board-svg";
 import { standardProgress } from "../core/standards";
@@ -11,6 +11,7 @@ import { doseDone, speedAttemptsToday, speedKey } from "./day";
 export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
+import { confirmSpend } from "./spend";
 
 /** Who rides: his explicit pick, else the newest owned, else the target. */
 export const resolveRider = (app: App): Creature => {
@@ -310,9 +311,16 @@ export const collectionScreen = (app: App): HTMLElement => {
     const idle = ((tileIndex++) * 0.73) % 5.2;
     tile.append(creatureSvg(c, { level, idle, ...(owned && helm ? { helmet: helm } : {}) }));
     tile.append(el("div", { class: "mon-name", text: owned ? (app.meta.names[c.id] ?? c.name) : c.name }));
-    tile.append(owned
-      ? el("div", { class: "mon-sub", text: `Level ${level}` })
-      : el("div", { class: `price-chip${app.meta.coins >= c.cost ? " can" : ""}`, text: `◆ ${c.cost}` }));
+    if (owned) {
+      // THE LEVEL IS SURFACED (Andy, 2026-09-02): when the wallet covers the
+      // next level the tile says so, right on the "Level N" line.
+      const line = el("div", { class: "mon-sub", text: `Level ${level}` });
+      if (canLevelUp(level, app.meta.coins)) line.append(el("span", { class: "lvl-ready", "data-probe": "level-ready", text: "LEVEL UP ▲" }));
+      tile.append(line);
+    } else {
+      tile.append(el("div", { class: `price-chip${app.meta.coins >= c.cost ? " can" : ""}`, text: `◆ ${c.cost}` }));
+    }
+    if (c.kaiju === true) tile.append(el("div", { class: "kaiju-tag", "data-probe": "kaiju-tag", text: "KAIJU" }));
     if (owned && resolveRider(app).id === c.id) {
       tile.append(el("div", { class: "riding-badge", text: "RIDING" }));
     }
@@ -388,18 +396,9 @@ const boardSheet = (app: App, b: Board): void => {
     sheet({ title: b.name, body, cancel: "Close" });
     return;
   }
-  const affordable = app.meta.coins >= b.cost;
-  body.append(el("p", { class: "note", text: affordable
-    ? `${b.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - b.cost} left.`
-    : `${b.cost} coins. You have ${app.meta.coins}, so keep landing tricks.` }));
-  sheet({
-    title: affordable ? `Buy ${b.name}?` : b.name,
-    body,
-    cancel: "Not yet",
-    ...(affordable ? {
-      confirm: `Buy ◆${b.cost}`,
-      onConfirm: (): void => {
-        app.meta.coins -= b.cost;
+  confirmSpend(app, {
+    what: b.name, verb: "Buy", cost: b.cost, body,
+    onSpent: (): void => {
         app.meta.boardsOwned.push(b.id);
         sfx.coin();
         void app.save().then(() => {
@@ -422,8 +421,7 @@ const boardSheet = (app: App, b: Board): void => {
             onCancel: () => app.refresh(),
           });
         });
-      },
-    } : {}),
+    },
   });
 };
 
@@ -435,22 +433,13 @@ const helmSheet = (app: App, h: Helmet): void => {
     sheet({ title: h.name, body: "Already in the locker. Put it on from any monster's card.", confirm: "OK" });
     return;
   }
-  const affordable = app.meta.coins >= h.cost;
-  sheet({
-    title: affordable ? `Buy ${h.name}?` : h.name,
-    body: affordable
-      ? `${h.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - h.cost} left.`
-      : `${h.cost} coins. You have ${app.meta.coins}, so keep landing tricks.`,
-    cancel: "Not yet",
-    ...(affordable ? {
-      confirm: `Buy ◆${h.cost}`,
-      onConfirm: (): void => {
-        app.meta.coins -= h.cost;
-        app.meta.helmetsOwned.push(h.id);
-        sfx.coin();
-        void app.save().then(() => app.refresh());
-      },
-    } : {}),
+  confirmSpend(app, {
+    what: h.name, verb: "Buy", cost: h.cost, body,
+    onSpent: (): void => {
+      app.meta.helmetsOwned.push(h.id);
+      sfx.coin();
+      void app.save().then(() => app.refresh());
+    },
   });
 };
 
@@ -458,29 +447,55 @@ const helmSheet = (app: App, h: Helmet): void => {
 const buySheet = (app: App, id: string): void => {
   const c = creatureById(id);
   if (!c) return;
-  const affordable = app.meta.coins >= c.cost;
-  const body = el("div", { class: "reveal" });
+  const body = el("div", {});
   // On a card the monster performs on a FAST loop: act, breathe for a couple
   // of seconds, act again. The shop saunters; the spotlight does not.
   body.append(creatureSvg(c, { idle: 0.3, fastIdle: true }));
   body.append(el("p", { class: "mon-lore", text: c.lore }));
-  body.append(el("p", { class: "note", text: affordable
-    ? `${c.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - c.cost} left.`
-    : `${c.cost} coins. You have ${app.meta.coins}, so keep landing tricks.` }));
-  sheet({
-    title: affordable ? `Buy ${c.name}?` : c.name,
-    body,
-    cancel: "Not yet",
-    ...(affordable ? {
-      confirm: `Buy ◆${c.cost}`,
-      onConfirm: (): void => {
-        app.meta.coins -= c.cost;
-        app.meta.owned.push(c.id);
-        app.meta.levels[c.id] = 1;
-        sfx.roar();
-        void app.save().then(() => revealSheet(app, c.id));
-      },
-    } : {}),
+  confirmSpend(app, {
+    what: c.name, verb: "Buy", cost: c.cost, body,
+    onSpent: (): void => {
+      app.meta.owned.push(c.id);
+      app.meta.levels[c.id] = 1;
+      sfx.roar();
+      void app.save().then(() => revealSheet(app, c.id));
+    },
+  });
+};
+
+/**
+ * LEVEL UP goes through the same gate as a purchase (Andy, 2026-09-02: any
+ * spend of coins requires confirmation) and SAYS WHY: the monster drawn at
+ * the level it would reach, the ladder of what each level brings with the
+ * next one lit, and the plain fact that levels are for looks only.
+ */
+const levelSheet = (app: App, c: Creature): void => {
+  const level = app.meta.levels[c.id] ?? 1;
+  if (level >= MAX_LEVEL) return;
+  const next = level + 1;
+  const cost = levelCost(level);
+  const helm = app.meta.gear[c.id] !== undefined ? helmetById(app.meta.gear[c.id]!) : undefined;
+  const body = el("div", { "data-probe": "level-sheet" });
+  body.append(creatureSvg(c, { level: next, idle: 0.3, fastIdle: true, ...(helm ? { helmet: helm } : {}) }));
+  body.append(el("div", { class: "mon-sub", text: `Level ${level} → Level ${next} of ${MAX_LEVEL}` }));
+  body.append(el("p", { class: "mon-lore", "data-probe": "level-why", text: `Level ${next} brings ${levelBrings(c, next)}.` }));
+  const ladder = el("ul", { class: "perk-list", "data-probe": "perk-list" });
+  for (const lv of [2, 3, 4, 7, 10]) {
+    const cls = lv === next ? "next" : lv <= level ? "had" : "";
+    ladder.append(el("li", { class: cls, text: `Level ${lv}: ${levelBrings(c, lv)}${lv <= level ? " ✓" : ""}` }));
+  }
+  body.append(ladder);
+  body.append(el("p", { class: "note", text: "Levels are for looks. The tricks, the coins and the maths never change with level." }));
+  // The card closed to make room; either road leads back to it, and after a
+  // level-up the card reopens at the new level so the change is SEEN.
+  confirmSpend(app, {
+    what: app.meta.names[c.id] ?? c.name, verb: "Level up", cost, body, probe: "level-confirm",
+    onCancel: () => monsterSheet(app, c.id),
+    onSpent: (): void => {
+      app.meta.levels[c.id] = next;
+      sfx.coin();
+      void app.save().then(() => { app.refresh(); monsterSheet(app, c.id); });
+    },
   });
 };
 
@@ -511,7 +526,18 @@ const monsterSheet = (app: App, id: string): void => {
   let cardBoard = boardSvg(boardFor(app.meta.boardOf, c.id, app.meta.boardsOwned), { cls: "card-board" });
   body.append(cardBoard);
   body.append(el("p", { class: "mon-lore", text: c.lore }));
-  body.append(el("div", { class: "mon-sub", text: `Level ${level} of ${MAX_LEVEL}` }));
+  // The level row: where it stands, what the next one costs, and the door
+  // to the confirm sheet. The button is there whether or not he can pay,
+  // because the sheet is also where the ladder is explained.
+  const lvlRow = el("div", { class: "stepper", style: "justify-content:center;flex-wrap:wrap;gap:8px" });
+  lvlRow.append(el("span", { class: "mon-sub", "data-probe": "level-line", text: level >= MAX_LEVEL ? `Level ${level} of ${MAX_LEVEL}. Maxed out!` : `Level ${level} of ${MAX_LEVEL}` }));
+  if (level < MAX_LEVEL) {
+    const ready = canLevelUp(level, app.meta.coins);
+    const up = el("button", { type: "button", class: `btn small${ready ? " go" : " ghost"}`, "data-probe": "level-up" }, el("span", { text: `Level up ◆${cost}` }));
+    on(up, "click", () => { card.close(); levelSheet(app, c); });
+    lvlRow.append(up);
+  }
+  body.append(lvlRow);
 
   // The gear row: NONE plus everything in the locker. Updates in place so
   // he sees the helmet land on the monster the moment he taps it.
@@ -600,23 +626,7 @@ const monsterSheet = (app: App, id: string): void => {
   });
   body.append(rename);
 
-  sheet({
-    title: app.meta.names[c.id] ?? c.name,
-    body,
-    cancel: "Close",
-    ...(level < MAX_LEVEL && app.meta.coins >= cost
-      ? {
-          confirm: `Level up ◆${cost}`,
-          onConfirm: (): void => {
-            app.meta.coins -= cost;
-            app.meta.levels[c.id] = level + 1;
-            sfx.coin();
-            void app.save();
-            app.refresh();
-          },
-        }
-      : {}),
-  });
+  const card = sheet({ title: app.meta.names[c.id] ?? c.name, body, cancel: "Close" });
 };
 
 /** Shown on the home screen inside the dashboard: where he stands on the SOLs. */

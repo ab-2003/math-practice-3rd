@@ -1,29 +1,67 @@
 /**
- * PROBE: SHOP. Twenty-one monsters, their forms and acts, the rack, the
- * confirms, the peek, gear, send out, and the off-stage pause.
+ * PROBE: SHOP. Twenty-seven monsters, their forms and acts, the rack, the
+ * confirms, the peek, gear, send out, the level gate, and the off-stage pause.
  */
 import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
 
 const { page, step, must, done, browser } = await suite("shop");
 
-await step("the shop shows all twenty-one monsters by name, no mysteries", async () => {
+/** Escape closes the top sheet; a cancelled level sheet reopens the card,
+ *  so keep going until the scrim is gone. */
+const escapeAll = async (p) => {
+  for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
+};
+
+await step("the shop shows all twenty-seven monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 21, "the roster is not twenty-one");
+  must((await page.$$(".mon")).length === 27, "the roster is not twenty-seven");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
   must(text.includes("CINDERWYRM") && text.includes("VOIDWYRM"), "the dragons are not on display");
   must(await page.evaluate(() => document.querySelector(".roster")?.lastElementChild?.getAttribute("data-mon")) === "voidwyrm",
     "VOIDWYRM is not the final monster in the shop");
   must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
-  must((await page.$$(".helm-tile")).length === 20, "the gear rack is not twenty helmets");
+  must((await page.$$(".helm-tile")).length === 22, "the gear rack is not twenty-two helmets");
+  // THE KAIJU SIX wear their tag, SKYHOOK is the 150 door, the pilot's lid is on the rack.
+  must((await page.$$('[data-probe="kaiju-tag"]')).length === 6, "the kaiju six are not tagged");
+  must(((await page.textContent('[data-mon="skyhook"]')) ?? "").includes("150"), "SKYHOOK is not 150 coins");
+  must(await page.$('[data-helm="pilot-jet"] .visor') !== null, "the pilot helmet has no visor");
+});
+
+await step("the kaiju six each perform their own act, and the ball is basketball orange", async () => {
+  for (const [mon, prop] of [
+    ["skyhook", ".hoops-rig .ball"], ["skyhook", ".hoops-rig .net"], ["machfang", ".jet-back .burner"], ["machfang", ".jet-front"],
+    ["moonhowl", ".moonrig .moon"], ["moonhowl", ".howl-3"], ["pandamonium", ".ringtail .spin-blur"],
+    ["triomaw", ".head-l"], ["triomaw", ".head-t"], ["triomaw", ".chomp-m"], ["chromaleon", ".tonguerig .tongue"], ["chromaleon", ".fly"],
+  ]) {
+    must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
+  }
+  must(await page.$eval('[data-mon="skyhook"] .ball circle', (e) => e.getAttribute("fill")) === "#EE6730", "the basketball is not basketball orange");
+  must((await page.$$('[data-mon="triomaw"] .head')).length === 3, "TRIOMAW does not have three heads");
+  // The acts are real animations on the idle clock, not static props.
+  const names = await page.evaluate(() => ({
+    hoops: getComputedStyle(document.querySelector('[data-mon="skyhook"] .creature')).animationName,
+    ball: getComputedStyle(document.querySelector('[data-mon="skyhook"] .ball')).animationName,
+    jet: getComputedStyle(document.querySelector('[data-mon="machfang"] .creature')).animationName,
+    tail: getComputedStyle(document.querySelector('[data-mon="pandamonium"] .ringtail')).animationName,
+    hue: getComputedStyle(document.querySelector('[data-mon="chromaleon"] .creature')).animationName,
+    howl: getComputedStyle(document.querySelector('[data-mon="moonhowl"] .creature')).animationName,
+    snap: getComputedStyle(document.querySelector('[data-mon="triomaw"] .head-l')).animationName,
+  }));
+  must(names.hoops === "idle-jumpshot" && names.ball === "ball-arc", `SKYHOOK's act reads ${names.hoops}/${names.ball}`);
+  must(names.jet === "idle-takeoff", `MACHFANG's act reads ${names.jet}`);
+  must(names.tail === "tail-spin", `PANDAMONIUM's tail reads ${names.tail}`);
+  must(names.hue === "idle-shift", `CHROMALEON's act reads ${names.hue}`);
+  must(names.howl === "idle-howl", `MOONHOWL's act reads ${names.howl}`);
+  must(names.snap === "snap-l", `TRIOMAW's heads read ${names.snap}`);
 });
 
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 21, `${delays.length} idle monsters, wanted 21`);
+  must(delays.length === 27, `${delays.length} idle monsters, wanted 27`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -44,13 +82,13 @@ await step("the shop breathes, staggered, and every bespoke act is present", asy
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 21.
+  // colours at tile size. Body plus wings must be unique across all 27.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 21, "could not read the forms");
+  must(forms.length === 27, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
@@ -77,7 +115,7 @@ await step("a TOUCH on the monster art opens its card (the phone scar)", async (
 await step("with no monsters yet, the racks are on display but shut", async () => {
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "the fresh profile owns something");
   must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");
-  must((await page.$$(".helm-tile[disabled]")).length === 20, "a helmet is tappable before the first monster");
+  must((await page.$$(".helm-tile[disabled]")).length === 22, "a helmet is tappable before the first monster");
   const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
   must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
   // THE BOARD RACK: nine decks, plain always owned, shut until the first monster.
@@ -132,6 +170,65 @@ await step("send out picks who rides, and the collection says so", async () => {
   while (await page.$(".scrim") !== null) { await page.keyboard.press("Escape"); await page.waitForTimeout(200); }
   const badges = await page.$$(".riding-badge");
   must(badges.length === 1, `${badges.length} RIDING badges, wanted exactly 1`);
+});
+
+await step("LEVEL UP is surfaced on the tile, explained on its sheet, and gated like any spend", async () => {
+  // Coins for exactly one level of grindjaw (40) and not voltmaw's second (80).
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.owned = ["grindjaw", "voltmaw"]; m.levels = { grindjaw: 1, voltmaw: 2 }; m.coins = 40;
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal;
+    window.__app.go("collection");
+  });
+  await page.waitForSelector(".roster");
+  must(await page.$('[data-mon="grindjaw"] [data-probe="level-ready"]') !== null, "the affordable level-up wears no badge");
+  must(await page.$('[data-mon="voltmaw"] [data-probe="level-ready"]') === null, "an unaffordable level-up wears a badge");
+  must(await page.evaluate(() => getComputedStyle(document.querySelector('[data-probe="level-ready"]')).animationName) === "lvl-pulse", "the badge does not pulse");
+  must(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-probe="level-ready"]')).fontSize)) >= 13, "the badge is below the 13px floor");
+  // The card has the door; the door opens the sheet; the sheet says why.
+  await page.click('[data-mon="grindjaw"]');
+  await page.waitForSelector('[data-probe="level-up"]', { timeout: 4000 });
+  must(((await page.textContent('[data-probe="level-line"]')) ?? "").includes("Level 1 of 10"), "the card does not say the level");
+  must(await page.$(".sheet .row .btn.go") === null, "the card itself still spends coins");
+  await page.click('[data-probe="level-up"]');
+  await page.waitForSelector('[data-probe="level-confirm"]', { timeout: 4000 });
+  must((await page.$$(".sheet")).length === 1, "the card is still open under the level sheet");
+  const why = (await page.textContent('[data-probe="level-confirm"]')) ?? "";
+  must(why.includes("Level 2 brings a star sticker"), `the sheet does not say what level 2 brings: ${why.slice(0, 80)}`);
+  must(await page.$('[data-probe="perk-list"] li.next') !== null, "the ladder does not light the next perk");
+  must(why.includes("for looks"), "the sheet does not say levels are cosmetic");
+  must(why.includes("would have 0 left"), "the sheet does not say what remains");
+  must(await page.$('[data-probe="level-sheet"] .lvl-star') !== null, "the sheet does not draw the monster at the next level");
+  // Not yet spends nothing. Confirm spends exactly the cost.
+  await page.click(".sheet .btn.ghost");
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => window.__app.meta().coins) === 40, "Not-yet took coins");
+  must(await page.evaluate(() => window.__app.meta().levels.grindjaw) === 1, "Not-yet levelled");
+  // Not yet lands back on the card, not on the roster.
+  await page.waitForSelector('[data-probe="level-up"]', { timeout: 4000 });
+  await page.click('[data-probe="level-up"]');
+  await page.waitForSelector('[data-probe="level-confirm"]', { timeout: 4000 });
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  const m = await page.evaluate(() => window.__app.meta());
+  must(m.levels.grindjaw === 2, `level went to ${m.levels.grindjaw}, wanted 2`);
+  must(m.coins === 0, `coins went to ${m.coins}, wanted 0`);
+  // The card reopens at the new level, star and all, so the change is seen.
+  await page.waitForSelector('[data-probe="level-line"]', { timeout: 4000 });
+  must(((await page.textContent('[data-probe="level-line"]')) ?? "").includes("Level 2 of 10"), "the card did not come back at level 2");
+  must(await page.$(".sheet .creature .lvl-star") !== null, "the card does not draw the new star");
+  await escapeAll(page);
+  await page.waitForSelector(".roster");
+  must(await page.$('[data-probe="level-ready"]') === null, "a badge survives an empty wallet");
+  must(await page.$('[data-mon="grindjaw"] .lvl-star') !== null, "level 2 did not put the star on the tile");
+  // Broke: the door still opens, explains, and offers only a way back.
+  await page.click('[data-mon="grindjaw"]');
+  await page.waitForSelector('[data-probe="level-up"]', { timeout: 4000 });
+  await page.click('[data-probe="level-up"]');
+  await page.waitForSelector('[data-probe="level-sheet"]', { timeout: 4000 });
+  must(await page.$(".sheet .row .btn.go") === null, "a broke rider is offered a confirm");
+  must(((await page.textContent('[data-probe="level-confirm"]')) ?? "").includes("keep landing tricks"), "the broke sheet does not point at the run");
+  await escapeAll(page);
 });
 
 await step("before today's run the shop is ONE peek: one visit, one minute, with a bar that shrinks", async () => {

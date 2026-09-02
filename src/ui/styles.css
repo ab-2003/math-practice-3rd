@@ -599,6 +599,26 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   color: var(--dim); border: 3px solid var(--line); border-radius: 999px; padding: 2px 12px;
 }
 .price-chip.can { color: var(--ink); background: var(--warm); border-color: var(--ink); }
+/* LEVEL UP is affordable: the tile says so, with a small pulse, so the
+   mechanic is never a secret behind a tap (Andy, 2026-09-02). */
+.lvl-ready {
+  display: inline-block; margin-left: 6px; font-size: 13px; font-weight: 900; letter-spacing: 0.05em;
+  color: var(--ink); background: var(--warm); border: 3px solid var(--ink); border-radius: 999px;
+  padding: 0 8px; line-height: 18px; vertical-align: middle; animation: lvl-pulse 1.7s ease-in-out infinite;
+}
+@keyframes lvl-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 225, 77, 0); }
+  50% { transform: scale(1.07); box-shadow: 0 0 0 5px rgba(255, 225, 77, 0.35); }
+}
+.kaiju-tag {
+  display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 900; letter-spacing: 0.1em;
+  color: var(--hot); border: 3px solid var(--hot); border-radius: 999px; padding: 0 8px; line-height: 18px;
+}
+/* The level ladder on the confirm sheet: what each level brings. */
+.perk-list { list-style: none; padding: 0; margin: 10px 0 4px; display: grid; gap: 4px; text-align: left; }
+.perk-list li { font-size: 14px; font-weight: 700; color: var(--dim); text-transform: none; padding: 4px 10px; border-radius: 10px; }
+.perk-list li.next { color: var(--ink); background: var(--warm); border: 3px solid var(--ink); font-weight: 900; }
+.perk-list li.had { opacity: 0.65; }
 .gear-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
 .helm-tile {
   font-family: var(--display); background: var(--panel); border: 5px solid var(--ink);
@@ -952,6 +972,122 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @media (prefers-reduced-motion: reduce) {
   .rockfall, .srain, .sbolt, .deckprop, .waverig, .scrap-1, .scrap-2, .scrap-gear,
   .scorchrig, .riftrig, .dust-1, .dust-2, .dust-3 { opacity: 0 !important; }
+}
+
+/* ---------- THE KAIJU SIX perform (0.18.0) ---------- */
+/* SKYHOOK: the jump shot. He dips, rises on his toes, and the ball arcs
+   from the hand into the rim; the net swishes as it drops through. */
+.creature.idle-hoops { animation-name: idle-jumpshot; }
+@keyframes idle-jumpshot {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: translateY(10px) scaleY(0.94); }
+  9% { transform: translateY(-16px); }
+  14% { transform: translateY(-6px); }
+  18% { transform: translateY(2px); }
+}
+.hoops-rig .hoop { opacity: 0; animation: hoop-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes hoop-in { 0%, 2%, 26%, 100% { opacity: 0; } 5% { opacity: 1; } 22% { opacity: 1; } }
+.hoops-rig .ball { opacity: 0; animation: ball-arc var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes ball-arc {
+  0%, 5% { opacity: 0; transform: translate(0, 0); }
+  6% { opacity: 1; transform: translate(0, 0); }
+  9% { opacity: 1; transform: translate(0, -10px); }
+  12% { transform: translate(12px, -46px); }
+  15% { transform: translate(24px, -30px); }
+  17% { transform: translate(26px, -10px); }
+  19% { opacity: 1; transform: translate(26px, 14px); }
+  21%, 100% { opacity: 0; transform: translate(26px, 30px); }
+}
+.hoops-rig .net { transform-box: fill-box; transform-origin: 50% 0; animation: net-swish var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes net-swish { 0%, 17%, 22%, 100% { transform: none; } 18.5% { transform: scaleY(1.25) scaleX(0.92); } 20% { transform: scaleY(0.94); } }
+
+/* MACHFANG: the jet fades in around him, the burner lights, and the whole
+   rig climbs off the top right of the tile before rolling back for more. */
+.creature.idle-ace { animation-name: idle-takeoff; }
+@keyframes idle-takeoff {
+  0%, 4% { transform: none; opacity: 1; }
+  7% { transform: translate(-6px, 4px) rotate(2deg); }
+  10% { transform: translate(20px, -6px) rotate(-8deg); opacity: 1; }
+  16% { transform: translate(130px, -110px) rotate(-26deg) scale(0.7); opacity: 1; }
+  17% { opacity: 0; }
+  19% { transform: translate(-40px, 20px) rotate(0) scale(0.9); opacity: 0; }
+  22%, 100% { transform: none; opacity: 1; }
+}
+.jet { opacity: 0; animation: jet-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes jet-in { 0%, 2%, 19%, 100% { opacity: 0; } 4% { opacity: 1; } 17% { opacity: 1; } }
+.burner { transform-box: fill-box; transform-origin: 100% 50%; animation: burner-flare var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes burner-flare {
+  0%, 6%, 100% { transform: scaleX(0.3); }
+  8% { transform: scaleX(1); }
+  10% { transform: scaleX(0.8); }
+  12% { transform: scaleX(1.3); }
+  14% { transform: scaleX(1); }
+  16% { transform: scaleX(1.4); }
+  18% { transform: scaleX(0.3); }
+}
+
+/* MOONHOWL: the moon rises, he tips his head back, three rings of howl. */
+.creature.idle-wolf { animation-name: idle-howl; }
+@keyframes idle-howl {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: rotate(2deg) translateY(2px); }
+  9% { transform: rotate(-10deg) translateY(-4px); }
+  17% { transform: rotate(-10deg) translateY(-4px); }
+}
+.moonrig .moon { opacity: 0; animation: moon-rise var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes moon-rise { 0%, 2% { opacity: 0; transform: translateY(16px); } 6% { opacity: 1; transform: translateY(0); } 20% { opacity: 1; transform: translateY(0); } 24%, 100% { opacity: 0; transform: translateY(0); } }
+.howl { transform-box: fill-box; transform-origin: 0% 50%; animation: howl-ring var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.howl-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.18s); }
+.howl-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.36s); }
+@keyframes howl-ring { 0%, 9% { opacity: 0; transform: scale(0.6); } 10.5% { opacity: 1; } 16% { opacity: 0; transform: scale(1.3); } 100% { opacity: 0; } }
+
+/* PANDAMONIUM: a hop, and the ringed tail spins two full turns. */
+.creature.idle-panda { animation-name: idle-twirl; }
+@keyframes idle-twirl {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateY(6px) scaleY(0.94); }
+  10% { transform: translateY(-10px) rotate(-3deg); }
+  15% { transform: translateY(-6px) rotate(3deg); }
+  19% { transform: translateY(2px); }
+}
+.ringtail { transform-box: fill-box; transform-origin: 92% 92%; animation: tail-spin var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes tail-spin { 0%, 6%, 100% { transform: rotate(0); } 18% { transform: rotate(720deg); } 22% { transform: rotate(720deg); } }
+.ringtail .spin-blur { animation: blur-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes blur-in { 0%, 7%, 19%, 100% { opacity: 0; } 9% { opacity: 0.7; } 17% { opacity: 0.7; } }
+
+/* TRIOMAW: the heads snap one after another, a chomp star at each bite. */
+.creature.idle-hydra { animation-name: idle-slither; }
+.idle-id-triomaw .head { transform-box: fill-box; transform-origin: 30% 100%; }
+.idle-id-triomaw .head-l { animation: snap-l var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+.idle-id-triomaw .head-m { animation: snap-m var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+.idle-id-triomaw .head-t { animation: snap-t var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes snap-l { 0%, 3%, 12%, 100% { transform: none; } 5% { transform: rotate(-14deg) translateX(-4px); } 7.5% { transform: rotate(8deg) translateX(10px); } }
+@keyframes snap-m { 0%, 8%, 17%, 100% { transform: none; } 10% { transform: rotate(-12deg) translateX(-4px); } 12.5% { transform: rotate(6deg) translateX(12px); } }
+@keyframes snap-t { 0%, 13%, 22%, 100% { transform: none; } 15% { transform: rotate(-14deg) translateX(-4px); } 17.5% { transform: rotate(10deg) translateX(8px); } }
+.chomp { animation: chomp-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.chomp-m { animation-delay: calc(var(--idle-delay, 0s) + 0.24s); }
+.chomp-t { animation-delay: calc(var(--idle-delay, 0s) + 0.48s); }
+@keyframes chomp-pop { 0%, 7%, 10%, 100% { opacity: 0; } 8% { opacity: 1; } }
+
+/* CHROMALEON: the colour sweeps through the whole hue wheel and back; the
+   tongue zaps the fly. */
+.creature.idle-chameleon { animation-name: idle-shift; }
+@keyframes idle-shift {
+  0%, 22%, 100% { filter: hue-rotate(0); transform: none; }
+  4% { filter: hue-rotate(70deg); transform: translateY(2px); }
+  8% { filter: hue-rotate(160deg); transform: translateY(-4px); }
+  12% { filter: hue-rotate(250deg); transform: translateY(0); }
+  16% { filter: hue-rotate(320deg); transform: translateY(-2px); }
+  20% { filter: hue-rotate(360deg); }
+}
+.tonguerig .tongue { transform-box: fill-box; transform-origin: 0% 100%; transform: scale(0); animation: tongue-zap var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes tongue-zap { 0%, 9%, 14%, 100% { transform: scale(0); } 10.5% { transform: scale(1); } 12% { transform: scale(1); } }
+.tonguerig .fly { animation: fly-gone var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes fly-gone { 0%, 3% { opacity: 0; transform: translate(0, 0); } 5% { opacity: 1; } 8% { transform: translate(-3px, 3px); } 10.5% { opacity: 1; transform: translate(0, -2px); } 11.5%, 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */
