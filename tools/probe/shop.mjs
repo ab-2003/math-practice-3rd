@@ -26,6 +26,8 @@ await step("the shop shows all twenty-seven monsters by name, no mysteries", asy
   must((await page.$$(".helm-tile")).length === 22, "the gear rack is not twenty-two helmets");
   // THE KAIJU SIX wear their tag, SKYHOOK is the 150 door, the pilot's lid is on the rack.
   must((await page.$$('[data-probe="kaiju-tag"]')).length === 6, "the kaiju six are not tagged");
+  must((await page.$$('[data-probe="dragon-tag"]')).length === 7, "the seven dragons are not tagged");
+  must(await page.$('[data-mon="voidwyrm"] [data-probe="dragon-tag"]') !== null, "VOIDWYRM wears no DRAGON tag");
   must(((await page.textContent('[data-mon="skyhook"]')) ?? "").includes("150"), "SKYHOOK is not 150 coins");
   must(await page.$('[data-helm="pilot-jet"] .visor') !== null, "the pilot helmet has no visor");
 });

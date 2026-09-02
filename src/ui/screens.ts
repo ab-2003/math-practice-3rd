@@ -321,6 +321,7 @@ export const collectionScreen = (app: App): HTMLElement => {
       tile.append(el("div", { class: `price-chip${app.meta.coins >= c.cost ? " can" : ""}`, text: `◆ ${c.cost}` }));
     }
     if (c.kaiju === true) tile.append(el("div", { class: "kaiju-tag", "data-probe": "kaiju-tag", text: "KAIJU" }));
+    if (c.silhouette === "dragon") tile.append(el("div", { class: "kaiju-tag dragon-tag", "data-probe": "dragon-tag", text: "DRAGON" }));
     if (owned && resolveRider(app).id === c.id) {
       tile.append(el("div", { class: "riding-badge", text: "RIDING" }));
     }

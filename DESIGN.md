@@ -1003,6 +1003,7 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.1 - DRAGON tags.** The seven dragons wear a tag in the shop the way the kaiju do (Andy, 2026-09-02).
 - [x] **0.18.0 - The Kaiju six, the pilot's lid, and the spend law.** SS9h:
       six original hybrid kaiju with bespoke acts (SKYHOOK's jump shot at
       150, the rest above it), two pilot helmets, LEVEL UP surfaced on the
