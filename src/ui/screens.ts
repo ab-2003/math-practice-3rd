@@ -219,7 +219,9 @@ export const collectionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
   const bar = el("div", { class: "topbar" });
   const back = el("button", { type: "button", class: "btn small ghost", "data-probe": "back" }, el("span", { text: "← Back" }));
-  on(back, "click", () => app.go("home"));
+  // Walking out of a peek ends it; the handler below is set once we know.
+  let onLeave: (() => void) | null = null;
+  on(back, "click", () => { onLeave?.(); app.go("home"); });
   bar.append(back, el("div", { class: "grow" }), coinChip(app.meta.coins));
   root.append(bar);
 
@@ -227,15 +229,21 @@ export const collectionScreen = (app: App): HTMLElement => {
   // one minute from the moment it opens; then it shuts until the run is done.
   // After today's run it stays open until midnight. Wanting to get back in
   // is supposed to point at the DROP IN button.
+  //
+  // ONE VISIT, NOT ONE MINUTE (Andy's alpha report, 2026-09-02: "let me
+  // enter several times"). Leaving the shop inside the minute spends the
+  // peek too, and the minute itself is a thin bar that shrinks, so the end
+  // of the look is never a surprise.
   const runDone = doseDone(app);
   if (!runDone) {
     if (app.meta.shopPeekDay !== app.day) {
       app.meta.shopPeekDay = app.day;
       app.meta.shopPeekAt = Date.now();
+      app.meta.shopPeekSpent = false;
       void app.save();
     }
     const elapsed = Date.now() - (app.meta.shopPeekAt ?? Date.now());
-    if (elapsed > PEEK_MS) {
+    if (elapsed > PEEK_MS || app.meta.shopPeekSpent) {
       root.append(el("h2", { text: "The Crew" }));
       const closedCard = el("div", { class: "card reveal", "data-probe": "shop-locked" });
       closedCard.append(el("h2", { text: "Shop opens after today's run" }));
@@ -246,12 +254,30 @@ export const collectionScreen = (app: App): HTMLElement => {
       root.append(closedCard);
       return root;
     }
+    const spend = (): void => {
+      if (app.meta.shopPeekSpent) return;
+      app.meta.shopPeekSpent = true;
+      void app.save();
+    };
+    onLeave = spend;
     root.append(el("p", { class: "note peek-note", "data-probe": "shop-peek",
       text: "Quick look! The shop opens for real after today's run." }));
+    const timer = el("div", { class: "speed-timer peek-timer", "data-probe": "peek-timer", role: "progressbar", "aria-label": "Quick look time left" });
+    const fill = el("div", { class: "speed-fill" });
+    timer.append(fill);
+    root.append(timer);
+    const paintBar = (): void => {
+      const left = Math.max(0, PEEK_MS - (Date.now() - (app.meta.shopPeekAt ?? 0)));
+      fill.style.width = `${(left / PEEK_MS) * 100}%`;
+    };
+    paintBar();
     const watcher = window.setInterval(() => {
-      if (!root.isConnected) { window.clearInterval(watcher); return; }
+      // Gone from the screen by any road: the peek is spent.
+      if (!root.isConnected) { window.clearInterval(watcher); spend(); return; }
+      paintBar();
       if (Date.now() - (app.meta.shopPeekAt ?? 0) > PEEK_MS) {
         window.clearInterval(watcher);
+        spend();
         app.go("home");
         sheet({
           title: "Peek's over!",
@@ -261,7 +287,7 @@ export const collectionScreen = (app: App): HTMLElement => {
           onConfirm: () => app.go("session"),
         });
       }
-    }, 1000);
+    }, 200);
   }
 
   root.append(el("h2", { text: "The Crew" }));

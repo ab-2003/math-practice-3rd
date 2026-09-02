@@ -122,16 +122,42 @@ await step("send out picks who rides, and the collection says so", async () => {
   must(badges.length === 1, `${badges.length} RIDING badges, wanted exactly 1`);
 });
 
-await step("before today's run the shop is one 60-second peek, then closed", async () => {
+await step("before today's run the shop is ONE peek: one visit, one minute, with a bar that shrinks", async () => {
   await goHome(page);
   await page.evaluate(() => {
     const m = window.__app.meta();
     m.doseDay = window.__app.day(); m.doseCount = 0;
-    m.shopPeekDay = null; m.shopPeekAt = null;
+    m.shopPeekDay = null; m.shopPeekAt = null; m.shopPeekSpent = false;
   });
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
   must(await page.$('[data-probe="shop-peek"]') !== null, "the peek does not announce itself");
+  // The minute is visible and shrinking.
+  must(await page.$('[data-probe="peek-timer"]') !== null, "no peek timer bar");
+  const w0 = await page.evaluate(() => parseFloat(document.querySelector('[data-probe="peek-timer"] .speed-fill').style.width));
+  await page.waitForTimeout(1300);
+  const w1 = await page.evaluate(() => parseFloat(document.querySelector('[data-probe="peek-timer"] .speed-fill').style.width));
+  must(w1 < w0 && w0 > 95, `the bar went ${w0}% -> ${w1}%, wanted a shrink from full`);
+  // WALKING OUT spends the peek: Andy got back in "several times" inside the minute.
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  must(await page.evaluate(() => window.__app.meta().shopPeekSpent) === true, "leaving did not spend the peek");
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector('[data-probe="shop-locked"]', { timeout: 4000 });
+  must(await page.$(".roster") === null, "a second visit inside the minute got the roster");
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  // A reload does not reopen it either.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="start"]');
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector('[data-probe="shop-locked"]', { timeout: 4000 });
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  // And the minute running out ends it with its sheet.
+  await page.evaluate(() => { const m = window.__app.meta(); m.shopPeekDay = null; m.shopPeekAt = null; m.shopPeekSpent = false; });
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector(".roster");
   await page.evaluate(() => { window.__app.meta().shopPeekAt = Date.now() - 61_000; });
   await page.waitForSelector(".sheet", { timeout: 4000 });
   must(((await page.textContent(".sheet")) ?? "").includes("Peek"), "the peek did not end with its sheet");

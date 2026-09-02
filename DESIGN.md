@@ -555,7 +555,13 @@ clock, all probe-pinned, all still under prefers-reduced-motion.
 **THE PEEK.** Before today's run the shop opens ONCE, for one minute from
 the moment it opens; then it closes ("You had your peek...") until the run is
 done, with DROP IN as the way forward. After today's run it stays open until
-midnight. Wanting back in is supposed to point at practice.
+midnight. Wanting back in is supposed to point at practice. ONE VISIT, not
+one minute (alpha, Andy 2026-09-02: "let me enter several times before I
+did my daily math"): walking out of the shop inside the minute spends the
+peek too, on the Back button and on any other road off the screen, and the
+minute is a thin warm bar that shrinks, the one clock outside the speed run,
+because the shop is not practice and the end of a look should never be a
+surprise.
 
 **THE SVG TAP SCAR, a harness lesson that goes in the permanent list.** On
 Andy's phone, tapping monster ART did nothing: the tap synthesizer gated on

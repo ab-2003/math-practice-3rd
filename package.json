@@ -1,7 +1,7 @@
 {
   "name": "math-practice-3rd",
   "private": true,
-  "version": "0.14.0-alpha.2",
+  "version": "0.14.0-alpha.3",
   "type": "module",
   "description": "TRICK LINE \u2014 a math fact fluency PWA that honours derivation while driving toward automaticity.",
   "scripts": {

@@ -951,6 +951,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   background: var(--panel-2); overflow: hidden; margin-bottom: 8px; flex: none;
 }
 .speed-fill { height: 100%; width: 100%; background: var(--cyan); transition: width 200ms linear; }
+/* The quick look's minute, shrinking. The shop is not practice, so this is
+   the one place outside the speed run a clock may show. */
+.peek-timer { margin: 0 0 10px; }
+.peek-timer .speed-fill { background: var(--warm); }
 .speed-hit .problem { animation: speed-hit 160ms ease-out; }
 @keyframes speed-hit { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .speed-miss .problem { animation: speed-miss 200ms ease-out; }

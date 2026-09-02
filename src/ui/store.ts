@@ -163,9 +163,11 @@ export interface Meta {
   speedDay: number | null;
   speedCount: number;
   speedLimit: number;
-  /** The one pre-run shop peek per day: which day, and when it started. */
+  /** The one pre-run shop peek per day: which day, when it started, and
+   *  whether he has already walked out of it (one VISIT, not one minute). */
   shopPeekDay: number | null;
   shopPeekAt: number | null;
+  shopPeekSpent: boolean;
   /** Helmets bought. Bought once, wearable by any monster. */
   helmetsOwned: string[];
   /** Which helmet each monster wears: creatureId -> helmetId. */
@@ -204,7 +206,7 @@ export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
   rider: null, dailyGoal: 40, doseDay: null, doseCount: 0,
   speedBest: {}, speedDay: null, speedCount: 0, speedLimit: 10,
-  shopPeekDay: null, shopPeekAt: null, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
+  shopPeekDay: null, shopPeekAt: null, shopPeekSpent: false, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
@@ -239,6 +241,7 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
   elapsedAnalog: raw.elapsedAnalog ?? false,
   lastColdDay: raw.lastColdDay ?? null,
+  shopPeekSpent: raw.shopPeekSpent ?? false,
 });
 
 export const getMeta = async (): Promise<Meta> => {
