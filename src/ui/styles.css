@@ -615,11 +615,33 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   color: var(--hot); border: 3px solid var(--hot); border-radius: 999px; padding: 0 8px; line-height: 18px;
 }
 .dragon-tag { color: var(--orange); border-color: var(--orange); }
+.lvl-row, .card-actions { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 /* The level ladder on the confirm sheet: what each level brings. */
 .perk-list { list-style: none; padding: 0; margin: 10px 0 4px; display: grid; gap: 4px; text-align: left; }
 .perk-list li { font-size: 14px; font-weight: 700; color: var(--dim); text-transform: none; padding: 4px 10px; border-radius: 10px; }
 .perk-list li.next { color: var(--ink); background: var(--warm); border: 3px solid var(--ink); font-weight: 900; }
 .perk-list li.had { opacity: 0.65; }
+/* THE IPAD ON ITS SIDE (Andy, 2026-09-02): a monster card and a level sheet
+   must fit a short viewport without a scroll. Smaller art, tighter rows,
+   the ladder in two columns. */
+@media (max-height: 900px) {
+  .sheet { padding: 14px 18px; }
+  .sheet h2 { margin-bottom: 4px; }
+  .sheet .row { margin-top: 10px; }
+  .sheet .row .btn { min-height: 54px; font-size: 18px; padding: 10px 20px; }
+  .reveal .creature { width: min(50vw, 200px); }
+  .reveal .mon-lore { font-size: 14px; margin: 4px 0; }
+  .reveal .note { margin: 6px 0 0; }
+  .card-board { width: 110px; margin: -10px auto 0; }
+  .gear-row { margin: 6px 0 0; gap: 6px; }
+  .gear-pick { width: 56px; height: 48px; }
+  .gear-pick .helm-mini { width: 40px; }
+  .board-pick { width: 84px; }
+  .board-pick-art { width: 66px; }
+  .lvl-row, .card-actions { margin-top: 6px; }
+  .perk-list { grid-template-columns: 1fr 1fr; gap: 3px; margin: 6px 0 0; }
+  .perk-list li { font-size: 13px; padding: 3px 8px; }
+}
 .gear-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
 .helm-tile {
   font-family: var(--display); background: var(--panel); border: 5px solid var(--ink);

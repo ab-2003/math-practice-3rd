@@ -196,6 +196,35 @@ await step("tiles that scroll off stage pause their acts", async () => {
   await ctx2.close();
 });
 
+await step("on an iPad on its side, the monster card and the level sheet fit without a scroll", async () => {
+  // Andy's photo (2026-09-02): the card ran off both ends of a landscape
+  // iPad. Worst case: a helmet on, a board owned, not the rider (Send out).
+  const ctx3 = await browser.newContext({ viewport: { width: 1180, height: 820 } });
+  const p3 = await ctx3.newPage();
+  await p3.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+  await p3.waitForSelector('[data-probe="collection"]');
+  await p3.evaluate(() => {
+    const m = window.__app.meta();
+    m.coins = 100; m.owned = ["grindjaw", "voltmaw"]; m.levels = { grindjaw: 1, voltmaw: 1 }; m.rider = "voltmaw";
+    m.helmetsOwned = ["pilot-jet", "cap-fire"]; m.gear = { grindjaw: "pilot-jet" }; m.boardsOwned = ["ember"];
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; window.__app.go("collection");
+  });
+  await p3.waitForSelector(".roster");
+  await p3.click('[data-mon="grindjaw"]');
+  await p3.waitForSelector('[data-probe="send-out"]', { timeout: 4000 });
+  const fit = (sel) => p3.evaluate(() => { const s = document.querySelector(".sheet"); return { sh: s.scrollHeight, ch: s.clientHeight, top: s.getBoundingClientRect().top, bottom: s.getBoundingClientRect().bottom, vh: innerHeight }; });
+  const card = await fit();
+  must(card.sh <= card.ch, `the card scrolls on a landscape iPad (${card.sh} > ${card.ch})`);
+  must(card.top >= 0 && card.bottom <= card.vh, `the card runs off the screen (${card.top}..${card.bottom} of ${card.vh})`);
+  must(await p3.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-probe="level-up"]')).fontSize)) < 20, "the Level up button is oversized on the card");
+  await p3.click('[data-probe="level-up"]');
+  await p3.waitForSelector('[data-probe="level-confirm"]', { timeout: 4000 });
+  const lvl = await fit();
+  must(lvl.sh <= lvl.ch, `the level sheet scrolls on a landscape iPad (${lvl.sh} > ${lvl.ch})`);
+  must(lvl.top >= 0 && lvl.bottom <= lvl.vh, `the level sheet runs off the screen (${lvl.top}..${lvl.bottom} of ${lvl.vh})`);
+  await ctx3.close();
+});
+
 await step("send out picks who rides, and the collection says so", async () => {
   await page.evaluate(() => {
     const m = window.__app.meta();

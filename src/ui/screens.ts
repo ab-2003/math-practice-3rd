@@ -530,7 +530,7 @@ const monsterSheet = (app: App, id: string): void => {
   // The level row: where it stands, what the next one costs, and the door
   // to the confirm sheet. The button is there whether or not he can pay,
   // because the sheet is also where the ladder is explained.
-  const lvlRow = el("div", { class: "stepper", style: "justify-content:center;flex-wrap:wrap;gap:8px" });
+  const lvlRow = el("div", { class: "lvl-row" });
   lvlRow.append(el("span", { class: "mon-sub", "data-probe": "level-line", text: level >= MAX_LEVEL ? `Level ${level} of ${MAX_LEVEL}. Maxed out!` : `Level ${level} of ${MAX_LEVEL}` }));
   if (level < MAX_LEVEL) {
     const ready = canLevelUp(level, app.meta.coins);
@@ -603,7 +603,9 @@ const monsterSheet = (app: App, id: string): void => {
   }
 
   // SEND OUT: he picks who rides. Agency turns the collection from a museum
-  // into a pre-run ritual.
+  // into a pre-run ritual. One row with Rename, so the card fits an iPad
+  // on its side without a scroll (Andy, 2026-09-02).
+  const actions = el("div", { class: "card-actions" });
   if (resolveRider(app).id !== c.id) {
     const send = el("button", { type: "button", class: "btn small alt", "data-probe": "send-out" }, el("span", { text: "Send out" }));
     on(send, "click", () => {
@@ -611,9 +613,9 @@ const monsterSheet = (app: App, id: string): void => {
       void app.save();
       app.refresh();
     });
-    body.append(send);
+    actions.append(send);
   } else {
-    body.append(el("p", { class: "mon-sub", text: "Riding today" }));
+    actions.append(el("span", { class: "mon-sub", text: "Riding today" }));
   }
 
   const rename = el("button", { type: "button", class: "btn small ghost" }, el("span", { text: "Rename" }));
@@ -625,7 +627,8 @@ const monsterSheet = (app: App, id: string): void => {
       app.refresh();
     }
   });
-  body.append(rename);
+  actions.append(rename);
+  body.append(actions);
 
   const card = sheet({ title: app.meta.names[c.id] ?? c.name, body, cancel: "Close" });
 };

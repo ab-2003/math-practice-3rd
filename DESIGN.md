@@ -1005,6 +1005,13 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.5 - The card fits an iPad on its side.** Andy's photo: the
+      monster card ran off both ends of a landscape iPad. Under 900px of
+      height the sheet tightens (smaller art, tighter rows, Send out and
+      Rename on one row, the level ladder in two columns), and the level
+      row lost the stepper class that was inflating its button to 24px.
+      The shop probe opens the card and the level sheet at 1180 by 820 and
+      requires no internal scroll and nothing off-screen.
 - [x] **0.18.4 - GRINDJAW's log, finished.** The 24% keyframe brought the
       whole log back and let it fade over the rest of the loop, and the
       halves had no hidden base state through the stagger. Now: appear,
