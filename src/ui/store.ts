@@ -173,6 +173,10 @@ export interface Meta {
   helmetsOwned: string[];
   /** Which helmet each monster wears: creatureId -> helmetId. */
   gear: Record<string, string>;
+  /** Boards bought. PLAIN is always owned and never listed here. */
+  boardsOwned: string[];
+  /** Which board each monster rides: creatureId -> boardId. Plain by default. */
+  boardOf: Record<string, string>;
   /** Lifetime lines landed. Unlocks tricks and spots. */
   linesLanded: number;
   /** Personal bests. They only ever go up, which is what keeps them safe. */
@@ -210,7 +214,7 @@ export const freshMeta = (): Meta => ({
   version: SCHEMA_VERSION, pin: null, muted: false, animations: true,
   rider: null, dailyGoal: 40, doseDay: null, doseCount: 0,
   speedBest: {}, speedDay: null, speedCount: 0, speedLimit: 10,
-  shopPeekDay: null, shopPeekAt: null, shopPeekSpent: false, helmetsOwned: [], gear: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
+  shopPeekDay: null, shopPeekAt: null, shopPeekSpent: false, helmetsOwned: [], gear: {}, boardsOwned: [], boardOf: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
@@ -248,6 +252,8 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   lastColdDay: raw.lastColdDay ?? null,
   shopPeekSpent: raw.shopPeekSpent ?? false,
   settingsStamps: raw.settingsStamps ?? {},
+  boardsOwned: raw.boardsOwned ?? [],
+  boardOf: raw.boardOf ?? {},
 });
 
 export const getMeta = async (): Promise<Meta> => {

@@ -14,7 +14,7 @@ Built for a boy who can *derive* any fact (11 − 8 by bridging through ten, tal
 - **A Leitner scheduler** (7 boxes, 1 to 64 days) with placement-on-first-sight, an anti-drowning gate on new facts, interleaving within priority bands, a fatigue detector that offers the exit early when the clock creeps, and mastery only after three fast recalls on three separate days. Once a week the session opens with an unannounced **cold check** of mastered facts, reported as its own series.
 - **Wrong answers can't be skipped** — a warm scaffold shows *his own* bridge-through-ten strategy back to him, then he types the correct answer himself. No red X, no buzzer, ever.
 - **A daily dose** (parent-set) with a fanfare, a stamped badge, and everything after it labelled extra practice.
-- **The shop**: 21 original dino-kaiju (seven dragons, each a different form with a different breath), 20 helmets, all with in-character idle acts — boulders fall for the quarry beast, the storm titan gets rained on, the night serpent vanishes while his trophy relocates.
+- **The shop**: 21 original dino-kaiju (seven dragons, each a different form with a different breath), 20 helmets, 9 boards (a plain one always yours, eight to save for, each with its own deck graphic and a trail while it rides), all with in-character idle acts — boulders fall for the quarry beast, the storm titan gets rained on, the night serpent vanishes while his trophy relocates.
 - **Speed Run**: one minute, as many as you can — budgeted per day, with per-setup high scores, and firewalled from the practice telemetry.
 
 ![Victory lap](docs/victory-lap.png)

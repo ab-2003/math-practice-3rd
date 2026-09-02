@@ -1,5 +1,7 @@
+import { boardFor, BOARDS, ownedBoards, PLAIN_BOARD, type Board } from "../core/boards";
 import { cheapestLocked, creatureById, levelCost, MAX_LEVEL, ROSTER, type Creature } from "../core/creatures";
 import { HELMETS, helmetById, type Helmet } from "../core/gear";
+import { boardSvg } from "./board-svg";
 import { standardProgress } from "../core/standards";
 import type { App } from "./appstate";
 import { progressBar } from "./charts";
@@ -148,6 +150,9 @@ export const homeScreen = (app: App): HTMLElement => {
     const art = creatureSvg(star, { level: app.meta.levels[star.id] ?? 1, ...(starHelm ? { helmet: starHelm } : {}) });
     art.classList.add("home-creature");
     hero.append(art);
+    // The rider stands on its board: a bought deck is visible before any run.
+    const deck = boardFor(app.meta.boardOf, star.id, app.meta.boardsOwned);
+    if (deck.id !== PLAIN_BOARD) hero.append(boardSvg(deck, { cls: "home-board" }));
     hero.append(el("div", { class: "mon-name", text: app.meta.names[star.id] ?? star.name }));
   } else {
     const next = cheapestLocked([]);
@@ -346,7 +351,80 @@ export const collectionScreen = (app: App): HTMLElement => {
     rack.append(t);
   }
   root.append(rack);
+
+  // THE BOARD RACK (Andy 2026-09-02): nine decks, plain always owned, the
+  // rest a real save, worn by whichever monster he puts them under. Shut
+  // until the first monster, for the same reason the helmets are.
+  root.append(el("h2", { text: "The Board Rack", style: "margin-top:18px" }));
+  root.append(el("p", { class: "note", "data-probe": "board-note", text: rackOpen
+    ? "Buy a board once and any of the crew can ride it. Put it under a monster from its card. The plain board is always yours."
+    : "Boards need riders. Pick your first monster and the rack opens." }));
+  const boards = el("div", { class: `board-rack${rackOpen ? "" : " rack-locked"}`, "data-probe": "board-rack" });
+  for (const b of BOARDS) {
+    const has = b.id === PLAIN_BOARD || app.meta.boardsOwned.includes(b.id);
+    const t = el("button", {
+      type: "button", class: `board-tile${has ? " owned" : ""}`, "data-board-tile": b.id,
+      ...(rackOpen ? {} : { disabled: true }),
+    });
+    const art = boardSvg(b, { cls: "board-mini" });
+    t.append(art);
+    t.append(el("span", { class: "helm-name", text: b.name }));
+    t.append(el("span", { class: "mon-sub", text: b.id === PLAIN_BOARD ? "always yours" : has ? "owned" : `◆ ${b.cost}` }));
+    on(t, "click", () => { if (app.meta.owned.length > 0) boardSheet(app, b); });
+    boards.append(t);
+  }
+  root.append(boards);
   return root;
+};
+
+/** Buying a board: the same confirm and cancel as everything else, then the
+ *  reveal offers to put it straight under the rider. */
+const boardSheet = (app: App, b: Board): void => {
+  const has = b.id === PLAIN_BOARD || app.meta.boardsOwned.includes(b.id);
+  const body = el("div", { class: "reveal" });
+  body.append(boardSvg(b, { cls: "board-big", riding: true }));
+  body.append(el("p", { class: "mon-lore", text: b.lore }));
+  if (has) {
+    sheet({ title: b.name, body, cancel: "Close" });
+    return;
+  }
+  const affordable = app.meta.coins >= b.cost;
+  body.append(el("p", { class: "note", text: affordable
+    ? `${b.cost} coins. You have ${app.meta.coins}, so you would have ${app.meta.coins - b.cost} left.`
+    : `${b.cost} coins. You have ${app.meta.coins}, so keep landing tricks.` }));
+  sheet({
+    title: affordable ? `Buy ${b.name}?` : b.name,
+    body,
+    cancel: "Not yet",
+    ...(affordable ? {
+      confirm: `Buy ◆${b.cost}`,
+      onConfirm: (): void => {
+        app.meta.coins -= b.cost;
+        app.meta.boardsOwned.push(b.id);
+        sfx.coin();
+        void app.save().then(() => {
+          const rider = resolveRider(app);
+          const riderName = app.meta.names[rider.id] ?? rider.name;
+          const reveal = el("div", { class: "reveal" });
+          reveal.append(boardSvg(b, { cls: "board-big", riding: true }));
+          reveal.append(el("h2", { text: b.name }));
+          reveal.append(el("p", { class: "mon-lore", text: b.lore }));
+          sheet({
+            title: "New board!", body: reveal,
+            cancel: "Later",
+            ...(app.meta.owned.includes(rider.id) ? {
+              confirm: `${riderName} rides it`,
+              onConfirm: (): void => {
+                app.meta.boardOf = { ...app.meta.boardOf, [rider.id]: b.id };
+                void app.save().then(() => app.refresh());
+              },
+            } : {}),
+            onCancel: () => app.refresh(),
+          });
+        });
+      },
+    } : {}),
+  });
 };
 
 const helmSheet = (app: App, h: Helmet): void => {
@@ -429,6 +507,9 @@ const monsterSheet = (app: App, id: string): void => {
   };
   let bigArt = creatureSvg(c, { level, idle: 0.3, fastIdle: true, ...(worn() ? { helmet: worn()! } : {}) });
   body.append(bigArt);
+  // The board under the monster, on the card, so an equip is seen at once.
+  let cardBoard = boardSvg(boardFor(app.meta.boardOf, c.id, app.meta.boardsOwned), { cls: "card-board" });
+  body.append(cardBoard);
   body.append(el("p", { class: "mon-lore", text: c.lore }));
   body.append(el("div", { class: "mon-sub", text: `Level ${level} of ${MAX_LEVEL}` }));
 
@@ -463,6 +544,31 @@ const monsterSheet = (app: App, id: string): void => {
         app.meta.gear = { ...app.meta.gear, [c.id]: hid };
         void app.save();
         redraw();
+      });
+      row.append(t);
+    }
+    body.append(row);
+  }
+
+  // The board row: plain plus everything in the rack, shown only once there
+  // is a choice to make.
+  if (app.meta.boardsOwned.length > 0) {
+    const row = el("div", { class: "gear-row board-row", "data-probe": "board-row" });
+    const redrawBoard = (): void => {
+      const fresh = boardSvg(boardFor(app.meta.boardOf, c.id, app.meta.boardsOwned), { cls: "card-board" });
+      cardBoard.replaceWith(fresh);
+      cardBoard = fresh;
+      const cur = boardFor(app.meta.boardOf, c.id, app.meta.boardsOwned).id;
+      for (const t of Array.from(row.children)) t.classList.toggle("sel", (t as HTMLElement).dataset["ride"] === cur);
+    };
+    for (const b of ownedBoards(app.meta.boardsOwned)) {
+      const cur = boardFor(app.meta.boardOf, c.id, app.meta.boardsOwned).id === b.id;
+      const t = el("button", { type: "button", class: `gear-pick board-pick${cur ? " sel" : ""}`, "data-ride": b.id, "aria-label": b.name });
+      t.append(boardSvg(b, { cls: "board-pick-art" }));
+      on(t, "click", () => {
+        app.meta.boardOf = { ...app.meta.boardOf, [c.id]: b.id };
+        void app.save();
+        redrawBoard();
       });
       row.append(t);
     }

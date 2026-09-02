@@ -740,6 +740,51 @@ of it replays the stored log through the scheduler's own transition
 (`replayMilestones`), so mastery dates are what the rules would have
 produced from those responses, never a running total.
 
+## 9f. The board rack (0.17.0)
+
+Andy, 2026-09-02: custom boards in the shop, cooler than the plain line,
+priced as a real save, equipped like the hats, with the plain board always
+in the inventory and a VOID BOARD to match VOIDWYRM. Nine boards: PLAIN
+(0, always owned, the way back), then EMBER DECK 100, VOID BOARD 500,
+FROSTBITE 600, STORM DECK 700, TIDE RIDER 800, GILDED 900, MAGMA 1000,
+NEON GHOST 1100: 5,700 coins, four more months of the arc. One renderer
+draws a real deck (kicked nose and tail, trucks, wheels with hub colour), a
+deck-top graphic per theme, and a TRAIL that lights only while the board
+rides (the trick, the lap, the reveal), fixed length, gone under reduced
+motion. Each monster remembers its board; the card shows it under the art
+and a row of plain plus the rack to swap; buying offers to put it straight
+under the rider. The rack is shut until the first monster, like the
+helmets, so a hundred-coin deck cannot undercut the first-monster moment.
+The strip's five little decks stay plain: they are the line's progress, not
+the rider's gear.
+
+## 9g. What loop-eye found (0.17.0)
+
+The instrument that proves the parent-and-player loop (tools/loop-eye.ts:
+five browser contexts as devices against the worker's own request handling
+in memory) found four defects in a design that had passed every probe:
+
+1. **A settings change made offline was lost.** Pushed once, never retried;
+   the door waited forever. Every pull now pushes local fields the cloud
+   lacks: the loop heals in both directions.
+2. **An empty device overwrote the record.** A device that linked a code and
+   declined a restore pulled settings, saved, and mirrored its empty record
+   over the rider's. Record ownership is explicit now: created, loaded or
+   restored makes an OWNER; "Just view" and "Start fresh" make a VIEWER
+   that never writes the record; installs from before the rule that hold
+   practice are made owners once at boot; the cloud card offers a
+   deliberate take-over for a replacement device.
+3. **The merge was not order-independent.** Two writes from one device in
+   one millisecond with different values had no tiebreak. The order is now
+   total: stamp, device, value. Found by a thousand random merges.
+4. **KV reads can be stale right after a write** (the live smoke caught it),
+   so a merge fed only the newest field could drop the one before. Every
+   writer now sends everything it knows; the live smoke waits for
+   consistency between writers rather than racing it.
+
+Also: the worker clamps stamps from a clock in the future, and Erase
+everything forgets the code. Both new guards were proven red by mutation.
+
 # PART III - DESIGN SYSTEM
 
 Bold, chunky, high contrast. Skate-deck graphics and monster-sticker art:
@@ -848,6 +893,13 @@ milliseconds, and proves no fact ever gained mastery credit from a forced
 re-entry. A tool that grades wrong is this app's defining failure, and this is
 the only instrument that catches it.
 
+**`loop-eye`** runs the parent-and-player data loop end to end: five
+browser contexts as devices (the rider's iPad and a second rider on it, a
+viewer, a phone, a laptop) against one in-memory cloud executing the
+worker's production request handling. Every synced field crosses both ways;
+conflicts, ties, stale writes, offline changes, restore, profiles, legacy
+backups, and the things that must never sync. See SS9g for what it found.
+
 **`probe-loop`** is the functional playtest: real taps, real keystrokes. It
 asserts there is no native text input anywhere in a session, that the scaffold
 never contains the words "wrong", "incorrect" or "failed", that a wrong PIN
@@ -889,6 +941,9 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.17.0 - loop-eye, and the board rack.** SS9g: the loop instrument
+      and the four defects it found, fixed and proven. SS9f: nine boards
+      in the shop, ridden in every trick and lap.
 - [x] **0.16.0 - settings from anywhere, riders, and trends.** SS9e: the
       riders list in place of a destructive Change; two documents per code
       with a per-field merge in the worker (`core/sync.ts`); the rider's

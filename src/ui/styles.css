@@ -1118,3 +1118,28 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 /* ---------- idle acts pause off-stage: twenty-one animating tiles is a battery ---------- */
 .mon.offstage .creature, .mon.offstage .creature * { animation-play-state: paused; }
+
+/* ---------- the board rack ---------- */
+.board { overflow: visible; display: block; }
+.board-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.board-tile {
+  font-family: var(--display); background: var(--panel); border: 5px solid var(--ink);
+  border-radius: 16px; box-shadow: 0 4px 0 var(--ink); padding: 10px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; color: var(--text); min-height: 104px;
+}
+.board-tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.board-tile.owned { border-color: var(--acid); }
+.board-rack.rack-locked .board-tile { opacity: 0.4; filter: grayscale(0.7); cursor: default; box-shadow: none; }
+.board-rack.rack-locked .board-tile:active { transform: none; }
+.board-mini { width: 112px; height: auto; }
+.board-big { width: min(70vw, 300px); height: auto; margin: 6px auto 4px; }
+.card-board { width: 150px; height: auto; margin: -8px auto 4px; }
+.home-board { width: min(24vw, 128px); height: auto; margin: -6px auto 0; }
+.board-pick { width: 92px; height: 58px; }
+.board-pick-art { width: 74px; height: auto; }
+/* The trail lives only while the board RIDES: the trick, the lap, the reveal. */
+.board-trail { opacity: 0; }
+.trick-rider .board-trail, .lap-rider .board-trail, .reveal .board-trail { opacity: 1; animation: trail-flicker 260ms ease-in-out infinite alternate; }
+@keyframes trail-flicker { from { opacity: 0.55; transform: translateX(0); } to { opacity: 1; transform: translateX(-3px); } }
+@media (prefers-reduced-motion: reduce) { .board-trail { animation: none !important; opacity: 0 !important; } }

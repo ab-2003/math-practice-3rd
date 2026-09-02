@@ -12,25 +12,19 @@
  * toggle on the home screen turns it off entirely, same as sound.
  */
 
+import { BOARDS, type Board } from "../core/boards";
 import type { Creature } from "../core/creatures";
 import type { Helmet } from "../core/gear";
 import type { Trick } from "../core/tricks";
+import { boardSvg } from "./board-svg";
 import { creatureSvg } from "./creature-svg";
-import { el, svg } from "./dom";
+import { el } from "./dom";
 
 export const TRICK_MS = 760;
 
-/** The board under his feet: chunky, acid, two fat wheels. */
-const board = (): SVGElement => {
-  const g = svg("svg", { viewBox: "0 0 96 30", class: "trick-deck" });
-  g.append(svg("path", {
-    d: "M10 8 C2 8 2 20 10 20 L86 20 C94 20 94 8 86 8 Z",
-    fill: "#B6FF3C", stroke: "#05070A", "stroke-width": 5, "stroke-linejoin": "round",
-  }));
-  g.append(svg("circle", { cx: 26, cy: 25, r: 6, fill: "#05070A" }));
-  g.append(svg("circle", { cx: 70, cy: 25, r: 6, fill: "#05070A" }));
-  return g;
-};
+/** The board under his feet: his own pick from the rack, plain by default,
+ *  with its trail lit because it is riding. */
+const board = (b: Board = BOARDS[0]!): SVGElement => boardSvg(b, { riding: true, cls: "trick-deck" });
 
 /**
  * Play trick `index` (0..4) with `c` as the rider. Resolves when the run is
@@ -38,7 +32,7 @@ const board = (): SVGElement => {
  * animationend alone: a backgrounded tab never fires it, and the session
  * would wedge with no way forward.
  */
-export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 1, helmet?: Helmet): Promise<void> =>
+export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 1, helmet?: Helmet, deck?: Board): Promise<void> =>
   new Promise((resolve) => {
     // The answered problem ghosts out while the trick has the stage, and the
     // next one fades in after. Without this the rider hopped straight through
@@ -54,7 +48,7 @@ export const playTrick = (host: HTMLElement, c: Creature, trick: Trick, level = 
     const flip = el("div", { class: "trick-flip" });
     const art = creatureSvg(c, { level, ...(helmet ? { helmet } : {}) });
     art.classList.add("trick-creature");
-    flip.append(art, board());
+    flip.append(art, board(deck));
     const rider = el("div", { class: "trick-rider" }, flip);
     if (trick.anim === 2 || trick.anim === 6) run.append(el("div", { class: "trick-rail" })); // grinds need their rail
     run.append(rider);
@@ -104,7 +98,7 @@ export interface LapOpts {
 
 export const playVictoryLap = (
   left: HTMLElement, stage: HTMLElement, c: Creature,
-  tricks: readonly Trick[], level: number, opts: LapOpts, helmet?: Helmet,
+  tricks: readonly Trick[], level: number, opts: LapOpts, helmet?: Helmet, deck?: Board,
 ): Promise<void> =>
   new Promise((resolve) => {
     const spot = left.querySelector(".spot");
@@ -122,7 +116,7 @@ export const playVictoryLap = (
     const flip = el("div", { class: "trick-flip" });
     const art = creatureSvg(c, { level, ...(helmet ? { helmet } : {}) });
     art.classList.add("trick-creature");
-    flip.append(art, board());
+    flip.append(art, board(deck));
     const label = el("div", { class: "lap-label" });
     const rider = el("div", { class: "lap-rider" }, flip, label);
     run.append(rider);

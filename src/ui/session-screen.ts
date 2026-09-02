@@ -40,6 +40,7 @@ import { lineStrip, playBail, playLanding, playLineBanner } from "./trickline";
 import { playTrick, playVictoryLap } from "./trick-anim";
 import { spotLayer } from "./spots";
 import { helmetById } from "../core/gear";
+import { boardFor } from "../core/boards";
 import { doseDone, resolveRider } from "./screens";
 
 type Phase = "asking" | "bailed" | "retry";
@@ -161,6 +162,7 @@ export const sessionScreen = (app: App): HTMLElement => {
   const riderLevel = app.meta.levels[rider.id] ?? 1;
   const riderGearId = app.meta.gear[rider.id];
   const riderHelmet = riderGearId !== undefined ? helmetById(riderGearId) : undefined;
+  const riderBoard = boardFor(app.meta.boardOf, rider.id, app.meta.boardsOwned);
 
   const pad: Keypad = keypad({
     maxDigits: 3,
@@ -315,7 +317,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       // five landings itself; a solo land here would double the first one.
       if (!(endsLine && app.meta.animations)) sfx.land(step);
       if (!endsLine) {
-        if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel, riderHelmet);
+        if (app.meta.animations) await playTrick(stage, rider, trick, riderLevel, riderHelmet, riderBoard);
         else await playLanding(stage, trick.name);
       } else if (!app.meta.animations) {
         await playLanding(stage, trick.name);
@@ -343,7 +345,7 @@ export const sessionScreen = (app: App): HTMLElement => {
         strip.classList.add("strip-flash");
         window.setTimeout(() => strip.classList.remove("strip-flash"), 950);
         if (app.meta.animations) {
-          await playVictoryLap(left, stage, rider, lineNow, riderLevel, { bonus: COIN_PER_LINE, newTrick: tUn?.name }, riderHelmet);
+          await playVictoryLap(left, stage, rider, lineNow, riderLevel, { bonus: COIN_PER_LINE, newTrick: tUn?.name }, riderHelmet, riderBoard);
         } else {
           await playLineBanner(left, { bonus: COIN_PER_LINE, newTrick: tUn?.name });
         }

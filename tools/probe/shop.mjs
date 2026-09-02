@@ -2,7 +2,7 @@
  * PROBE: SHOP. Twenty-one monsters, their forms and acts, the rack, the
  * confirms, the peek, gear, send out, and the off-stage pause.
  */
-import { closeSheets, goHome, suite } from "./_shared.mjs";
+import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
 
 const { page, step, must, done, browser } = await suite("shop");
 
@@ -74,12 +74,24 @@ await step("a TOUCH on the monster art opens its card (the phone scar)", async (
   await page.waitForTimeout(250);
 });
 
-await step("with no monsters yet, the rack is on display but shut", async () => {
+await step("with no monsters yet, the racks are on display but shut", async () => {
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "the fresh profile owns something");
   must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");
   must((await page.$$(".helm-tile[disabled]")).length === 20, "a helmet is tappable before the first monster");
   const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
   must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
+  // THE BOARD RACK: nine decks, plain always owned, shut until the first monster.
+  must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
+  must((await page.$$(".board-tile")).length === 9, "the board rack is not nine boards");
+  must((await page.$$(".board-tile[disabled]")).length === 9, "a board is tappable before the first monster");
+  must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
+  must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
+  const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
+  must(prices.includes("◆ 100") && prices.includes("◆ 500") && prices.includes("◆ 1100"), `the prices read ${JSON.stringify(prices)}`);
+  // Nine forms, not one deck in nine colours: the graphics differ, and Void has its stars.
+  const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
+  must(new Set(marks).size >= 8, "the boards are palette swaps");
+  must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
 });
 
 await step("tiles that scroll off stage pause their acts", async () => {
@@ -206,6 +218,64 @@ await step("he buys the dragon he WANTS, not the cheapest, and the confirm cance
   must(m.coins === 5000 - 350, `coins went to ${m.coins}, wanted 4650`);
   must(await page.$(".gear-rack.rack-locked") === null, "the rack stayed locked after his first monster");
   must((await page.$$(".helm-tile[disabled]")).length === 0, "helmets still disabled after his first monster");
+});
+
+await step("a board is bought once, ridden by the monster he puts it under, and shows in the trick", async () => {
+  // The rack opened with the first monster. Cancel spends nothing.
+  must(await page.$('[data-probe="board-rack"].rack-locked') === null, "the board rack stayed locked after his first monster");
+  await page.click('[data-board-tile="ember"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  must(((await page.textContent(".sheet")) ?? "").includes("left"), "the board confirm does not say what remains");
+  await page.click(".sheet .btn.ghost"); // Not yet
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => window.__app.meta().boardsOwned.length) === 0, "Not-yet bought a board");
+  const coins0 = await page.evaluate(() => window.__app.meta().coins);
+  await page.click('[data-board-tile="ember"]');
+  await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
+  await page.click(".sheet .btn.go"); // Buy
+  await page.waitForSelector(".sheet .reveal .board", { timeout: 4000 });
+  must(((await page.textContent(".sheet")) ?? "").includes("New board"), "no reveal for the board");
+  await page.click(".sheet .btn.go"); // <rider> rides it
+  await page.waitForTimeout(400);
+  const m = await page.evaluate(() => window.__app.meta());
+  must(m.boardsOwned.includes("ember"), "the board is not in the rack");
+  must(m.coins === coins0 - 100, `coins went ${coins0} -> ${m.coins}, wanted -100`);
+  const rider = await page.evaluate(() => { const m = window.__app.meta(); return m.rider ?? m.owned[m.owned.length - 1]; });
+  must(m.boardOf[rider] === "ember", "the reveal did not put the board under the rider");
+  // The card shows the row: plain and ember, ember selected; plain takes it back.
+  await page.click(`[data-mon="${rider}"]`);
+  await page.waitForSelector('[data-probe="board-row"]', { timeout: 4000 });
+  must((await page.$$('[data-probe="board-row"] .board-pick')).length === 2, "the board row is not plain plus ember");
+  must(await page.$('[data-ride="ember"].sel') !== null, "ember is not marked as ridden");
+  must(await page.$('.sheet .card-board[data-board="ember"]') !== null, "the card does not draw the ridden board");
+  await page.click('[data-ride="plain"]');
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => Object.values(window.__app.meta().boardOf)).then((v) => v.includes("plain")), "plain did not take the board back");
+  await page.click('[data-ride="ember"]');
+  await page.waitForTimeout(250);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+  // And in the ride itself: the trick's deck is the ember board, trail and all.
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+  await page.evaluate(() => { const m = window.__app.meta(); m.animations = true; m.strands = { add: true, sub: true, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 }; });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  // The real keypad, not the probe hook: awaiting the hook's promise would
+  // return only after the 760ms ride is already gone.
+  await typeAnswer(page, answerOf(id));
+  const deck = await page.waitForSelector('.trick-run .trick-deck[data-board="ember"]', { timeout: 2500 }).catch(() => null);
+  must(deck !== null, "the trick did not ride the ember board");
+  must(await page.$(".trick-run .board-trail") !== null, "the riding board has no trail");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await closeSheets(page);
+  await page.evaluate(() => { const m = window.__app.meta(); m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; window.__app.go("collection"); });
+  await page.waitForSelector(".roster");
 });
 
 await step("a helmet is bought once and lands on the monster he puts it on", async () => {

@@ -28,6 +28,7 @@ import { resolveRider } from "./screens";
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 import { helmetById } from "../core/gear";
+import { boardFor } from "../core/boards";
 import { playVictoryLap } from "./trick-anim";
 
 const RUN_MS = 60_000;
@@ -180,7 +181,7 @@ export const speedScreen = (app: App): HTMLElement => {
     sfx.speedFanfare();
     const total = app.meta.linesLanded;
     await playVictoryLap(left, stage, rider, lineTricks(total, total), riderLevel,
-      { bonus: 0, title: "TIME!", sub: `${score} correct` }, riderHelmet);
+      { bonus: 0, title: "TIME!", sub: `${score} correct` }, riderHelmet, boardFor(app.meta.boardOf, rider.id, app.meta.boardsOwned));
 
     const body = el("div", { class: "reveal" });
     body.append(el("h2", { text: `${score} in a minute` }));
