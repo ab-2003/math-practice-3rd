@@ -11,7 +11,7 @@ Built for a boy who can *derive* any fact (11 − 8 by bridging through ten, tal
 ## How it plays
 
 - **Trick Line**: every correct answer lands the next skate trick. Five tricks land a line — and his monster rides the whole line start to finish while the park lights up.
-- **A Leitner scheduler** (5 boxes, 1/2/4/8/16 days) with placement-on-first-sight, an anti-drowning gate on new facts, and mastery only after three fast recalls on three separate days.
+- **A Leitner scheduler** (7 boxes, 1 to 64 days) with placement-on-first-sight, an anti-drowning gate on new facts, interleaving within priority bands, a fatigue detector that offers the exit early when the clock creeps, and mastery only after three fast recalls on three separate days. Once a week the session opens with an unannounced **cold check** of mastered facts, reported as its own series.
 - **Wrong answers can't be skipped** — a warm scaffold shows *his own* bridge-through-ten strategy back to him, then he types the correct answer himself. No red X, no buzzer, ever.
 - **A daily dose** (parent-set) with a fanfare, a stamped badge, and everything after it labelled extra practice.
 - **The shop**: 21 original dino-kaiju (seven dragons, each a different form with a different breath), 20 helmets, all with in-character idle acts — boulders fall for the quarry beast, the storm titan gets rained on, the night serpent vanishes while his trophy relocates.
@@ -22,7 +22,7 @@ Built for a boy who can *derive* any fact (11 − 8 by bridging through ten, tal
 
 ## The parent side
 
-Behind a PIN: retrieval-vs-derivation trend by week, a fact-by-fact heat map, a response-time histogram whose buckets nest inside the classification, session stamina logs, per-operation practice switches, CSV export that carries its own measurement definition, and an anonymous **cloud share code** (QR) so a parent or teacher can view the record from their own device. The iPad remains the gold standard; the cloud is a throttled, never-blocking mirror.
+Behind a PIN, in two tabs. **Progress**: retrieval-vs-derivation trend by week, the cold-check series, the two Virginia standards, his personal floor and a response-time histogram whose buckets nest inside the classification, tomorrow's queue from the real planner, per-operation summary bars with the fact grid on request, and a stamina log that names how every run ended. **Settings**: a four-row practice table (on, missing-number, cap), the daily dose and speed-run budget, the elapsed-time ladder, riders (several children on one iPad, each with their own data), backup and CSV export that carries its own measurement definition, and an anonymous **cloud share code** (QR). A phone or laptop linked to a code views the record read-only without loading it over its own data. The iPad remains the gold standard; the cloud is a throttled, never-blocking mirror.
 
 ![Parent dashboard](docs/parent-dashboard.png)
 
@@ -30,7 +30,7 @@ Behind a PIN: retrieval-vs-derivation trend by week, a fact-by-fact heat map, a 
 
 - Vite + TypeScript, **no framework, no canvas library** — the entire app is vanilla DOM and inline SVG. Every creature is a parameter set through one renderer; every sound is synthesized WebAudio. No image or audio assets ship at all, so the offline bundle is ~60 KB gzipped.
 - **Installable PWA, fully offline**: hand-written service worker with a build-generated precache, IndexedDB with a rejected-not-coerced schema version.
-- **Verification culture inherited from a family of shipped games**: 100+ unit tests, deliberate-mutation checks that prove the tests bite, and eight Playwright "senses" including `answer-eye`, which re-derives every graded answer with a second independent implementation, drives real touches, and reads the screenshots back. The release gate deploys only from green and polls the live edge to convergence.
+- **Verification culture inherited from a family of shipped games**: 130+ unit tests, deliberate-mutation checks that prove the tests bite, a 200-day simulation of the learner, and eleven Playwright "senses" including `answer-eye`, which re-derives every graded answer with a second independent implementation, drives real touches, and reads the screenshots back. The release gate deploys only from green and polls the live edge to convergence; an `alpha` branch publishes to its own preview channel through the same gate.
 - Aligned to the **Virginia SOL**: closing the grade-2 automaticity standard (2.CE.1) while building toward grade-3's (3.CE.2).
 
 Built by a dad and [Claude Code](https://claude.com/claude-code), in a day, from field reports sent between homework and bedtime.

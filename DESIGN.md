@@ -5,8 +5,12 @@ still driving him toward automaticity.**
 
 Design document and development handbook. Started 2026-08-31.
 
-LIVE at `https://math-practice-3rd.pages.dev`, single production channel.
-Repo `~/code/math-practice-3rd`, GitHub `ab-2003/math-practice-3rd`, private.
+LIVE at `https://math-practice-3rd.pages.dev`, the production channel (branch
+`main`). The ALPHA channel, `https://alpha.math-practice-3rd.pages.dev`, is
+the `alpha` branch published as a Cloudflare Pages preview by the same
+gauntlet (`./run-gauntlet.sh --branch alpha`); it has its own origin and so
+its own storage, and the cloud share code is the bridge between the two.
+Repo `~/code/math-practice-3rd`, GitHub `ab-2003/math-practice-3rd`, public.
 
 ---
 
@@ -242,7 +246,20 @@ queue; the real gate is the partner rule below.
 
 ## 7. Leitner, and what mastery means
 
-Boxes 1 to 5, intervals 1, 2, 4, 8, 16 days.
+Boxes 1 to 7, intervals 1, 2, 4, 8, 16, 32, 64 days.
+
+**Why seven and not five (alpha).** With the ladder topping out at sixteen
+days every mastered fact recycled forever at that interval, and the arithmetic
+of a full deck is unforgiving: 363 / 16 is about 23 due a day purely to
+MAINTAIN what he owns, more than half of a forty item dose by spring, crowding
+out the new facts. Boxes at 32 and 64 days let owned facts drift to long
+intervals. The 200-day simulation then found the other edge of that change:
+once the whole deck was owned, sessions COLLAPSED to three items and some days
+planned nothing, because top-up refused to reach past box 5 and a boy who
+owned the deck could never have met his dose again. Top-up may now draw from
+any owned box, weakest and closest to due first; it cannot crowd out new
+facts, which are gated by the DUE count, never by top-up. Sessions hold at
+43 to 47 items through day 200 with all four strands complete.
 
 - **retrieved** promotes a box, and counts toward mastery *if it is a new day*
 - **derived** holds the box and holds the streak
@@ -265,6 +282,44 @@ ever trend anywhere.
 would mean division never unlocks: three retrieved responses on distinct days
 at box 4 and 5 intervals is weeks per fact. Box 3 means "he has been right
 about this twice, days apart," and that is enough to hang the inverse on.
+
+## 7d. Interleaving, fatigue, the cold check, and the floor (alpha)
+
+Four additions from the holistic review (Fable 5.1, 2026-09-01), all in
+`core/`, all pinned by tests, none of them visible as anything about speed:
+
+**Interleaving within priority bands.** Facts introduced together share a
+dueOn and a box, so the plain sort handed him eight additions in a row and
+then eight subtractions: blocked practice, the weaker kind. The queue is now
+shuffled WITHIN runs of equal (dueOn, box), seeded by the day, so priority
+order is exact, same-operation runs are broken, and a probe can predict the
+queue.
+
+**The fatigue detector.** The struggle detector watches wrongness; this one
+watches the clock creep. When the median first-digit time of his last eight
+correct answers is 1.5x his first eight AND over two seconds, he is tiring
+before the misses arrive. It never ends a session by itself: it lowers the bar
+at which the ordinary line-break exit is offered (ten items instead of
+twenty), and the offer uses the identical sheet and words. A run he calls
+after a tired offer is logged `endedEarly · tired`; the stamina log now names
+every early ending (struggle, tired, choice, breather).
+
+**The cold check.** The retrieval percentage is measured INSIDE sessions,
+where a fact may have appeared minutes earlier: partly priming. Once a week
+the first five items of a session are mastered facts he has gone longest
+without retrieving, asked unannounced before anything has warmed him up, and
+flagged `cold` on the response. The dashboard draws them as their own series,
+FROM COLD, beside the headline, and the CSV carries the flag. Requeues can
+never land inside the cold zone (REQUEUE_GAP >= COLD_CHECK_ITEMS, pinned).
+
+**The floor.** The 3 second threshold is a hypothesis. The report now states
+his personal floor, the median first-digit time on facts he owns, and how
+many times it fits under the line, so the day the derived band is starving
+can be seen rather than guessed at.
+
+**Tomorrow.** The report runs the real planner one day ahead and says what
+is due, what is new, and what is pulled forward, so "what is he working on?"
+is answered by what the app will actually do.
 
 ## 7b. Practice focus: which operations are switched on
 
@@ -563,6 +618,43 @@ Laws intact throughout: nothing distinguishes retrieved from derived, all
 celebration is fixed-duration, records only rise, and nothing is ever taken
 back.
 
+## 9c. The grown-ups screen, riders, and the viewer (0.14.0-alpha)
+
+**Two tabs.** Measured before the rebuild: 5,227px, 4.4 iPad screens, 31
+buttons, 12 toggles, 7 steppers, 363 heat cells, with charts and controls
+interleaved, and the practising card alone taller than the screen. Now
+PROGRESS (the report: headline, from cold, standards, the clock with his
+floor and the histogram, tomorrow, the facts as per-operation summary bars
+with the grid on request, going the wrong way, stamina) and SETTINGS (the
+practice TABLE of four rows by On / Missing # / Cap, the day's dials, the
+elapsed ladder as a segmented control, riders, data, cloud). Caps are set
+from chips with a fine stepper beside them. Every derivation lives in
+`core/report.ts` and takes a Snapshot, which is what makes the viewer
+possible. Settings measured 2,539px after; the practice card 700px or under.
+
+**Viewer mode.** A device linked to a share code that has no practice of its
+own shows the cloud copy, read-only, with a banner naming whose record it is
+and when it was saved, and a Refresh. A device with its own data reaches the
+same view through the cloud card's View button, with a way back. Connecting a
+code now offers "Just view" before "Load it here": the parent's phone and the
+teacher's laptop want to LOOK, not to replace their own data.
+
+**Riders.** One iPad, more than one child. Each profile is its own IndexedDB
+database (the first keeps the original name, so an install that predates
+profiles needs no migration), with its own coins, monsters, settings and
+share code. The registry of riders and the grown-ups' PIN are device-level in
+localStorage: a PIN belongs to the parent, not to a child's progress file.
+With more than one rider the app asks who is riding at launch, and home
+carries a name chip that leads back to the picker.
+
+**The rest of the review, as shipped.** A dose chip in the session topbar
+(a count, never a clock); streak stamps at 7, 30 and 100 days; the rider gets
+a line of its own on the end sheet (two per monster, day-rotated, no
+em-dashes); SVG corner icons in place of emoji; nine new body forms so no two
+monsters share a mass; idle acts pause off stage; two seasonal spots (FROST
+PARK, Dec-Feb; THE BOARDWALK, Jun-Aug), open to everyone in season; the
+build stamp cleared by the screen's bottom padding.
+
 # PART III - DESIGN SYSTEM
 
 Bold, chunky, high contrast. Skate-deck graphics and monster-sticker art:
@@ -675,7 +767,13 @@ the only instrument that catches it.
 asserts there is no native text input anywhere in a session, that the scaffold
 never contains the words "wrong", "incorrect" or "failed", that a wrong PIN
 does not open the dashboard, and that the CSV carries its measurement
-definition.
+definition. It is SIX SUITES in `tools/probe/` (core, settings, juice, shop,
+cloud, speed), each its own browser against the same preview, launched in
+parallel by the gauntlet, because the single serial probe had reached 913
+lines and four minutes. Two lessons from splitting it: a probe that pokes the
+live meta or states must SAVE before anything reads the store (`saveNow`), and
+a pane that re-fetches on a click must be judged by the old element's
+DEPARTURE, not by a snapshot taken mid-fetch.
 
 **`human-eye`** walks five states across four shapes, iPad portrait and
 landscape first. It judges vertical overflow by SCROLLING and re-measuring:
@@ -706,6 +804,16 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [ ] **0.14.0-alpha - the holistic review, built.** Everything in SS7d and
+      SS9c: the seven-box ladder with top-up from any owned box (the
+      simulation's cliff), band interleaving, the fatigue detector, the
+      cold check and its series, the floor, tomorrow, the two-tab grown-ups
+      screen with the practice table, viewer mode, riders, the dose chip,
+      streak stamps, rider voices, SVG icons, nine body forms, off-stage
+      pause, seasonal spots, the stamp clearance; `core/report.ts` as the
+      one source of every figure; `day.ts` under test; the probe split into
+      six parallel suites; the gauntlet's `--branch` channel. Published to
+      the alpha channel for Andy to test before any of it reaches main.
 - [x] **M1 - the model.** Deck, tiers, Leitner scheduler, response-time
       classification, session assembly with requeue, closer cascade and
       struggle detector. 51 unit tests, three proven mutations, and the
@@ -839,3 +947,7 @@ zero image requests.
   12px. `legible-check` measured it; both were raised.
 - **The breather button fell off a phone.** The trick strip pushed it past the
   right edge at 390px. The strip yields now; the way out never does.
+- **The long boxes emptied the sessions.** Adding boxes at 32 and 64 days
+  fixed the maintenance arithmetic and, in the 200-day simulation, produced
+  three-item sessions and empty days once the deck was owned, because top-up
+  stopped at box 5. No unit test asked that question; the instrument did.
