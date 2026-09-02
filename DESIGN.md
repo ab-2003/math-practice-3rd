@@ -946,6 +946,7 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.17.3 - Monster Shop.** The home button says what it is: a shop, with the count.
 - [x] **0.17.2 - Get Parent App.** A button in the grown-ups' top bar, on
       the kid's app, opens a sheet with the door's link (this origin plus
       /parent/), a QR that opens it, Copy and Share, and the iOS and

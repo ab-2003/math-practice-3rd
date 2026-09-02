@@ -211,7 +211,7 @@ export const homeScreen = (app: App): HTMLElement => {
   }
 
   const coll = el("button", { type: "button", class: "btn alt big", "data-probe": "collection" },
-    iconMonster(), el("span", { text: `Monsters ${app.meta.owned.length}/${ROSTER.length}` }));
+    iconMonster(), el("span", { text: `Monster Shop ${app.meta.owned.length}/${ROSTER.length}` }));
   on(coll, "click", () => app.go("collection"));
   root.append(coll);
 
