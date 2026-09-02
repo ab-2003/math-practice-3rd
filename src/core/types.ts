@@ -22,7 +22,7 @@ export interface Fact {
 
 export interface FactState {
   introduced: boolean;
-  /** 1..5 once introduced. Meaningless before. */
+  /** 1..7 once introduced. Meaningless before. */
   box: number;
   dueOn: number;
   /** Consecutive retrieved responses on DISTINCT days. */
@@ -60,6 +60,12 @@ export interface Response {
    * retrieval percentage.
    */
   isRetry: boolean;
+  /**
+   * A COLD CHECK item: one of the unannounced mastered facts that open a
+   * session once a week, before anything has primed him. Scored like any
+   * other response by the scheduler; reported as its own series.
+   */
+  cold?: boolean;
 }
 
 export type SessionStatus = "active" | "complete" | "endedEarly";
@@ -74,6 +80,25 @@ export interface SessionState {
   status: SessionStatus;
   /** Ids answered correctly this session, for the closer cascade. */
   succeeded: string[];
+  /** The first coldCount queue positions are the cold check. 0 when none. */
+  coldCount: number;
+}
+
+/** Why a session ended early, for the dashboard's stamina log. */
+export type EndReason = "struggle" | "tired" | "choice" | "breather";
+
+export interface SessionRecord {
+  id: string;
+  day: number;
+  startedAt: number;
+  endedAt: number;
+  items: number;
+  correct: number;
+  retrieved: number;
+  derived: number;
+  status: "complete" | "endedEarly" | "abandoned";
+  coins: number;
+  reason?: EndReason;
 }
 
 /**

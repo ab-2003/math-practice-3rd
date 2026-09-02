@@ -78,11 +78,11 @@ export const applyResponse = (prev: FactState, r: Response): FactState => {
 /**
  * MASTERY IS A LABEL, NOT AN EXIT.
  *
- * A mastered fact keeps circulating at the box-5 interval and can lose the
- * label. If mastery removed a fact from rotation, automaticity would decay
- * silently, the heat map would go stale, and the parent dashboard's "trending
- * the wrong way" list would be permanently empty because nothing could ever
- * trend anywhere.
+ * A mastered fact keeps circulating, climbing out to the 32 and 64 day boxes,
+ * and can lose the label. If mastery removed a fact from rotation,
+ * automaticity would decay silently, the heat map would go stale, and the
+ * parent dashboard's "trending the wrong way" list would be permanently
+ * empty because nothing could ever trend anywhere.
  */
 export const isMastered = (s: FactState): boolean => s.mastered;
 

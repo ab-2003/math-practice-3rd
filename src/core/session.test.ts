@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  CLOSER_ITEMS, NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
+  CLOSER_ITEMS, COLD_CHECK_DAYS, COLD_CHECK_ITEMS, COLD_CHECK_MIN_POOL, FATIGUE_MIN_ITEMS,
+  FATIGUE_WINDOW, NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
   SESSION_MAX_ITEMS, SESSION_TARGET_ITEMS, STRUGGLE_WINDOW,
 } from "./config";
 import { buildDeck, deckInIntroOrder } from "./facts";
+import { forecast } from "./forecast";
 import { allStates, freshState, reviveStrand } from "./scheduler";
 import {
-  closerIds, currentFactId, isStruggling, nextNewFacts, planQueue,
-  recordResponse, sessionIsOver, startSession, withinCap,
+  bandShuffle, closerIds, coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued,
+  isStruggling, nextNewFacts, planQueue, recordResponse, sessionIsOver, startSession, withinCap,
 } from "./session";
 import type { Caps, FactState, Response, ResponseClass, SessionState, States, Strands } from "./types";
 
@@ -174,11 +176,152 @@ describe("the struggle detector", () => {
 
   it("ignores the forced re-entries when judging struggle", () => {
     const s: SessionState = {
-      day: 0, queue: [], cursor: 0, closerAdded: false, status: "active", succeeded: [],
+      day: 0, queue: [], cursor: 0, closerAdded: false, status: "active", succeeded: [], coldCount: 0,
       responses: Array.from({ length: STRUGGLE_WINDOW }, () =>
         answer("add:0+0", "retrieved", 0, true, true)),
     };
     expect(isStruggling(s)).toBe(false);
+  });
+});
+
+describe("the fatigue detector", () => {
+  const session = (times: number[], extra: Partial<Response> = {}): SessionState => ({
+    day: 0, queue: [], cursor: 0, closerAdded: false, status: "active", succeeded: [], coldCount: 0,
+    responses: times.map((ms) => ({ ...answer("add:7+8", "retrieved"), firstKeyMs: ms, ...extra })),
+  });
+  const opening = Array.from({ length: FATIGUE_WINDOW }, () => 900);
+
+  it("says tired when the clock has crept well above where he started", () => {
+    const s = session([...opening, ...Array.from({ length: FATIGUE_WINDOW }, () => 2400)]);
+    expect(isFatigued(s)).toBe(true);
+  });
+
+  it("stays quiet on a steady sitting, and on a drift that never leaves the floor", () => {
+    expect(isFatigued(session([...opening, ...opening]))).toBe(false);
+    // 600ms to 1000ms is a ratio of 1.7 but nowhere near a tired boy.
+    expect(isFatigued(session([...Array.from({ length: 8 }, () => 600), ...Array.from({ length: 8 }, () => 1000)]))).toBe(false);
+  });
+
+  it("has no opinion before there is a baseline to compare against", () => {
+    const s = session(Array.from({ length: FATIGUE_MIN_ITEMS - 1 }, (_, i) => (i < 8 ? 900 : 5000)));
+    expect(isFatigued(s)).toBe(false);
+  });
+
+  it("ignores the forced re-entries and wrong answers when judging fatigue", () => {
+    const slowRetries = session([...opening, ...Array.from({ length: FATIGUE_WINDOW }, () => 4000)], { isRetry: true });
+    expect(isFatigued(slowRetries)).toBe(false);
+  });
+});
+
+describe("interleaving within priority bands", () => {
+  it("breaks up same-operation runs without disturbing the priority order", () => {
+    // Twenty additions and twenty subtractions introduced together share one
+    // dueOn and one box: a plain sort hands him twenty of one kind in a row.
+    const states = allStates(deck);
+    const adds = [...deck.values()].filter((f) => f.kind === "add").slice(0, 20);
+    const subs = [...deck.values()].filter((f) => f.kind === "sub").slice(0, 20);
+    for (const f of [...adds, ...subs]) states.set(f.id, { ...freshState(), introduced: true, box: 2, dueOn: 0 });
+    const q = planQueue(deck, states, 3);
+    const kinds = q.slice(0, 40).map((id) => deck.get(id)!.kind);
+    let longestRun = 1;
+    let run = 1;
+    for (let i = 1; i < kinds.length; i++) {
+      run = kinds[i] === kinds[i - 1] ? run + 1 : 1;
+      longestRun = Math.max(longestRun, run);
+    }
+    expect(longestRun).toBeLessThan(8);
+    // Same day, same queue: a probe can predict it.
+    expect(planQueue(deck, states, 3)).toEqual(q);
+  });
+
+  it("only ever stirs inside a band, never across one", () => {
+    const items = [1, 1, 1, 2, 2, 3, 3, 3, 3].map((band, i) => ({ band, i }));
+    const out = bandShuffle(items, (t) => String(t.band), 5);
+    expect(out.map((t) => t.band)).toEqual([1, 1, 1, 2, 2, 3, 3, 3, 3]);
+    // The most overdue fact is a band of one and still comes first.
+    const states = withDue(5);
+    states.set(ordered[3]!.id, { ...states.get(ordered[3]!.id)!, dueOn: -4 });
+    expect(planQueue(deck, states, 0)[0]).toBe(ordered[3]!.id);
+  });
+});
+
+describe("the cold check", () => {
+  const mastered = (n: number, lastDay = 0): Map<string, FactState> => {
+    const states = allStates(deck);
+    for (const f of ordered.slice(0, n)) {
+      states.set(f.id, { ...freshState(), introduced: true, box: 6, dueOn: 99, mastered: true, masteryStreak: 3, lastRetrievedDay: lastDay });
+    }
+    return states;
+  };
+
+  it("is due once a week, and on the very first day", () => {
+    expect(coldCheckDue(null, 0)).toBe(true);
+    expect(coldCheckDue(0, COLD_CHECK_DAYS - 1)).toBe(false);
+    expect(coldCheckDue(0, COLD_CHECK_DAYS)).toBe(true);
+  });
+
+  it("draws a few MASTERED facts, the coldest first, deterministically", () => {
+    const states = mastered(20);
+    states.set(ordered[4]!.id, { ...states.get(ordered[4]!.id)!, lastRetrievedDay: -30 });
+    const ids = coldCheckIds(deck, states, 10);
+    expect(ids.length).toBe(COLD_CHECK_ITEMS);
+    expect(ids[0]).toBe(ordered[4]!.id);
+    for (const id of ids) expect(states.get(id)!.mastered).toBe(true);
+    expect(coldCheckIds(deck, states, 10)).toEqual(ids);
+  });
+
+  it("stays silent while the mastered pool is too thin to mean anything", () => {
+    expect(coldCheckIds(deck, mastered(COLD_CHECK_MIN_POOL - 1), 10)).toEqual([]);
+    expect(coldCheckIds(deck, mastered(COLD_CHECK_MIN_POOL), 10).length).toBe(COLD_CHECK_MIN_POOL);
+  });
+
+  it("respects the switched-on operations and the caps", () => {
+    const states = mastered(40);
+    const ids = coldCheckIds(deck, states, 10, { add: true, sub: false, mul: false, div: false });
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(deck.get(id)!.kind).toBe("add");
+  });
+
+  it("opens the session, unannounced, and is asked exactly once", () => {
+    const states = mastered(20);
+    for (const f of ordered.slice(20, 40)) states.set(f.id, { ...freshState(), introduced: true, box: 2, dueOn: 0 });
+    const cold = coldCheckIds(deck, states, 10);
+    const s = startSession(deck, states, 10, undefined, undefined, cold);
+    expect(s.queue.slice(0, cold.length)).toEqual(cold);
+    expect(s.coldCount).toBe(cold.length);
+    expect(isColdItem(s)).toBe(true);
+    // Nothing the planner drew repeats a cold item.
+    expect(s.queue.slice(cold.length).some((id) => cold.includes(id))).toBe(false);
+    // And after the cold zone, items are ordinary.
+    expect(isColdItem({ ...s, cursor: cold.length })).toBe(false);
+  });
+
+  it("never lets a requeue land inside the cold zone", () => {
+    // The gap is what keeps the cold positions pure: pinned here so nobody
+    // shortens REQUEUE_GAP below the cold check without hearing about it.
+    expect(REQUEUE_GAP).toBeGreaterThanOrEqual(COLD_CHECK_ITEMS);
+    const states = mastered(20);
+    for (const f of ordered.slice(20, 40)) states.set(f.id, { ...freshState(), introduced: true, box: 2, dueOn: 0 });
+    const cold = coldCheckIds(deck, states, 10);
+    let s = startSession(deck, states, 10, undefined, undefined, cold);
+    const first = currentFactId(s)!;
+    s = recordResponse(deck, states, s, answer(first, "effortful", 10)).session;
+    expect(s.queue.slice(0, cold.length)).toEqual(cold);
+    expect(s.queue[REQUEUE_GAP]).toBe(first);
+  });
+});
+
+describe("tomorrow's queue", () => {
+  it("runs the real planner a day ahead and sorts the answer into due, new and top-up", () => {
+    const states = allStates(deck);
+    for (const f of ordered.slice(0, 6)) states.set(f.id, { ...freshState(), introduced: true, box: 2, dueOn: 1 });
+    for (const f of ordered.slice(6, 10)) states.set(f.id, { ...freshState(), introduced: true, box: 3, dueOn: 50 });
+    const fc = forecast(deck, states, 1, { add: true, sub: true, mul: false, div: false }, { add: null, sub: null, mul: null, div: null });
+    expect(fc.due).toBe(6);
+    expect(fc.fresh.length).toBeGreaterThan(0);
+    expect(fc.topUp).toBe(4);
+    expect(fc.total).toBe(fc.due + fc.fresh.length + fc.topUp);
+    for (const f of fc.fresh) expect(["add", "sub"]).toContain(f.kind);
   });
 });
 
@@ -203,6 +346,15 @@ describe("topping up to a workable session", () => {
     const boxes = q.map((id) => states.get(id)!.box);
     expect(boxes.slice(0, 10).every((b) => b === 1)).toBe(true);
     for (let i = 1; i < boxes.length; i++) expect(boxes[i]!).toBeGreaterThanOrEqual(boxes[i - 1]!);
+  });
+
+  it("still fills a whole sitting once the entire deck is owned", () => {
+    // The 200-day simulation's find: with the long boxes, a boy who owned
+    // the deck got three-item sessions and empty days, and could never have
+    // reached his dose again. Filler may draw from any owned box.
+    const states = allStates(deck);
+    for (const f of deck.values()) states.set(f.id, { ...freshState(), introduced: true, box: 7, mastered: true, dueOn: 500 });
+    expect(planQueue(deck, states, 100).length).toBe(SESSION_TARGET_ITEMS);
   });
 
   it("never tops up past the target, or past the hard plan cap", () => {

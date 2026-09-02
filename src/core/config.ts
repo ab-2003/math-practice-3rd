@@ -17,10 +17,22 @@ export const RETRIEVED_MAX_MS = 3_000;
 /** Correct, first digit pressed before this, and the fact was DERIVED. */
 export const DERIVED_MAX_MS = 8_000;
 
-/** Leitner intervals in days, indexed by box 1..5. Index 0 is unused. */
-export const BOX_INTERVAL_DAYS = [0, 1, 2, 4, 8, 16] as const;
+/**
+ * Leitner intervals in days, indexed by box 1..7. Index 0 is unused.
+ *
+ * SEVEN boxes, not five (alpha, 2026-09-01). With the ladder topping out at
+ * sixteen days, every mastered fact recycled forever at that interval, and the
+ * arithmetic of a full deck is unforgiving: 363 facts / 16 days is about 23
+ * due per day purely to MAINTAIN what he already owns. Against a forty item
+ * dose that is more than half of every spring session spent re-proving known
+ * facts, crowding out the new ones. Boxes at 32 and 64 days let owned facts
+ * drift out to long intervals, which drops steady-state maintenance to a
+ * handful a day. Standard spaced-repetition practice; the simulation in
+ * tools/sim.ts measures the load either way.
+ */
+export const BOX_INTERVAL_DAYS = [0, 1, 2, 4, 8, 16, 32, 64] as const;
 
-export const MAX_BOX = 5;
+export const MAX_BOX = 7;
 export const MIN_BOX = 1;
 
 /**
@@ -121,8 +133,58 @@ export const SESSION_TARGET_ITEMS = 40;
  * twenty items. Allowing the strong ones to pad the TAIL costs a little
  * spacing precision and buys a session that ends in a run of easy wins,
  * which is the shape we wanted anyway.
+ *
+ * And the whole ladder, not five of its seven rungs (alpha): when the long
+ * boxes arrived, a 200-day simulation showed sessions COLLAPSING once the
+ * deck was owned, some days planning nothing at all, because the filler
+ * refused to reach past box 5 and the anti-crowding boxes had nothing left
+ * to crowd. A boy who owns the deck could never have met his forty-item dose
+ * again. Top-up may now draw from any owned box, weakest and closest to due
+ * first; it cannot crowd out new facts, which are gated by the DUE count,
+ * never by top-up.
  */
-export const TOPUP_MAX_BOX = 5;
+export const TOPUP_MAX_BOX = MAX_BOX;
+
+// ---------------------------------------------------------------------------
+// THE FATIGUE DETECTOR (alpha, 2026-09-01)
+//
+// The struggle detector watches WRONGNESS. This one watches the clock creep:
+// when his recent first-digit times run well above where he started the
+// sitting, he is tiring before the misses arrive. It never ends a session by
+// itself and never shows on screen as anything about speed; it only lowers
+// the bar at which the ordinary line-break exit is offered, so the way out
+// appears a few lines earlier and reads as the same friendly offer as always.
+// ---------------------------------------------------------------------------
+
+/** Responses compared: the first N correct answers against the last N. */
+export const FATIGUE_WINDOW = 8;
+/** No verdict before this many real items: a session has to have a baseline. */
+export const FATIGUE_MIN_ITEMS = 16;
+/** Recent median must be this many times the opening median... */
+export const FATIGUE_RATIO = 1.5;
+/** ...AND above this floor, so 600ms drifting to 1000ms never counts. */
+export const FATIGUE_FLOOR_MS = 2_000;
+/** When tired, the celebrated exit is offered from this many items instead. */
+export const OFFER_EXIT_WHEN_TIRED_AFTER = 10;
+
+// ---------------------------------------------------------------------------
+// THE COLD CHECK (alpha, 2026-09-01)
+//
+// The retrieval percentage is measured INSIDE sessions, where a fact may have
+// been seen minutes earlier: partly priming, not durable memory. Once a week
+// the first few items of a session are drawn, unannounced, from facts he has
+// mastered, and their latency is logged as a separate series. That is the
+// honest number for a teacher: automaticity from cold, not from warm-up.
+// Nothing on screen marks these items; they look like any other problem.
+// ---------------------------------------------------------------------------
+
+export const COLD_CHECK_DAYS = 7;
+export const COLD_CHECK_ITEMS = 5;
+/** Below this many mastered facts there is nothing meaningful to check. */
+export const COLD_CHECK_MIN_POOL = 3;
+
+/** Streak days that earn a stamp on the run's story. */
+export const STREAK_MILESTONES = [7, 30, 100] as const;
 
 // ---------------------------------------------------------------------------
 // ATTENTION AND TOLERANCE

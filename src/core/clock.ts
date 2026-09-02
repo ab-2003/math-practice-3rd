@@ -17,3 +17,7 @@ export const dayIndexOf = (d: Date): number =>
   Math.floor((d.getTime() - d.getTimezoneOffset() * 60_000) / MS_PER_DAY);
 
 export const today = (): number => dayIndexOf(new Date());
+
+/** A stored timestamp as ISO text, for the export. Formatting, not a clock
+ *  read, but it still lives here so the rest of core never touches Date. */
+export const isoOf = (ms: number): string => new Date(ms).toISOString();

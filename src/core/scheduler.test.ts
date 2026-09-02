@@ -61,11 +61,34 @@ describe("the Leitner transition", () => {
     expect(s.masteryStreak).toBe(0);
   });
 
-  it("floors the box at one and caps it at five", () => {
+  it("floors the box at one and caps it at seven", () => {
     const low = applyResponse({ ...freshState(), box: MIN_BOX, introduced: true }, resp("effortful", 5, false));
     expect(low.box).toBe(MIN_BOX);
     const high = applyResponse({ ...freshState(), box: MAX_BOX, introduced: true, seen: 4 }, resp("retrieved", 5));
     expect(high.box).toBe(MAX_BOX);
+    expect(MAX_BOX).toBe(7);
+  });
+
+  it("lets an owned fact drift out to two months between sightings", () => {
+    // The maintenance arithmetic: 363 facts recycled every 16 days is ~23 due
+    // a day just to re-prove what he knows. The long boxes exist for this.
+    expect(boxInterval(5)).toBe(16);
+    expect(boxInterval(6)).toBe(32);
+    expect(boxInterval(7)).toBe(64);
+    let s = { ...freshState(), box: 5, introduced: true, seen: 9 };
+    s = applyResponse(s, resp("retrieved", 100));
+    expect(s.box).toBe(6);
+    expect(s.dueOn).toBe(132);
+    s = applyResponse(s, resp("retrieved", 132));
+    expect(s.box).toBe(7);
+    expect(s.dueOn).toBe(196);
+  });
+
+  it("keeps steady-state maintenance to a handful a day once the deck is owned", () => {
+    // Every fact at the top box, due dates spread evenly: how many come due
+    // on a typical day? Under the old five-box ladder this was ~23.
+    const per = Math.ceil(deck.size / boxInterval(MAX_BOX));
+    expect(per).toBeLessThanOrEqual(6);
   });
 });
 

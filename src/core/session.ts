@@ -1,5 +1,7 @@
 import {
-  CLOSER_ITEMS, NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
+  CLOSER_ITEMS, COLD_CHECK_ITEMS, COLD_CHECK_DAYS, COLD_CHECK_MIN_POOL,
+  FATIGUE_FLOOR_MS, FATIGUE_MIN_ITEMS, FATIGUE_RATIO, FATIGUE_WINDOW,
+  NEW_FACT_GATE, NEW_FILL_MAX, REQUEUE_GAP,
   SESSION_HARD_CAP, SESSION_MAX_ITEMS, SESSION_TARGET_ITEMS, STRUGGLE_THRESHOLD,
   STRUGGLE_WINDOW, TOPUP_MAX_BOX,
 } from "./config";
@@ -16,6 +18,7 @@ import type { Caps, Deck, Fact, FactState, Response, SessionState, States, Stran
  */
 export const ALL_STRANDS: Strands = { add: true, sub: true, mul: true, div: true };
 export const NO_CAPS: Caps = { add: null, sub: null, mul: null, div: null };
+const NONE: ReadonlySet<string> = new Set();
 
 /** Does this fact sit inside the parent's magnitude cap for its operation? */
 export const withinCap = (f: Fact, caps: Caps): boolean => {
@@ -31,11 +34,12 @@ export const inPlay = (f: Fact, strands: Strands, caps: Caps = NO_CAPS): boolean
 
 export const planQueue = (
   deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
+  exclude: ReadonlySet<string> = NONE,
 ): string[] => {
   const due = [...deck.values()]
     .filter((f) => {
       const s = states.get(f.id);
-      return s !== undefined && isDue(s, day) && inPlay(f, strands, caps);
+      return s !== undefined && isDue(s, day) && inPlay(f, strands, caps) && !exclude.has(f.id);
     })
     // Most overdue first, then weakest box: the things he is shakiest on get
     // seen while he still has attention to spend on them.
@@ -43,10 +47,17 @@ export const planQueue = (
       const sx = states.get(x.id)!;
       const sy = states.get(y.id)!;
       return sx.dueOn - sy.dueOn || sx.box - sy.box;
-    })
-    .map((f) => f.id);
+    });
 
-  const queue = due.slice(0, SESSION_MAX_ITEMS);
+  // INTERLEAVE within each priority band. Facts introduced together share a
+  // dueOn and a box, so a plain sort hands him eight additions in a row and
+  // then eight subtractions: blocked practice, which the research is clear
+  // is the weaker kind. Shuffling only WITHIN equal keys keeps the priority
+  // order exact and breaks the same-operation runs. Seeded by the day, so a
+  // probe and a second sitting see the same queue.
+  const queue = bandShuffle(due, (f) => `${states.get(f.id)!.dueOn}:${states.get(f.id)!.box}`, day)
+    .map((f) => f.id)
+    .slice(0, SESSION_MAX_ITEMS);
 
   if (due.length < NEW_FACT_GATE) {
     // FILL, don't drip. The session takes as much new material as fits its
@@ -54,7 +65,7 @@ export const planQueue = (
     // limiting: what he already owns flies to a distant box after one look,
     // and what he does not stacks up as due work that closes this gate.
     const room = Math.min(NEW_FILL_MAX, SESSION_TARGET_ITEMS - queue.length);
-    for (const id of nextNewFacts(deck, states, room, strands, caps)) queue.push(id);
+    for (const id of nextNewFacts(deck, states, room, strands, caps)) if (!exclude.has(id)) queue.push(id);
   }
 
   // TOP UP to a workable session length.
@@ -69,11 +80,11 @@ export const planQueue = (
     const spare = [...deck.values()]
       .filter((f) => {
         const s = states.get(f.id);
-        return s !== undefined && s.introduced && !inQueue.has(f.id)
+        return s !== undefined && s.introduced && !inQueue.has(f.id) && !exclude.has(f.id)
           && s.box <= TOPUP_MAX_BOX && inPlay(f, strands, caps);
       })
       .sort((x, y) => states.get(x.id)!.box - states.get(y.id)!.box || states.get(x.id)!.dueOn - states.get(y.id)!.dueOn);
-    for (const f of spare) {
+    for (const f of bandShuffle(spare, (f) => `${states.get(f.id)!.box}:${states.get(f.id)!.dueOn}`, day + 7919)) {
       if (queue.length >= SESSION_TARGET_ITEMS) break;
       queue.push(f.id);
     }
@@ -121,20 +132,59 @@ export const nextNewFacts = (
   return out;
 };
 
+/**
+ * Start a session. `cold` is the week's cold check (see coldCheckIds): those
+ * ids open the queue, unannounced, ahead of everything the planner chooses,
+ * and are kept out of the planner's own draw so nothing is asked twice.
+ */
 export const startSession = (
   deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
+  cold: readonly string[] = [],
 ): SessionState => ({
   day,
-  queue: planQueue(deck, states, day, strands, caps),
+  queue: [...cold, ...planQueue(deck, states, day, strands, caps, new Set(cold))],
   cursor: 0,
   responses: [],
   closerAdded: false,
   status: "active",
   succeeded: [],
+  coldCount: cold.length,
 });
 
 export const currentFactId = (s: SessionState): string | null =>
   s.cursor < s.queue.length ? (s.queue[s.cursor] ?? null) : null;
+
+/** Is the item under the cursor one of the cold check? Requeues never land
+ *  inside the cold zone because REQUEUE_GAP >= COLD_CHECK_ITEMS (pinned by
+ *  test), so position alone is the truth. */
+export const isColdItem = (s: SessionState): boolean => s.cursor < s.coldCount;
+
+// ---------------------------------------------------------------------------
+// THE COLD CHECK
+// ---------------------------------------------------------------------------
+
+/** A week since the last one (or never had one). */
+export const coldCheckDue = (lastColdDay: number | null, day: number): boolean =>
+  lastColdDay === null || day - lastColdDay >= COLD_CHECK_DAYS;
+
+/**
+ * Up to COLD_CHECK_ITEMS mastered, in-play facts, the ones he has gone
+ * LONGEST without retrieving first (the coldest), tie-broken by a day-seeded
+ * shuffle. Empty when the mastered pool is too thin to say anything.
+ */
+export const coldCheckIds = (
+  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
+): string[] => {
+  const pool = [...deck.values()].filter((f) => {
+    const s = states.get(f.id);
+    return s !== undefined && s.mastered && inPlay(f, strands, caps);
+  });
+  if (pool.length < COLD_CHECK_MIN_POOL) return [];
+  const shuffled = shuffleStable(pool.map((f) => f.id), day * 31 + 17);
+  return shuffled
+    .sort((x, y) => (states.get(x)!.lastRetrievedDay ?? -1) - (states.get(y)!.lastRetrievedDay ?? -1))
+    .slice(0, COLD_CHECK_ITEMS);
+};
 
 /**
  * THE CLOSER CASCADE.
@@ -183,8 +233,8 @@ export const closerIds = (
 };
 
 /** Deterministic shuffle so a session is reproducible in tests and probes. */
-const shuffleStable = (ids: string[], seed: number): string[] => {
-  const out = [...ids];
+export const shuffleStable = <T>(items: readonly T[], seed: number): T[] => {
+  const out = [...items];
   let h = (seed * 2654435761) >>> 0;
   for (let i = out.length - 1; i > 0; i--) {
     h = (h * 1664525 + 1013904223) >>> 0;
@@ -193,6 +243,25 @@ const shuffleStable = (ids: string[], seed: number): string[] => {
     const b = out[j]!;
     out[i] = b;
     out[j] = a;
+  }
+  return out;
+};
+
+/**
+ * Shuffle WITHIN runs of equal key, leaving the order of the runs untouched.
+ * The input must already be sorted by that key; this only stirs each band.
+ */
+export const bandShuffle = <T>(sorted: readonly T[], keyOf: (t: T) => string, seed: number): T[] => {
+  const out: T[] = [];
+  let i = 0;
+  let band = 0;
+  while (i < sorted.length) {
+    const key = keyOf(sorted[i]!);
+    let j = i;
+    while (j < sorted.length && keyOf(sorted[j]!) === key) j++;
+    out.push(...shuffleStable(sorted.slice(i, j), seed * 131 + band));
+    i = j;
+    band += 1;
   }
   return out;
 };
@@ -211,6 +280,32 @@ export const isStruggling = (s: SessionState): boolean => {
   const recent = real.slice(-STRUGGLE_WINDOW);
   const bad = recent.filter((r) => !r.correct || r.cls === "effortful").length;
   return bad >= STRUGGLE_THRESHOLD;
+};
+
+const medianOf = (xs: number[]): number | null => {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+};
+
+/**
+ * Is he TIRING? The clock creeping up across a sitting predicts a bad ending
+ * before the misses arrive. Compares the median first-digit time of his last
+ * FATIGUE_WINDOW correct answers against his first FATIGUE_WINDOW: tired means
+ * the recent median is both FATIGUE_RATIO times the opening one and above an
+ * absolute floor. Correct answers only, retries never, and no verdict until
+ * there are enough real items to have a baseline at all.
+ */
+export const isFatigued = (s: SessionState): boolean => {
+  const real = s.responses.filter((r) => !r.isRetry);
+  if (real.length < FATIGUE_MIN_ITEMS) return false;
+  const timed = real.filter((r) => r.correct && r.firstKeyMs !== null).map((r) => r.firstKeyMs!);
+  if (timed.length < FATIGUE_WINDOW * 2) return false;
+  const opening = medianOf(timed.slice(0, FATIGUE_WINDOW));
+  const recent = medianOf(timed.slice(-FATIGUE_WINDOW));
+  if (opening === null || recent === null) return false;
+  return recent >= FATIGUE_FLOOR_MS && recent >= opening * FATIGUE_RATIO;
 };
 
 export interface StepResult {
