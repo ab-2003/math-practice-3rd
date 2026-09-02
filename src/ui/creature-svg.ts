@@ -181,6 +181,16 @@ const PLANS: Record<Silhouette, Plan> = {
     spine: [[38, 124], [70, 104], [118, 100], [152, 108]],
     tailAnchor: [30, 140],
   },
+  // KOMODUSTER (0.18.6): the monitor lizard. Longer and lower than
+  // anything else, legs splayed wide, a flat wedge of a head held low.
+  komodo: {
+    body: "M20 150 L30 120 L64 106 L118 102 L152 112 L170 134 L166 150 Z",
+    head: "M150 100 L208 96 L214 114 L198 126 L152 126 Z",
+    face: { x: 158, y: 100, scale: 0.85 },
+    legs: ["M34 144 L16 184 L44 184 L56 144 Z", "M66 146 L60 184 L84 184 L90 146 Z", "M122 146 L118 184 L142 184 L146 146 Z", "M146 144 L156 184 L182 184 L168 144 Z"],
+    spine: [[30, 128], [64, 108], [118, 102], [150, 112]],
+    tailAnchor: [22, 140],
+  },
   // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
   // the tail curling behind.
   chameleon: {
@@ -527,6 +537,9 @@ export const creatureSvg = (
   }
 
   if (c.tail === "ring") root.append(ringTail(c, plan));
+  // KOMODUSTER's tail trails long and LOW, the way a monitor's does; the
+  // raised spike every other tail starts from read as an antenna on it.
+  else if (c.id === "komoduster") root.append(poly("M30 124 L-2 140 L-12 156 L28 150 Z", body, SW - 1));
   else root.append(...tail(c, plan));
   if (plan.wings !== undefined) {
     const w = poly(plan.wings, c.palette[2], SW);
@@ -573,6 +586,12 @@ export const creatureSvg = (
     }
     // A gold tuft on the tail tip, or the black tail is lost on the panel.
     root.append(svg("circle", { cx: 20, cy: 66, r: 6, fill: c.palette[2], stroke: INK, "stroke-width": 3 }));
+  }
+  // KOMODUSTER's hide: a scatter of darker scales along the flank.
+  if (c.id === "komoduster") {
+    for (const [sx, sy, r] of [[58, 124, 3], [78, 134, 2.4], [96, 118, 3], [114, 132, 2.6], [132, 120, 2.8], [148, 134, 2.2], [88, 142, 2]] as const) {
+      root.append(svg("circle", { cx: sx, cy: sy, r, fill: c.palette[1], opacity: 0.55 }));
+    }
   }
   // WRECKARM's fist: its own rig, so the act can wind it up and swing it.
   if (c.id === "wreckarm") {
@@ -1015,6 +1034,20 @@ export const creatureSvg = (
       rig.append(svg("path", { class: `slash slash-${k}`, d: `M${x + 14} 54 L${x - 10} 134`, stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round", opacity: 0 }));
     }
     rig.append(svg("path", { class: "slash-spark", d: "M232 60 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z", fill: "#FFFFFF", stroke: INK, "stroke-width": 1.2, opacity: 0 }));
+    root.append(rig);
+  }
+
+  // KOMODUSTER lunges and FLICKS a forked tongue, twice, out of the jaw;
+  // dust kicks up at the feet.
+  if (opts.idle !== undefined && c.id === "komoduster") {
+    const rig = svg("g", { class: "komodo-rig" });
+    const tongue = svg("g", { class: "tongue-fork" });
+    tongue.append(svg("path", { d: "M210 127 L238 122", fill: "none", stroke: INK, "stroke-width": 7, "stroke-linecap": "round" }));
+    tongue.append(svg("path", { d: "M210 127 L238 122 M236 122 L246 115 M236 122 L246 127", fill: "none", stroke: "#FFD84A", "stroke-width": 3.6, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    rig.append(tongue);
+    const dust = svg("g", { class: "dust-k" });
+    for (const [dx, r] of [[24, 5], [44, 6], [160, 5], [182, 6]] as const) dust.append(svg("circle", { cx: dx, cy: 186, r, fill: "#B8B28A", opacity: 0.8 }));
+    rig.append(dust);
     root.append(rig);
   }
 

@@ -3,8 +3,8 @@ import { canAffordAny, canLevelUp, cheapestLocked, levelBrings, levelCost, MAX_L
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
-  it("holds exactly twenty-nine monsters, seven of them dragons, eight of them kaiju", () => {
-    expect(ROSTER.length).toBe(29);
+  it("holds exactly thirty monsters, seven of them dragons, eight of them kaiju", () => {
+    expect(ROSTER.length).toBe(30);
     expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
     expect(ROSTER.filter((c) => c.kaiju === true).length).toBe(8);
   });
@@ -29,8 +29,8 @@ describe("the open shop", () => {
   });
 
   it("keeps every id and name unique, and every price positive", () => {
-    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(29);
-    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(29);
+    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(30);
+    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(30);
     for (const c of ROSTER) expect(c.cost).toBeGreaterThan(0);
   });
 
@@ -41,15 +41,17 @@ describe("the open shop", () => {
 
   it("gives every monster two lines of its own, with no em-dashes", () => {
     const all = ROSTER.flatMap((c) => c.voice);
-    expect(all.length).toBe(58);
-    expect(new Set(all).size).toBe(58);
+    expect(all.length).toBe(60);
+    expect(new Set(all).size).toBe(60);
     for (const line of all) expect(line).not.toContain("—");
     expect(riderVoice(ROSTER[0]!, 0)).toBe(ROSTER[0]!.voice[0]);
     expect(riderVoice(ROSTER[0]!, 1)).toBe(ROSTER[0]!.voice[1]);
   });
 
-  it("still knows the cheapest target and affordability", () => {
+  it("still knows the cheapest target and affordability, KOMODUSTER third in line", () => {
     expect(cheapestLocked([])!.id).toBe("grindjaw");
+    expect(cheapestLocked(["grindjaw", "skathorn"])!.id).toBe("komoduster");
+    expect(cheapestLocked(["grindjaw", "skathorn"])!.cost).toBe(125);
     expect(cheapestLocked(ROSTER.map((c) => c.id))).toBeNull();
     expect(canAffordAny([], 59)).toBe(false);
     expect(canAffordAny([], 60)).toBe(true);

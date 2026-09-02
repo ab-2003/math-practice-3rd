@@ -16,7 +16,9 @@ export type Silhouette =
   // THE KAIJU SIX (0.18.0): hybrids, not elements.
   | "hoops" | "ace" | "wolf" | "panda" | "hydra" | "chameleon"
   // 0.18.3: a wolf-dragon on two legs, and a panther.
-  | "wrecker" | "panther";
+  | "wrecker" | "panther"
+  // 0.18.6: a Komodo dragon.
+  | "komodo";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -57,6 +59,12 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "horned", crest: "frill", tail: "spike", eyes: 2, horns: 3,
     palette: ["#FF8A1F", "#4A1B00", "#FFE3C2"] ,
     voice: ["Frill first, wheels second. Every time.", "The deck was my idea. Ask anyone."] },
+  // KOMODUSTER (Andy, 2026-09-02): a Komodo dragon, an early save at 125.
+  { id: "komoduster", name: "KOMODUSTER", cost: 125,
+    lore: "Tastes the air before every trick. Then eats the dust it kicked up.",
+    silhouette: "komodo", crest: "none", tail: "spike", eyes: 2, horns: 0,
+    palette: ["#8C8A5A", "#3A3820", "#D9D3A0"] ,
+    voice: ["Tasted the air. Landed the trick.", "The dust is mine. So is the rail."] },
   { id: "voltmaw", name: "VOLTMAW", cost: 130,
     lore: "Runs faster than the storm it stole its teeth from.",
     silhouette: "raptor", crest: "spikes", tail: "whip", eyes: 2, horns: 1,

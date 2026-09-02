@@ -1176,9 +1176,30 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .slash-spark { animation: spark-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes spark-pop { 0%, 8.5%, 12%, 100% { opacity: 0; } 9.5% { opacity: 1; } }
 
+/* KOMODUSTER: a low lunge, the forked tongue flicks twice, dust at the feet. */
+.creature.idle-komodo { animation-name: idle-lunge; }
+@keyframes idle-lunge {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: translateX(-5px); }
+  8% { transform: translate(10px, 2px); }
+  13% { transform: translate(10px, 0); }
+  18% { transform: translateX(3px); }
+}
+.tongue-fork { transform-box: fill-box; transform-origin: 0% 50%; transform: scaleX(0); animation: tongue-flick var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes tongue-flick {
+  0%, 7% { transform: scaleX(0); }
+  8.5% { transform: scaleX(1); }
+  10% { transform: scaleX(0.15); }
+  11.5% { transform: scaleX(1); }
+  13.5% { transform: scaleX(1); }
+  15%, 100% { transform: scaleX(0); }
+}
+.dust-k { opacity: 0; animation: dust-kick var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes dust-kick { 0%, 6.5% { opacity: 0; transform: none; } 8% { opacity: 1; } 14% { opacity: 0; transform: translate(-10px, -8px) scale(1.4); } 100% { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */

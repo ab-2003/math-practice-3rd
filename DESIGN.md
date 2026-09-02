@@ -1005,6 +1005,10 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.6 - KOMODUSTER.** A Komodo dragon at 125, third in line after
+      GRINDJAW and SKATHORN: low and long on splayed legs, scales on the
+      flank, a lunge with a forked tongue that flicks twice and dust at
+      the feet. (Andy, 2026-09-02.)
 - [x] **0.18.5 - The card fits an iPad on its side.** Andy's photo: the
       monster card ran off both ends of a landscape iPad. Under 900px of
       height the sheet tightens (smaller art, tighter rows, Send out and

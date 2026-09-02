@@ -1,5 +1,5 @@
 /**
- * PROBE: SHOP. Twenty-nine monsters, their forms and acts, the rack, the
+ * PROBE: SHOP. Thirty monsters, their forms and acts, the rack, the
  * confirms, the peek, gear, send out, the level gate, and the off-stage pause.
  */
 import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
@@ -12,11 +12,12 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all twenty-nine monsters by name, no mysteries", async () => {
+await step("the shop shows all thirty monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 29, "the roster is not twenty-nine");
+  must((await page.$$(".mon")).length === 30, "the roster is not thirty");
+  must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
   must(text.includes("CINDERWYRM") && text.includes("VOIDWYRM"), "the dragons are not on display");
@@ -39,6 +40,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["triomaw", ".head-l"], ["triomaw", ".head-t"], ["triomaw", ".chomp-m"], ["chromaleon", ".tonguerig .tongue"], ["chromaleon", ".fly"],
     ["wreckarm", ".fist-arm"], ["wreckarm", ".tower-top"], ["wreckarm", ".debris-3"], ["wreckarm", ".dust-w"],
     ["pantheraclaw", ".claw-paw .claw"], ["pantheraclaw", ".slash-3"], ["pantheraclaw", ".slash-spark"],
+    ["komoduster", ".komodo-rig .tongue-fork"], ["komoduster", ".dust-k"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
@@ -59,7 +61,10 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     fall: getComputedStyle(document.querySelector('[data-mon="wreckarm"] .tower-top')).animationName,
     swipe: getComputedStyle(document.querySelector('[data-mon="pantheraclaw"] .claw-paw')).animationName,
     pounce: getComputedStyle(document.querySelector('[data-mon="pantheraclaw"] .creature')).animationName,
+    flick: getComputedStyle(document.querySelector('[data-mon="komoduster"] .tongue-fork')).animationName,
+    lunge: getComputedStyle(document.querySelector('[data-mon="komoduster"] .creature')).animationName,
   }));
+  must(names.flick === "tongue-flick" && names.lunge === "idle-lunge", `KOMODUSTER's act reads ${names.flick}/${names.lunge}`);
   must(names.fist === "fist-swing" && names.fall === "tower-fall", `WRECKARM's act reads ${names.fist}/${names.fall}`);
   must(names.swipe === "claw-swipe" && names.pounce === "idle-pounce", `PANTHERACLAW's act reads ${names.swipe}/${names.pounce}`);
   must(names.hoops === "idle-jumpshot" && names.ball === "ball-arc", `SKYHOOK's act reads ${names.hoops}/${names.ball}`);
@@ -73,7 +78,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 29, `${delays.length} idle monsters, wanted 29`);
+  must(delays.length === 30, `${delays.length} idle monsters, wanted 30`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -121,13 +126,13 @@ await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of th
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 29.
+  // colours at tile size. Body plus wings must be unique across all 30.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 29, "could not read the forms");
+  must(forms.length === 30, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
