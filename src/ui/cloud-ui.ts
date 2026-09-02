@@ -10,13 +10,17 @@ import jsQR from "jsqr";
 import type { App } from "./appstate";
 import {
   cloudPushNow, connectedCode, deleteShare, fmtCode, forgetCode, genCode,
-  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode,
+  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, type CloudResult,
 } from "./cloud";
 import { el, mount, on } from "./dom";
 import { exportAll } from "./store";
 import { sheet } from "./sheet";
 
-export const cloudCard = (_app: App): HTMLElement => {
+export type CloudOk = Extract<CloudResult, { kind: "ok" }>;
+/** The dashboard's way into VIEWER MODE: show this copy, read-only. */
+export type CloudViewHandler = (code: string, res: CloudOk) => void;
+
+export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): HTMLElement => {
   const card = el("div", { class: "card", "data-probe": "cloud-card" });
   let stopScan: (() => void) | null = null;
   const render = (): void => { stopScan?.(); mount(card, build()); };
@@ -94,6 +98,16 @@ export const cloudCard = (_app: App): HTMLElement => {
     const now = el("button", { type: "button", class: "btn small alt", "data-probe": "cloud-save-now" }, el("span", { text: "Save now" }));
     on(now, "click", () => { void cloudPushNow().then(() => render()); });
     rows.append(now);
+    // VIEW without loading: the parent's phone and the teacher's laptop want
+    // to LOOK at the record, not replace their own data with it.
+    const view = el("button", { type: "button", class: "btn small", "data-probe": "cloud-view" }, el("span", { text: "View" }));
+    on(view, "click", () => {
+      void getShare(code).then((res) => {
+        if (res.kind !== "ok") { sheet({ title: "Nothing to view", body: "The cloud did not hand back a usable copy.", confirm: "OK" }); return; }
+        opts.onView?.(code, res);
+      });
+    });
+    rows.append(view);
     const load = el("button", { type: "button", class: "btn small" }, el("span", { text: "Load from cloud" }));
     on(load, "click", () => {
       void getShare(code).then((res) => {
@@ -192,20 +206,22 @@ export const cloudCard = (_app: App): HTMLElement => {
         if (res.kind === "offline") { err.textContent = "The cloud is not answering. Try again in a bit."; return; }
         if (res.kind === "bad") { err.textContent = "That copy needs a newer app than this device runs."; return; }
         stopScan?.();
+        const whose = res.meta.name !== undefined ? `${res.meta.name}'s record` : "the record";
         sheet({
           title: "Code connected",
-          body: `The cloud holds ${res.meta.sessions ?? 0} sessions${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. Load it onto this device, or just link for viewing later?`,
-          cancel: "Just link",
+          body: `The cloud holds ${whose}: ${res.meta.sessions ?? 0} sessions${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. ` +
+            `View it here without touching this device's own data, or load it onto this device?`,
+          cancel: "Just view",
           confirm: "Load it here",
           onConfirm: () => {
             sheet({
               title: "Replace this device's data?",
-              body: "Loading the cloud copy replaces everything currently on this device.",
+              body: "Loading the cloud copy replaces everything currently on this device for this rider.",
               cancel: "Cancel", confirm: "Replace", danger: true,
               onConfirm: () => { rememberCode(norm); void loadBackup(res.backup).then(() => location.reload()); },
             });
           },
-          onCancel: () => { rememberCode(norm); render(); },
+          onCancel: () => { rememberCode(norm); if (opts.onView) opts.onView(norm, res); else render(); },
         });
       });
     });

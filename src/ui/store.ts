@@ -9,31 +9,141 @@
  * iOS evicts IndexedDB from home-screen apps under storage pressure and after
  * long periods of non-use. That is not a hypothetical, and it is the reason
  * the JSON backup is offered on a schedule rather than buried in a menu.
+ *
+ * PROFILES (alpha, 2026-09-01). One iPad, more than one child: each profile
+ * is its own database, so nothing about one rider can leak into another's
+ * evidence. The first profile keeps the original database name, so an
+ * install that predates profiles carries on without a migration. The
+ * registry of profiles, and the grown-ups' PIN, are DEVICE-level and live in
+ * localStorage: a PIN belongs to the parent, not to a child's progress file.
  */
 
 import { DEFAULT_STRANDS } from "../core/config";
 import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
-import type { Caps, FactState, Response, Strands } from "../core/types";
+import type { Caps, FactState, Response, SessionRecord, Strands } from "../core/types";
+export type { SessionRecord } from "../core/types";
 
 export const SCHEMA_VERSION = 1;
-const DB_NAME = "trickline";
+const LEGACY_DB = "trickline";
 const STORES = ["meta", "facts", "responses", "sessions"] as const;
 
-export interface SessionRecord {
+// ---------------------------------------------------------------------------
+// The registry: who the riders are, which one is up, and the grown-ups' code.
+// ---------------------------------------------------------------------------
+
+export interface Profile {
   id: string;
-  day: number;
-  startedAt: number;
-  endedAt: number;
-  items: number;
-  correct: number;
-  retrieved: number;
-  derived: number;
-  status: "complete" | "endedEarly" | "abandoned";
-  coins: number;
+  name: string;
+  createdAt: number;
 }
+
+export interface Registry {
+  version: 1;
+  active: string;
+  /** The grown-ups' 4 digit code. Device-level; seeded from a pre-profile
+   *  meta.pin on first boot so nobody has to set it twice. */
+  pin: string | null;
+  profiles: Profile[];
+}
+
+export const MAIN_PROFILE = "main";
+const REG_KEY = "tl-profiles";
+
+const freshRegistry = (): Registry => ({
+  version: 1, active: MAIN_PROFILE, pin: null,
+  profiles: [{ id: MAIN_PROFILE, name: "RIDER", createdAt: 0 }],
+});
+
+export const loadRegistry = (): Registry => {
+  try {
+    const raw = localStorage.getItem(REG_KEY);
+    if (raw) {
+      const r = JSON.parse(raw) as Registry;
+      if (r.version === 1 && Array.isArray(r.profiles) && r.profiles.length > 0) {
+        if (!r.profiles.some((p) => p.id === r.active)) r.active = r.profiles[0]!.id;
+        return r;
+      }
+    }
+  } catch { /* private mode, or a garbled entry: start clean */ }
+  return freshRegistry();
+};
+
+export const saveRegistry = (r: Registry): void => {
+  try { localStorage.setItem(REG_KEY, JSON.stringify(r)); } catch { /* private mode */ }
+};
+
+export const dbNameFor = (id: string): string => (id === MAIN_PROFILE ? LEGACY_DB : `${LEGACY_DB}-${id}`);
+
+export const newProfileId = (): string =>
+  `p${Date.now().toString(36)}${Math.floor(Math.random() * 46_656).toString(36)}`;
+
+let profileId = MAIN_PROFILE;
+let dbName = LEGACY_DB;
+let db: IDBDatabase | null = null;
+
+/** Point every store call at this profile's database. */
+export const useProfile = (id: string): void => {
+  const name = dbNameFor(id);
+  profileId = id;
+  if (name === dbName) return;
+  db?.close();
+  db = null;
+  dbName = name;
+};
+
+export const currentProfileId = (): string => profileId;
+
+const openNamed = (name: string): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
+    const req = indexedDB.open(name, SCHEMA_VERSION);
+    req.onupgradeneeded = () => {
+      const d = req.result;
+      for (const s of STORES) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error("indexedDB open failed"));
+  });
+
+export const open = async (): Promise<IDBDatabase> => {
+  if (db) return db;
+  db = await openNamed(dbName);
+  return db;
+};
+
+/** Wipe a profile's database entirely. Only ever reached behind a typed
+ *  confirmation in the grown-ups screen. */
+export const deleteProfileData = (id: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (dbNameFor(id) === dbName) { db?.close(); db = null; }
+    const req = indexedDB.deleteDatabase(dbNameFor(id));
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error ?? new Error("delete failed"));
+    req.onblocked = () => resolve();
+  });
+
+/** Read another profile's meta without switching to it: the picker shows
+ *  each rider's monster and coins. Missing or unreadable reads as fresh. */
+export const peekMeta = async (id: string): Promise<Meta> => {
+  try {
+    const d = await openNamed(dbNameFor(id));
+    const raw = await new Promise<Meta | undefined>((resolve, reject) => {
+      const t = d.transaction("meta", "readonly");
+      const req = t.objectStore("meta").get("meta");
+      req.onsuccess = () => resolve(req.result as Meta | undefined);
+      req.onerror = () => reject(req.error);
+    });
+    d.close();
+    return raw && raw.version === SCHEMA_VERSION ? { ...freshMeta(), ...raw } : freshMeta();
+  } catch { return freshMeta(); }
+};
+
+// ---------------------------------------------------------------------------
+// Meta: everything about one rider that is not a fact state or a response.
+// ---------------------------------------------------------------------------
 
 export interface Meta {
   version: number;
+  /** Legacy: the PIN before profiles existed. Seeds the registry once. */
   pin: string | null;
   muted: boolean;
   /** Trick animations on a correct answer. A kid control, like mute. */
@@ -86,6 +196,8 @@ export interface Meta {
   /** Show the bonus times as analog clock faces instead of digits. Opt-in:
    *  it doubles as analog-reading practice on five minute marks. */
   elapsedAnalog: boolean;
+  /** The day of the last weekly cold check. See core/config COLD_CHECK. */
+  lastColdDay: number | null;
 }
 
 export const freshMeta = (): Meta => ({
@@ -99,21 +211,8 @@ export const freshMeta = (): Meta => ({
   caps: { add: null, sub: null, mul: null, div: null },
   elapsedLevel: 1,
   elapsedAnalog: false,
+  lastColdDay: null,
 });
-
-let db: IDBDatabase | null = null;
-
-export const open = (): Promise<IDBDatabase> =>
-  new Promise((resolve, reject) => {
-    if (db) return resolve(db);
-    const req = indexedDB.open(DB_NAME, SCHEMA_VERSION);
-    req.onupgradeneeded = () => {
-      const d = req.result;
-      for (const s of STORES) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
-    };
-    req.onsuccess = () => { db = req.result; resolve(db); };
-    req.onerror = () => reject(req.error ?? new Error("indexedDB open failed"));
-  });
 
 const tx = async <T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
   const d = await open();
@@ -126,25 +225,29 @@ const tx = async <T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectS
   });
 };
 
+/** A meta saved before a field existed picks up the default rather than
+ *  arriving undefined, which is why this spread is not a formality. */
+export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
+  ...freshMeta(), ...raw,
+  strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) },
+  missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
+  caps: { add: null, sub: null, mul: null, div: null, ...(raw.caps ?? {}) },
+  dailyGoal: Math.max(10, Math.min(80, raw.dailyGoal ?? 40)),
+  speedLimit: Math.max(1, Math.min(30, raw.speedLimit ?? 10)),
+  speedBest: raw.speedBest ?? {},
+  // A save from the brief elapsedHard era maps onto the ladder it became.
+  elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
+  elapsedAnalog: raw.elapsedAnalog ?? false,
+  lastColdDay: raw.lastColdDay ?? null,
+});
+
 export const getMeta = async (): Promise<Meta> => {
   const raw = await tx<Meta | undefined>("meta", "readonly", (s) => s.get("meta"));
   if (!raw) return freshMeta();
   if (raw.version !== SCHEMA_VERSION) {
     throw new Error(`saved data is version ${raw.version}, this app speaks ${SCHEMA_VERSION}`);
   }
-  // A meta saved before a field existed picks up the default rather than
-  // arriving undefined, which is why this spread is not a formality.
-  return {
-    ...freshMeta(), ...raw,
-    strands: { ...DEFAULT_STRANDS, ...(raw.strands ?? {}) },
-    missing: { ...DEFAULT_MISSING, ...(raw.missing ?? {}) },
-    // A save from the brief elapsedHard era maps onto the ladder it became.
-    dailyGoal: Math.max(10, Math.min(80, raw.dailyGoal ?? 40)),
-    speedLimit: Math.max(1, Math.min(30, raw.speedLimit ?? 10)),
-    speedBest: raw.speedBest ?? {},
-    elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
-    elapsedAnalog: raw.elapsedAnalog ?? false,
-  };
+  return hydrateMeta(raw);
 };
 
 export const putMeta = async (m: Meta): Promise<void> => {
@@ -177,6 +280,14 @@ export const appendSession = async (r: SessionRecord): Promise<void> => {
 export const getSessions = async (): Promise<SessionRecord[]> =>
   (await tx<SessionRecord[] | undefined>("sessions", "readonly", (s) => s.get("all"))) ?? [];
 
+/** Has this profile ever done anything? The viewer mode keys off this: a
+ *  device with nothing of its own shows the cloud copy instead. */
+export const hasLocalData = async (): Promise<boolean> => {
+  const facts = await getFacts();
+  for (const s of facts.values()) if (s.introduced) return true;
+  return (await getSessions()).length > 0;
+};
+
 // ---------------------------------------------------------------------------
 // Export and import, so progress survives a device change or an eviction.
 // ---------------------------------------------------------------------------
@@ -185,23 +296,30 @@ export interface Backup {
   app: "trickline";
   version: number;
   exportedAt: string;
+  /** The rider's name, so a viewer knows whose record this is. */
+  name?: string;
   meta: Meta;
   facts: Record<string, FactState>;
   responses: Response[];
   sessions: SessionRecord[];
 }
 
-export const exportAll = async (): Promise<Backup> => ({
-  app: "trickline",
-  version: SCHEMA_VERSION,
-  exportedAt: new Date().toISOString(),
-  meta: await getMeta(),
-  facts: Object.fromEntries(await getFacts()),
-  responses: await getResponses(),
-  sessions: await getSessions(),
-});
+export const exportAll = async (): Promise<Backup> => {
+  const reg = loadRegistry();
+  const name = reg.profiles.find((p) => p.id === profileId)?.name;
+  return {
+    app: "trickline",
+    version: SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    ...(name !== undefined ? { name } : {}),
+    meta: await getMeta(),
+    facts: Object.fromEntries(await getFacts()),
+    responses: await getResponses(),
+    sessions: await getSessions(),
+  };
+};
 
-export const importAll = async (b: unknown): Promise<void> => {
+export const checkBackup = (b: unknown): Backup => {
   if (typeof b !== "object" || b === null) throw new Error("that file is not a backup");
   const back = b as Partial<Backup>;
   if (back.app !== "trickline") throw new Error("that backup is from a different app");
@@ -209,13 +327,18 @@ export const importAll = async (b: unknown): Promise<void> => {
     throw new Error(`that backup is version ${String(back.version)}, this app speaks ${SCHEMA_VERSION}`);
   }
   if (!back.meta || !back.facts) throw new Error("that backup is missing its progress");
-  await putMeta(back.meta);
+  return back as Backup;
+};
+
+export const importAll = async (b: unknown): Promise<void> => {
+  const back = checkBackup(b);
+  await putMeta(hydrateMeta(back.meta));
   await putFacts(new Map(Object.entries(back.facts)));
   await tx("responses", "readwrite", (s) => s.put(back.responses ?? [], "all"));
   await tx("sessions", "readwrite", (s) => s.put(back.sessions ?? [], "all"));
 };
 
-/** Wipe everything. Only ever reached behind a typed confirmation. */
+/** Wipe everything in THIS profile. Only ever reached behind a typed confirmation. */
 export const eraseAll = async (): Promise<void> => {
   const d = await open();
   await Promise.all(STORES.map((store) => new Promise<void>((resolve, reject) => {

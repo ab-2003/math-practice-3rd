@@ -14,7 +14,7 @@
  *    launches a browser window.
  */
 
-import { exportAll, importAll, type Backup } from "./store";
+import { currentProfileId, exportAll, importAll, MAIN_PROFILE, type Backup } from "./store";
 
 export const CLOUD_URL = "https://math-pra3-cloudshare.beyer-games.workers.dev";
 
@@ -58,6 +58,7 @@ const device = (): string => {
 export interface CloudMeta {
   savedAt?: string;
   device?: string;
+  name?: string;
   sessions?: number;
   coins?: number;
 }
@@ -84,6 +85,7 @@ export const getShare = async (code: string): Promise<CloudResult> => {
       kind: "ok", backup: raw,
       meta: { ...(raw.savedAt !== undefined ? { savedAt: raw.savedAt } : {}),
         ...(raw.device !== undefined ? { device: raw.device } : {}),
+        ...(raw.name !== undefined ? { name: raw.name } : {}),
         sessions: raw.sessions?.length ?? 0, coins: raw.meta.coins },
     };
   } catch { return { kind: "offline" }; }
@@ -109,18 +111,24 @@ export const deleteShare = async (code: string): Promise<boolean> => {
 export const loadBackup = (b: Backup): Promise<void> => importAll(b);
 
 // ---- the device's memory of its share (plain localStorage, WO4 precedent) --
+// One code PER RIDER: the first profile keeps the original key, so a device
+// linked before profiles existed stays linked.
+const keyFor = (base: string): string => {
+  const id = currentProfileId();
+  return id === MAIN_PROFILE ? base : `${base}:${id}`;
+};
 const KEY = "tl-cloud-code";
 const STATUS = "tl-cloud-status";
-export const connectedCode = (): string | null => { try { return localStorage.getItem(KEY); } catch { return null; } };
-export const rememberCode = (code: string): void => { try { localStorage.setItem(KEY, code); } catch { /* private mode */ } };
-export const forgetCode = (): void => { try { localStorage.removeItem(KEY); } catch { /* */ } };
+export const connectedCode = (): string | null => { try { return localStorage.getItem(keyFor(KEY)); } catch { return null; } };
+export const rememberCode = (code: string): void => { try { localStorage.setItem(keyFor(KEY), code); } catch { /* private mode */ } };
+export const forgetCode = (): void => { try { localStorage.removeItem(keyFor(KEY)); } catch { /* */ } };
 
 export interface PushStatus { at: number; ok: boolean }
 export const lastPush = (): PushStatus | null => {
-  try { return JSON.parse(localStorage.getItem(STATUS) ?? "null") as PushStatus | null; } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(keyFor(STATUS)) ?? "null") as PushStatus | null; } catch { return null; }
 };
 const recordPush = (ok: boolean): void => {
-  try { localStorage.setItem(STATUS, JSON.stringify({ at: Date.now(), ok })); } catch { /* */ }
+  try { localStorage.setItem(keyFor(STATUS), JSON.stringify({ at: Date.now(), ok })); } catch { /* */ }
 };
 
 // ---- the auto-push: throttled, trailing, fire-and-forget -------------------

@@ -5,18 +5,27 @@ import type { FactState } from "../core/types";
 import type { App, Route } from "./appstate";
 import { dashboardScreen } from "./dashboard";
 import { mount } from "./dom";
+import { profilesScreen } from "./profiles";
 import { collectionScreen, homeScreen } from "./screens";
 import { sessionScreen } from "./session-screen";
 import { speedScreen } from "./speed-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
 import { cloudAutoPush } from "./cloud";
-import { getFacts, getMeta, putFacts, putMeta, freshMeta, type Meta } from "./store";
+import {
+  getFacts, getMeta, loadRegistry, putFacts, putMeta, freshMeta, saveRegistry, useProfile, type Meta,
+} from "./store";
 
 const BACKUP_NUDGE_DAYS = 21;
+/** Once a rider is picked, a reload inside the same visit keeps them. */
+const CHOSEN_KEY = "tl-profile-chosen";
 
 export const boot = async (root: HTMLElement): Promise<void> => {
   const deck = buildDeck();
+
+  const registry = loadRegistry();
+  useProfile(registry.active);
+  const profile = registry.profiles.find((p) => p.id === registry.active) ?? registry.profiles[0]!;
 
   let meta: Meta;
   try {
@@ -32,6 +41,13 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     });
   }
 
+  // The PIN moved from the progress file to the device when profiles
+  // arrived. Seed it once so nobody sets it twice.
+  if (registry.pin === null && meta.pin !== null) {
+    registry.pin = meta.pin;
+    saveRegistry(registry);
+  }
+
   const stored = await getFacts();
   const states = allStates(deck);
   for (const [id, s] of stored) if (states.has(id)) states.set(id, s as FactState);
@@ -40,10 +56,13 @@ export const boot = async (root: HTMLElement): Promise<void> => {
 
   setMuted(meta.muted);
 
-  let route: Route = "home";
+  let chosen = false;
+  try { chosen = sessionStorage.getItem(CHOSEN_KEY) !== null; } catch { /* private mode */ }
+  // More than one rider on this iPad: ask who is up, every launch.
+  let route: Route = registry.profiles.length > 1 && !chosen ? "profiles" : "home";
 
   const app: App = {
-    deck, states, meta, day: today(),
+    deck, states, meta, day: today(), profile, registry,
     go: (r) => { route = r; render(); },
     save: async () => {
       await putMeta(app.meta);
@@ -53,6 +72,15 @@ export const boot = async (root: HTMLElement): Promise<void> => {
       cloudAutoPush();
     },
     refresh: () => render(),
+    pin: () => app.registry.pin,
+    setPin: (code) => { app.registry.pin = code; app.meta.pin = code; saveRegistry(app.registry); void app.save(); },
+    saveRegistry: () => saveRegistry(app.registry),
+    switchProfile: (id) => {
+      app.registry.active = id;
+      saveRegistry(app.registry);
+      try { sessionStorage.setItem(CHOSEN_KEY, id); } catch { /* private mode */ }
+      location.reload();
+    },
   };
 
   const render = (): void => {
@@ -61,6 +89,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
       : route === "speed" ? speedScreen(app)
       : route === "collection" ? collectionScreen(app)
       : route === "dashboard" ? dashboardScreen(app)
+      : route === "profiles" ? profilesScreen(app)
       : homeScreen(app);
     mount(root, screen);
     window.scrollTo(0, 0);
@@ -91,5 +120,8 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     meta: () => app.meta,
     deck: () => app.deck,
     day: () => app.day,
+    registry: () => app.registry,
+    profile: () => app.profile,
+    save: () => app.save(),
   };
 };
