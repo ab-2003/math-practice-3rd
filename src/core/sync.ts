@@ -41,6 +41,9 @@ export type Fields = Partial<Record<SyncKey, Field>>;
 export interface SettingsDoc {
   app: "trickline";
   version: 1;
+  /** The device that wrote this document. The worker stores one document
+   *  per writer and merges on read, so no writer ever overwrites another. */
+  writer?: string;
   fields: Fields;
 }
 
@@ -80,6 +83,7 @@ export const isSettingsDoc = (x: unknown): x is SettingsDoc => {
   if (typeof x !== "object" || x === null) return false;
   const d = x as Partial<SettingsDoc>;
   if (d.app !== "trickline" || d.version !== 1 || typeof d.fields !== "object" || d.fields === null) return false;
+  if (d.writer !== undefined && (typeof d.writer !== "string" || d.writer.length > 40)) return false;
   for (const [k, f] of Object.entries(d.fields)) {
     if (!isSyncKey(k)) return false;
     const field = f as Partial<Field>;

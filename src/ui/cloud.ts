@@ -140,6 +140,21 @@ export const deleteShare = async (code: string): Promise<boolean> => {
 
 export const loadBackup = (b: Backup): Promise<void> => importAll(b);
 
+/** Who stamped a field. Random per device, never a name, never sent
+ *  anywhere but into the stamps. */
+const DEVICE_KEY = "tl-device-id";
+export const deviceId = (): string => {
+  try {
+    const have = localStorage.getItem(DEVICE_KEY);
+    if (have) return have;
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    const id = "d" + Array.from(bytes, (b) => ALPHABET[b % 32]).join("");
+    localStorage.setItem(DEVICE_KEY, id);
+    return id;
+  } catch { return "d-private"; }
+};
+
 // ---- the settings document: two writers, merged by the worker -------------
 export type SettingsResult =
   | { kind: "ok"; doc: SettingsDoc }
@@ -161,7 +176,7 @@ export const getSettings = async (code: string, ms = 6000): Promise<SettingsResu
  *  whole document, later stamp winning per field. */
 export const putSettings = async (code: string, fields: Fields): Promise<SettingsResult> => {
   try {
-    const body = JSON.stringify({ app: "trickline", version: 1, fields } satisfies SettingsDoc);
+    const body = JSON.stringify({ app: "trickline", version: 1, writer: deviceId(), fields } satisfies SettingsDoc);
     const r = await timedFetch(`${CLOUD_URL}/v1/share/${code}/settings`, {
       method: "PUT", headers: { "content-type": "application/json" }, body,
     });
@@ -171,20 +186,6 @@ export const putSettings = async (code: string, fields: Fields): Promise<Setting
   } catch { return { kind: "offline" }; }
 };
 
-/** Who stamped a field. Random per device, never a name, never sent
- *  anywhere but into the stamps. */
-const DEVICE_KEY = "tl-device-id";
-export const deviceId = (): string => {
-  try {
-    const have = localStorage.getItem(DEVICE_KEY);
-    if (have) return have;
-    const bytes = new Uint8Array(6);
-    crypto.getRandomValues(bytes);
-    const id = "d" + Array.from(bytes, (b) => ALPHABET[b % 32]).join("");
-    localStorage.setItem(DEVICE_KEY, id);
-    return id;
-  } catch { return "d-private"; }
-};
 
 // ---- the device's memory of its share (plain localStorage, WO4 precedent) --
 // One code PER RIDER: the first profile keeps the original key, so a device

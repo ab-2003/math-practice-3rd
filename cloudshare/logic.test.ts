@@ -5,7 +5,7 @@ const CODE = "ABCDEFGHJKMNPQRSTVWX";
 const put = (kv: MemKV, path: string, body: unknown, now?: number) =>
   handle({ method: "PUT", path, body: JSON.stringify(body) }, kv, now);
 const get = (kv: MemKV, path: string) => handle({ method: "GET", path, body: "" }, kv);
-const doc = (fields: Record<string, unknown>) => ({ app: "trickline", version: 1, fields });
+const doc = (fields: Record<string, unknown>, writer = "w1") => ({ app: "trickline", version: 1, writer, fields });
 
 describe("the worker's record route", () => {
   it("stores Trick Line data and refuses anything else", async () => {
@@ -32,13 +32,40 @@ describe("the worker's record route", () => {
 });
 
 describe("the worker's settings route", () => {
-  it("merges on write, later stamp winning per field", async () => {
+  it("keeps one document per writer and merges on read, later stamp winning per field", async () => {
     const kv = new MemKV();
-    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 100, by: "phone" } }));
-    const r = await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 80, at: 50, by: "ipad" }, speedLimit: { v: 3, at: 60, by: "ipad" } }));
+    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 100, by: "phone" } }, "phone"));
+    const r = await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 80, at: 50, by: "ipad" }, speedLimit: { v: 3, at: 60, by: "ipad" } }, "ipad"));
     const merged = JSON.parse(r.body!);
     expect(merged.fields.dailyGoal.v).toBe(30);
     expect(merged.fields.speedLimit.v).toBe(3);
+    expect(kv.map.has(`${CODE}:settings:phone`) && kv.map.has(`${CODE}:settings:ipad`)).toBe(true);
+    const got = JSON.parse((await get(kv, `/v1/share/${CODE}/settings`)).body!);
+    expect(got.fields.dailyGoal.v).toBe(30);
+    expect(got.fields.speedLimit.v).toBe(3);
+  });
+
+  it("cannot lose another writer's field to a stale read, because it never reads to write", async () => {
+    // A store whose GETs lag its PUTs, the way KV can for a moment.
+    const kv = new MemKV();
+    const lagging: typeof kv = Object.create(kv) as typeof kv;
+    lagging.get = async () => null;
+    lagging.list = async () => ({ keys: [] });
+    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 100, by: "phone" } }, "phone"));
+    await handle({ method: "PUT", path: `/v1/share/${CODE}/settings`, body: JSON.stringify(doc({ speedLimit: { v: 3, at: 60, by: "ipad" } }, "ipad")) }, lagging);
+    // Once the store catches up, both fields are there: nothing was overwritten.
+    const got = JSON.parse((await get(kv, `/v1/share/${CODE}/settings`)).body!);
+    expect(got.fields.dailyGoal.v).toBe(30);
+    expect(got.fields.speedLimit.v).toBe(3);
+  });
+
+  it("still reads a pre-0.17 single document and merges it in", async () => {
+    const kv = new MemKV();
+    await kv.put(`${CODE}:settings`, JSON.stringify({ app: "trickline", version: 1, fields: { elapsedLevel: { v: 2, at: 5, by: "old" } } }));
+    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 100, by: "phone" } }, "phone"));
+    const got = JSON.parse((await get(kv, `/v1/share/${CODE}/settings`)).body!);
+    expect(got.fields.elapsedLevel.v).toBe(2);
+    expect(got.fields.dailyGoal.v).toBe(30);
   });
 
   it("clamps a stamp from a clock that runs in the future", async () => {
@@ -60,10 +87,11 @@ describe("the worker's settings route", () => {
     expect((await put(kv, `/v1/share/${CODE}/settings`, big)).status).toBe(413);
   });
 
-  it("deleting the code takes the settings with it", async () => {
+  it("deleting the code takes every writer's settings with it", async () => {
     const kv = new MemKV();
     await put(kv, `/v1/share/${CODE}`, { app: "trickline", version: 1, meta: {} });
-    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 1, by: "x" } }));
+    await put(kv, `/v1/share/${CODE}/settings`, doc({ dailyGoal: { v: 30, at: 1, by: "x" } }, "a"));
+    await put(kv, `/v1/share/${CODE}/settings`, doc({ speedLimit: { v: 3, at: 1, by: "y" } }, "b"));
     expect((await handle({ method: "DELETE", path: `/v1/share/${CODE}`, body: "" }, kv)).status).toBe(204);
     expect((await get(kv, `/v1/share/${CODE}`)).status).toBe(404);
     expect((await get(kv, `/v1/share/${CODE}/settings`)).status).toBe(404);

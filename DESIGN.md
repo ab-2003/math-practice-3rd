@@ -777,10 +777,15 @@ in memory) found four defects in a design that had passed every probe:
 3. **The merge was not order-independent.** Two writes from one device in
    one millisecond with different values had no tiebreak. The order is now
    total: stamp, device, value. Found by a thousand random merges.
-4. **KV reads can be stale right after a write** (the live smoke caught it),
-   so a merge fed only the newest field could drop the one before. Every
-   writer now sends everything it knows; the live smoke waits for
-   consistency between writers rather than racing it.
+4. **KV reads can be stale right after a write** (the live smoke caught it
+   twice). First a merge fed only the newest field dropped the one before,
+   so every writer now sends everything it knows. Then the worker's own
+   read-modify-write dropped another writer's field landed a second
+   earlier, so the worker no longer reads to write at all: it stores ONE
+   DOCUMENT PER WRITER under its own key and merges on read. A write is
+   either not yet visible or fully visible; nothing can be lost to a stale
+   read. The pre-0.17 single document is still read and merged in. The live
+   smoke waits for consistency between writers rather than racing it.
 
 Also: the worker clamps stamps from a clock in the future, and Erase
 everything forgets the code. Both new guards were proven red by mutation.

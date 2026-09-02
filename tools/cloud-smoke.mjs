@@ -32,15 +32,15 @@ const foreign = await fetch(`${BASE}/v1/share/${code}`, { method: "PUT", body: '
 if (foreign.status !== 400) fail(`foreign data was accepted (${foreign.status})`);
 
 // ---- settings: merged on write, later stamp wins, bad shapes refused ------
-const sput = (fields) => fetch(`${BASE}/v1/share/${code}/settings`, {
-  method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ app: "trickline", version: 1, fields }),
+const sput = (fields, writer = "smoke") => fetch(`${BASE}/v1/share/${code}/settings`, {
+  method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ app: "trickline", version: 1, writer, fields }),
 });
-const r1 = await sput({ dailyGoal: { v: 30, at: 100, by: "phone" } });
+const r1 = await sput({ dailyGoal: { v: 30, at: 100, by: "phone" } }, "phone");
 if (!r1.ok) fail(`settings put ${r1.status}`);
 const m1 = await r1.json();
 if (m1?.fields?.dailyGoal?.v !== 30) fail("the first settings write did not come back merged");
 // An OLDER stamp for the same field must not win; a new field must join.
-const r2 = await sput({ dailyGoal: { v: 80, at: 50, by: "ipad" }, speedLimit: { v: 3, at: 60, by: "ipad" } });
+const r2 = await sput({ dailyGoal: { v: 80, at: 50, by: "ipad" }, speedLimit: { v: 3, at: 60, by: "ipad" } }, "ipad");
 const m2 = await r2.json();
 if (m2?.fields?.dailyGoal?.v !== 30) fail(`an older stamp overrode a newer field (${JSON.stringify(m2?.fields?.dailyGoal)})`);
 if (m2?.fields?.speedLimit?.v !== 3) fail("a new field did not join the merge");
@@ -49,7 +49,7 @@ if (m2?.fields?.speedLimit?.v !== 3) fail("a new field did not join the merge");
 // the smoke waits for the first write to be readable before the second lands;
 // racing them would test KV's propagation, not the merge. (Clients send their
 // whole field set on every write for the same reason.)
-const tie = await sput({ elapsedLevel: { v: 2, at: 70, by: "bbb" } });
+const tie = await sput({ elapsedLevel: { v: 2, at: 70, by: "bbb" } }, "bbb");
 if ((await tie.json())?.fields?.elapsedLevel?.v !== 2) fail("the first tie write did not land");
 let seen = false;
 for (let i = 0; i < 12 && !seen; i++) {
@@ -57,9 +57,9 @@ for (let i = 0; i < 12 && !seen; i++) {
   if (r.ok && (await r.json())?.fields?.elapsedLevel?.by === "bbb") seen = true; else await new Promise((res) => setTimeout(res, 3000));
 }
 if (!seen) fail("the first tie write never became readable");
-const tie2 = await sput({ elapsedLevel: { v: 3, at: 70, by: "aaa" } });
+const tie2 = await sput({ elapsedLevel: { v: 3, at: 70, by: "aaa" } }, "aaa");
 if ((await tie2.json())?.fields?.elapsedLevel?.v !== 2) fail("an equal-stamp tie did not break by device id");
-const future = await sput({ elapsedAnalog: { v: true, at: Date.now() + 365 * 86_400_000, by: "wrong-clock" } });
+const future = await sput({ elapsedAnalog: { v: true, at: Date.now() + 365 * 86_400_000, by: "wrong-clock" } }, "wrong-clock");
 const fj = await future.json();
 if (!(fj?.fields?.elapsedAnalog?.at <= Date.now() + 6 * 60_000)) fail("a future stamp was not clamped by the live worker");
 const lower = await fetch(`${BASE}/v1/share/${code.toLowerCase()}/settings`);
@@ -68,10 +68,16 @@ const bad = await sput({ pin: { v: "1234", at: 999, by: "x" } });
 if (bad.status !== 400) fail(`a foreign settings field was accepted (${bad.status})`);
 const bad2 = await sput({ dailyGoal: { v: 999, at: 999, by: "x" } });
 if (bad2.status !== 400) fail(`an out-of-range value was accepted (${bad2.status})`);
-const sget = await poll(`/v1/share/${code}/settings`, "present");
-if (!sget) fail("the settings never became readable");
-const held = await sget.json();
-if (held?.fields?.dailyGoal?.v !== 30 || held?.fields?.speedLimit?.v !== 3) fail("the held settings are not the merge");
+// The settled read: every writer's document, merged. KV may lag a little,
+// so poll for the merge rather than judging the first answer.
+let settled = null;
+for (let i = 0; i < 15 && settled === null; i++) {
+  const r = await fetch(`${BASE}/v1/share/${code}/settings`);
+  const j = r.ok ? await r.json() : null;
+  if (j?.fields?.dailyGoal?.v === 30 && j?.fields?.speedLimit?.v === 3 && j?.fields?.elapsedLevel?.v === 2) settled = j;
+  else await new Promise((res) => setTimeout(res, 4000));
+}
+if (settled === null) fail("the held settings never settled on the merge of every writer");
 
 const del = await fetch(`${BASE}/v1/share/${code}`, { method: "DELETE" });
 if (!(del.ok || del.status === 404)) fail(`delete ${del.status}`);

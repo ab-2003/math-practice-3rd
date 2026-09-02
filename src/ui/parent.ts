@@ -265,7 +265,9 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
         const field = { v: value, at: Date.now(), by: deviceId() };
         src.settings = { ...src.settings, [key]: field };
         render(true);
-        void putSettings(src.code, { [key]: field }).then((r) => {
+        // Send everything this door knows, not just the change: a stale KV
+        // read on the worker could otherwise drop the field before it.
+        void putSettings(src.code, src.settings).then((r) => {
           if (r.kind === "ok") { src.settings = r.doc.fields; render(true); toast(`Saved: ${describeField(key, value)}. The rider's device picks it up when it next opens.`); }
           else toast("The cloud did not take that change. Try again in a bit.");
         });
