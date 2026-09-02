@@ -1,0 +1,262 @@
+/**
+ * PROBE: CORE. The keypad, the scaffold, the breather, the PIN, the CSV, the
+ * trick, and the new dashboard's report tab. Every bug ever fixed earns a
+ * permanent step in one of these suites.
+ */
+import { answerN, answerOf, calmMeta, closeSheets, goHome, pinIn, readStore, suite, typeAnswer } from "./_shared.mjs";
+
+const { page, step, must, done } = await suite("core");
+
+await step("the app boots to a home screen with a way in", async () => {
+  await page.waitForSelector('[data-probe="start"]', { timeout: 8000 });
+  must((await page.textContent("h1"))?.includes("Trick Line"), "no title");
+  // The corner controls are drawn, not emoji.
+  must((await page.$$('.topbar .btn.ghost svg.ico')).length === 3, "the corner icons are not SVG");
+});
+
+await step("a session starts, shows a problem, and a dose count", async () => {
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  must(typeof id === "string" && id.includes(":"), `bad fact id ${id}`);
+  const chip = (await page.textContent('[data-probe="dose-chip"]')) ?? "";
+  must(/^0 \/ \d+$/.test(chip.trim()), `the dose chip reads "${chip}"`);
+});
+
+await step("typing on the keypad fills the answer slot, one digit at a time", async () => {
+  await page.click('.keypad .key[data-key="4"]');
+  must((await page.textContent('[data-probe="answer"]'))?.trim() === "4", "4 did not appear");
+  await page.click('.keypad .key[data-key="7"]');
+  must((await page.textContent('[data-probe="answer"]'))?.trim() === "47", "47 did not appear");
+});
+
+await step("clear empties the slot", async () => {
+  await page.click(".keypad .key.clear");
+  must((await page.textContent('[data-probe="answer"]'))?.trim() === "", "clear left something behind");
+});
+
+await step("enter does nothing on an empty slot", async () => {
+  const before = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await page.click(".keypad .key.enter");
+  await page.waitForTimeout(200);
+  must(await page.getAttribute('[data-probe="problem"]', "data-fact") === before, "an empty enter advanced the problem");
+});
+
+await step("there is no native text input anywhere in the session", async () => {
+  must(await page.$("input, textarea") === null, "a native input exists on the session screen");
+});
+
+await step("a correct answer lands a trick, counts on the dose chip, and moves on", async () => {
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  must(await page.$('[data-probe="retype"]') === null, "a correct answer raised the scaffold");
+  must(((await page.textContent('[data-probe="dose-chip"]')) ?? "").trim().startsWith("1 /"), "the dose chip did not count");
+});
+
+await step("a wrong answer shows the strategy scaffold and blocks the skip", async () => {
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id) + 3);
+  await page.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+  must((await page.textContent(".scaf-head"))?.length > 0, "the scaffold has no heading");
+  must((await page.$$(".step")).length >= 2, "the scaffold has no steps");
+});
+
+await step("the scaffold never shows a red X or the word wrong", async () => {
+  const text = ((await page.textContent(".stage")) ?? "").toLowerCase();
+  for (const banned of ["wrong", "incorrect", "failed", "❌"]) must(!text.includes(banned), `the scaffold says "${banned}"`);
+});
+
+await step("the correct re-entry clears the scaffold", async () => {
+  const shown = (await page.textContent('[data-probe="retype"]')) ?? "";
+  await typeAnswer(page, Number(shown.replace(/\D+/g, "")));
+  await page.waitForSelector('[data-probe="retype"]', { state: "detached", timeout: 6000 });
+});
+
+await step("take a breather ends the session, keeps what was landed, and logs why", async () => {
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await closeSheets(page);
+  await page.waitForSelector('[data-probe="start"]', { timeout: 6000 });
+  const sessions = await readStore(page, "sessions");
+  must(Array.isArray(sessions) && sessions.length === 1, "the session was not logged");
+  must(sessions[0].status === "endedEarly" && sessions[0].reason === "breather", `logged as ${JSON.stringify(sessions[0].status)}/${sessions[0].reason}`);
+});
+
+await step("progress survives a reload", async () => {
+  const before = await page.evaluate(() => window.__app.meta().coins);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="start"]');
+  const after = await page.evaluate(() => window.__app.meta().coins);
+  must(after === before, `coins were ${before} and came back ${after}`);
+  must(after > 0, "no coins were banked at all");
+});
+
+await step("the parent screen is behind a PIN, and the first visit sets it", async () => {
+  await page.click('[data-probe="grownups"]');
+  await page.waitForSelector(".pinpad");
+  must((await page.textContent("h2"))?.toLowerCase().includes("code"), "no PIN prompt on first entry");
+});
+
+await step("the PIN opens two tabs, PROGRESS first, with the report cards", async () => {
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector(".chart", { timeout: 6000 });
+  must(await page.$('[data-probe="tab-progress"].on') !== null, "progress is not the open tab");
+  must(await page.$('[data-probe="progress-tab"]') !== null, "no progress pane");
+  const text = (await page.textContent(".screen")) ?? "";
+  must(text.includes("2.CE.1") && text.includes("3.CE.2"), "the SOL standards are not reported");
+  must(text.includes("FIRST DIGIT"), "the measurement definition is not stated on screen");
+  must(await page.$('[data-probe="histogram"]') !== null, "no response-time histogram");
+  must(await page.$('[data-probe="cold-card"]') !== null, "no cold-retention card");
+  must(await page.$('[data-probe="cold-empty"]') !== null, "the cold card does not explain its empty state");
+  must(await page.$('[data-probe="tomorrow"]') !== null, "no tomorrow card");
+  must(((await page.textContent('[data-probe="tomorrow"]')) ?? "").includes("new"), "tomorrow says nothing about new facts");
+  must(((await page.textContent('[data-probe="baseline"]')) ?? "").includes("floor"), "no personal floor sentence");
+  // The controls live on the OTHER tab: the report has no steppers.
+  must(await page.$('[data-probe="dose-goal"]') === null, "a setting is sitting in the report");
+});
+
+await step("the heat maps are collapsed to summary bars and open on request", async () => {
+  must((await page.$$(".heat-cell:not([hidden])")).length === 0 || await page.evaluate(() => [...document.querySelectorAll(".heat-wrap")].every((w) => w.hidden)), "a grid is open before being asked");
+  await page.click('[data-probe="heat-summary-add"]');
+  await page.waitForTimeout(150);
+  must(await page.evaluate(() => !document.querySelector('[data-probe="heat-grid-add"]').hidden), "the addition grid did not open");
+  must((await page.$$('[data-probe="heat-grid-add"] .heat-cell')).length === 66, "the addition grid is not 66 facts");
+  must(await page.getAttribute('[data-probe="heat-summary-add"]', "aria-expanded") === "true", "aria-expanded did not follow");
+});
+
+await step("the dashboard fits in far fewer screens than it did", async () => {
+  // The one-scroll dashboard measured 5,227px, 4.4 iPad screens. The report
+  // tab with grids collapsed must be well under half that.
+  const h = await page.evaluate(() => document.querySelector(".screen").scrollHeight);
+  must(h < 3000, `the progress tab is ${h}px tall`);
+});
+
+await step("the settings tab holds the controls, and the code is not asked again", async () => {
+  await page.click('[data-probe="tab-settings"]');
+  await page.waitForSelector('[data-probe="settings-tab"]', { timeout: 4000 });
+  must(await page.$(".pinpad") === null, "switching tabs asked for the PIN again");
+  must(await page.$('[data-probe="dose-goal"]') !== null, "no daily dose setting");
+  must(await page.$('[data-probe="cloud-card"]') !== null, "no cloud share card");
+  must(await page.$(".ptable") !== null, "the practice controls are not a table");
+  const h = await page.evaluate(() => document.querySelector(".screen").scrollHeight);
+  must(h < 3200, `the settings tab is ${h}px tall`);
+  // The dose stepper steps and clamps.
+  const g0 = Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0");
+  await page.click('[data-probe="dose-goal-plus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0") === g0 + 5, "dose plus did not step");
+  await page.click('[data-probe="dose-goal-minus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="dose-goal"]')) ?? "0") === g0, "dose minus did not step back");
+  const sl0 = Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0");
+  await page.click('[data-probe="speed-limit-plus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0") === sl0 + 1, "speed-limit plus did not step");
+  await page.click('[data-probe="speed-limit-minus"]');
+  await page.waitForTimeout(300);
+  must(Number((await page.textContent('[data-probe="speed-limit"]')) ?? "0") === sl0, "speed-limit minus did not step back");
+});
+
+await step("the wrong PIN does not open the dashboard", async () => {
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="start"]');
+  await page.click('[data-probe="grownups"]');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["9", "9", "9", "9"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForTimeout(400);
+  must(await page.$(".chart") === null, "a wrong PIN opened the dashboard");
+});
+
+await step("the CSV export carries its own measurement definition and the cold column", async () => {
+  await goHome(page);
+  await pinIn(page);
+  await page.click('[data-probe="tab-settings"]');
+  await page.waitForSelector('[data-probe="csv"]', { timeout: 6000 });
+  const dl = page.waitForEvent("download", { timeout: 8000 });
+  await page.click('[data-probe="csv"]');
+  const file = await dl;
+  const stream = await file.createReadStream();
+  let body = "";
+  for await (const chunk of stream) body += chunk;
+  must(body.includes("FIRST DIGIT"), "the CSV does not carry the measurement definition");
+  must(body.includes("first_key_ms") && body.includes("submit_ms"), "the CSV is missing the raw timings");
+  must(body.includes("cold_check"), "the CSV has no cold-check column");
+  must(body.split("\n").length > 4, "the CSV has no rows");
+});
+
+await step("a correct answer plays the trick before the next problem appears", async () => {
+  await goHome(page);
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  const seen = await page.waitForSelector(".trick-run .trick-creature", { timeout: 1200 }).catch(() => null);
+  must(seen !== null, "no trick animation appeared on a correct answer");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  must(await page.$(".trick-run") === null, "the trick run outlived its own animation");
+});
+
+await step("the kid can switch the tricks off, and the switch persists", async () => {
+  await goHome(page);
+  await page.click('[data-probe="anim-toggle"]');
+  await page.waitForTimeout(250);
+  must(await page.evaluate(() => window.__app.meta().animations) === false, "the toggle did not take");
+  await page.reload({ waitUntil: "networkidle" });
+  must(await page.evaluate(() => window.__app.meta().animations) === false, "the toggle did not persist");
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const id = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  await typeAnswer(page, answerOf(id));
+  const ride = await page.waitForSelector(".trick-run", { timeout: 900 }).catch(() => null);
+  must(ride === null, "the trick still played with the toggle off");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await goHome(page);
+  await page.click('[data-probe="anim-toggle"]');
+  await page.waitForTimeout(250);
+});
+
+await step("the weekly cold check opens a session with mastered facts, unmarked", async () => {
+  await goHome(page);
+  await calmMeta(page);
+  // Master six facts by hand, and make the check due.
+  await page.evaluate(() => {
+    const st = window.__app.states();
+    const ids = [...st.keys()].filter((id) => id.startsWith("add:")).slice(5, 11);
+    for (const id of ids) st.set(id, { ...st.get(id), introduced: true, box: 6, mastered: true, masteryStreak: 3, lastRetrievedDay: 0, dueOn: 9999, seen: 5, correct: 5 });
+    window.__app.meta().lastColdDay = null;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const n = await page.evaluate(() => window.__probe.cold());
+  must(n === 5, `${n} cold items, wanted 5`);
+  must(await page.evaluate(() => window.__probe.isCold()) === true, "the first item is not flagged cold");
+  // Nothing on the glass says so.
+  const text = ((await page.textContent(".screen")) ?? "").toLowerCase();
+  must(!text.includes("cold") && !text.includes("check"), "the cold check announced itself");
+  const first = await page.getAttribute('[data-probe="problem"]', "data-fact");
+  must(await page.evaluate((id) => window.__app.states().get(id).mastered, first), "the first cold item is not a mastered fact");
+  await answerN(page, 5);
+  must(await page.evaluate(() => window.__probe.isCold()) === false, "the sixth item is still flagged cold");
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await closeSheets(page);
+  const responses = await readStore(page, "responses");
+  must(responses.filter((r) => r.cold === true && !r.isRetry).length === 5, "five cold responses were not stored");
+  must(await page.evaluate(() => window.__app.meta().lastColdDay === window.__app.day()), "the cold day was not remembered");
+  // And the report now draws the cold series.
+  await pinIn(page);
+  must(await page.$('[data-probe="cold-empty"]') === null, "the cold card still reads as empty");
+  must(((await page.textContent('[data-probe="cold-card"]')) ?? "").includes("Latest"), "the cold card has no latest figure");
+});
+
+await step("the stamina log names how a run ended", async () => {
+  const text = (await page.textContent(".screen")) ?? "";
+  must(text.includes("took a breather"), "the breather run is not named as such");
+});
+
+await done();
