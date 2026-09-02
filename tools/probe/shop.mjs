@@ -1,5 +1,5 @@
 /**
- * PROBE: SHOP. Twenty-seven monsters, their forms and acts, the rack, the
+ * PROBE: SHOP. Twenty-nine monsters, their forms and acts, the rack, the
  * confirms, the peek, gear, send out, the level gate, and the off-stage pause.
  */
 import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
@@ -12,11 +12,11 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all twenty-seven monsters by name, no mysteries", async () => {
+await step("the shop shows all twenty-nine monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 27, "the roster is not twenty-seven");
+  must((await page.$$(".mon")).length === 29, "the roster is not twenty-nine");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
   must(text.includes("CINDERWYRM") && text.includes("VOIDWYRM"), "the dragons are not on display");
@@ -25,7 +25,7 @@ await step("the shop shows all twenty-seven monsters by name, no mysteries", asy
   must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
   must((await page.$$(".helm-tile")).length === 22, "the gear rack is not twenty-two helmets");
   // THE KAIJU SIX wear their tag, SKYHOOK is the 150 door, the pilot's lid is on the rack.
-  must((await page.$$('[data-probe="kaiju-tag"]')).length === 6, "the kaiju six are not tagged");
+  must((await page.$$('[data-probe="kaiju-tag"]')).length === 8, "the kaiju eight are not tagged");
   must((await page.$$('[data-probe="dragon-tag"]')).length === 7, "the seven dragons are not tagged");
   must(await page.$('[data-mon="voidwyrm"] [data-probe="dragon-tag"]') !== null, "VOIDWYRM wears no DRAGON tag");
   must(((await page.textContent('[data-mon="skyhook"]')) ?? "").includes("150"), "SKYHOOK is not 150 coins");
@@ -37,11 +37,15 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["skyhook", ".hoops-rig .ball"], ["skyhook", ".hoops-rig .net"], ["machfang", ".jet-back .burner"], ["machfang", ".jet-front"],
     ["moonhowl", ".moonrig .moon"], ["moonhowl", ".howl-3"], ["pandamonium", ".ringtail .spin-blur"],
     ["triomaw", ".head-l"], ["triomaw", ".head-t"], ["triomaw", ".chomp-m"], ["chromaleon", ".tonguerig .tongue"], ["chromaleon", ".fly"],
+    ["wreckarm", ".fist-arm"], ["wreckarm", ".tower-top"], ["wreckarm", ".debris-3"], ["wreckarm", ".dust-w"],
+    ["pantheraclaw", ".claw-paw .claw"], ["pantheraclaw", ".slash-3"], ["pantheraclaw", ".slash-spark"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
   must(await page.$eval('[data-mon="skyhook"] .ball circle', (e) => e.getAttribute("fill")) === "#EE6730", "the basketball is not basketball orange");
   must((await page.$$('[data-mon="triomaw"] .head')).length === 3, "TRIOMAW does not have three heads");
+  must(await page.$eval('[data-mon="pantheraclaw"] .claw', (e) => e.getAttribute("fill")) === "#F5C542", "the panther's claws are not gold");
+  must((await page.$$('[data-mon="pantheraclaw"] .claw-paw .claw')).length === 3, "the panther's paw does not have three claws");
   // The acts are real animations on the idle clock, not static props.
   const names = await page.evaluate(() => ({
     hoops: getComputedStyle(document.querySelector('[data-mon="skyhook"] .creature')).animationName,
@@ -51,7 +55,13 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     hue: getComputedStyle(document.querySelector('[data-mon="chromaleon"] .creature')).animationName,
     howl: getComputedStyle(document.querySelector('[data-mon="moonhowl"] .creature')).animationName,
     snap: getComputedStyle(document.querySelector('[data-mon="triomaw"] .head-l')).animationName,
+    fist: getComputedStyle(document.querySelector('[data-mon="wreckarm"] .fist-arm')).animationName,
+    fall: getComputedStyle(document.querySelector('[data-mon="wreckarm"] .tower-top')).animationName,
+    swipe: getComputedStyle(document.querySelector('[data-mon="pantheraclaw"] .claw-paw')).animationName,
+    pounce: getComputedStyle(document.querySelector('[data-mon="pantheraclaw"] .creature')).animationName,
   }));
+  must(names.fist === "fist-swing" && names.fall === "tower-fall", `WRECKARM's act reads ${names.fist}/${names.fall}`);
+  must(names.swipe === "claw-swipe" && names.pounce === "idle-pounce", `PANTHERACLAW's act reads ${names.swipe}/${names.pounce}`);
   must(names.hoops === "idle-jumpshot" && names.ball === "ball-arc", `SKYHOOK's act reads ${names.hoops}/${names.ball}`);
   must(names.jet === "idle-takeoff", `MACHFANG's act reads ${names.jet}`);
   must(names.tail === "tail-spin", `PANDAMONIUM's tail reads ${names.tail}`);
@@ -63,7 +73,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 27, `${delays.length} idle monsters, wanted 27`);
+  must(delays.length === 29, `${delays.length} idle monsters, wanted 29`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -78,19 +88,20 @@ await step("the shop breathes, staggered, and every bespoke act is present", asy
   const breaths = await page.evaluate(() => [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
   must(new Set(breaths).size === 7, "the dragons share breaths that should be their own");
   must(await page.$('[data-mon="puckjaw"] .puck-shot .stick') !== null, "PUCKJAW lost the stick");
+  // Seven dragons and WRECKARM (a wolf-dragon) wear wings, and no two pairs match.
   const wings = await page.evaluate(() => [...document.querySelectorAll(".roster .wings")].map((w) => w.getAttribute("d")));
-  must(wings.length === 7 && new Set(wings).size === 7, "the seven dragons are palette swaps, not forms");
+  must(wings.length === 8 && new Set(wings).size === 8, `the winged are palette swaps, not forms (${wings.length} pairs, ${new Set(wings).size} distinct)`);
 });
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 27.
+  // colours at tile size. Body plus wings must be unique across all 29.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 27, "could not read the forms");
+  must(forms.length === 29, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);

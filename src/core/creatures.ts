@@ -14,7 +14,9 @@
 export type Silhouette =
   | "brute" | "raptor" | "plated" | "horned" | "serpent" | "titan" | "dragon"
   // THE KAIJU SIX (0.18.0): hybrids, not elements.
-  | "hoops" | "ace" | "wolf" | "panda" | "hydra" | "chameleon";
+  | "hoops" | "ace" | "wolf" | "panda" | "hydra" | "chameleon"
+  // 0.18.3: a wolf-dragon on two legs, and a panther.
+  | "wrecker" | "panther";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -145,7 +147,7 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "dragon", crest: "sail", tail: "blade", eyes: 2, horns: 5,
     palette: ["#F5C542", "#4A3200", "#FFF3C4"] ,
     voice: ["Hoarded another perfect landing.", "Gold does not bail. Neither did I."] },
-  // THE KAIJU SIX (Andy, 2026-09-02): "cool bonus creatures for the kids to
+  // THE KAIJU (Andy, 2026-09-02; six, then eight): "cool bonus creatures for the kids to
   // work towards", hybrids rather than elements. Our own inventions; the
   // only borrowing is the idea of a giant monster, which belongs to nobody.
   // SKYHOOK is the cheap door in at 150; the rest are a real save. They sit
@@ -155,6 +157,11 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "hoops", crest: "none", tail: "whip", eyes: 2, horns: 0,
     palette: ["#2FBF8F", "#063A2A", "#CFFFE9"] ,
     voice: ["Nothing but net. Nothing but rail.", "Swish. That is what a landing sounds like."] },
+  { id: "pantheraclaw", name: "PANTHERACLAW", cost: 250, kaiju: true,
+    lore: "Black as the halfpipe at midnight. The claws are gold, and they are sharp.",
+    silhouette: "panther", crest: "none", tail: "whip", eyes: 2, horns: 0,
+    palette: ["#1B1F26", "#0A0C10", "#F5C542"] ,
+    voice: ["Three claws, three marks, one landing.", "Gold claws. Clean line. Quiet exit."] },
   { id: "pandamonium", name: "PANDAMONIUM", cost: 350, kaiju: true,
     lore: "Spins its tail so fast the whole park leans. Never spills its snack.",
     silhouette: "panda", crest: "none", tail: "ring", eyes: 2, horns: 0,
@@ -170,6 +177,11 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "wolf", crest: "none", tail: "bush", eyes: 2, horns: 0,
     palette: ["#EEF4FA", "#1C2A3A", "#9EC7FF"] ,
     voice: ["The moon heard that landing.", "One howl per line. House rules."] },
+  { id: "wreckarm", name: "WRECKARM", cost: 600, kaiju: true,
+    lore: "Half wolf, half dragon, one enormous fist. The skyline keeps getting shorter.",
+    silhouette: "wrecker", crest: "spikes", tail: "bush", eyes: 2, horns: 2,
+    palette: ["#6B7A99", "#1A2233", "#FFB25A"] ,
+    voice: ["One fist. One tower. One trick.", "The skyline got shorter. The line got longer."] },
   { id: "chromaleon", name: "CHROMALEON", cost: 700, kaiju: true,
     lore: "Changes colour mid-trick. Judges have never agreed on what they saw.",
     silhouette: "chameleon", crest: "sail", tail: "curl", eyes: 2, horns: 1,

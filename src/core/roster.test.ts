@@ -3,10 +3,10 @@ import { canAffordAny, canLevelUp, cheapestLocked, levelBrings, levelCost, MAX_L
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
-  it("holds exactly twenty-seven monsters, seven of them dragons, six of them kaiju", () => {
-    expect(ROSTER.length).toBe(27);
+  it("holds exactly twenty-nine monsters, seven of them dragons, eight of them kaiju", () => {
+    expect(ROSTER.length).toBe(29);
     expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
-    expect(ROSTER.filter((c) => c.kaiju === true).length).toBe(6);
+    expect(ROSTER.filter((c) => c.kaiju === true).length).toBe(8);
   });
 
   it("prices SKYHOOK at 150 and every other kaiju above it, each its own form", () => {
@@ -15,7 +15,9 @@ describe("the open shop", () => {
     expect(hoops.cost).toBe(150);
     expect(hoops.silhouette).toBe("hoops");
     for (const k of kaiju) if (k.id !== "skyhook") expect(k.cost, k.id).toBeGreaterThan(150);
-    expect(new Set(kaiju.map((k) => k.silhouette)).size).toBe(6);
+    expect(kaiju.find((c) => c.id === "pantheraclaw")!.cost).toBe(250);
+    expect(kaiju.find((c) => c.id === "wreckarm")!.cost).toBe(600);
+    expect(new Set(kaiju.map((k) => k.silhouette)).size).toBe(8);
     // Their forms are their own: none shares a silhouette with the old crew.
     const old = new Set(ROSTER.filter((c) => c.kaiju !== true).map((c) => c.silhouette));
     for (const k of kaiju) expect(old.has(k.silhouette), k.id).toBe(false);
@@ -27,8 +29,8 @@ describe("the open shop", () => {
   });
 
   it("keeps every id and name unique, and every price positive", () => {
-    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(27);
-    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(27);
+    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(29);
+    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(29);
     for (const c of ROSTER) expect(c.cost).toBeGreaterThan(0);
   });
 
@@ -39,8 +41,8 @@ describe("the open shop", () => {
 
   it("gives every monster two lines of its own, with no em-dashes", () => {
     const all = ROSTER.flatMap((c) => c.voice);
-    expect(all.length).toBe(54);
-    expect(new Set(all).size).toBe(54);
+    expect(all.length).toBe(58);
+    expect(new Set(all).size).toBe(58);
     for (const line of all) expect(line).not.toContain("—");
     expect(riderVoice(ROSTER[0]!, 0)).toBe(ROSTER[0]!.voice[0]);
     expect(riderVoice(ROSTER[0]!, 1)).toBe(ROSTER[0]!.voice[1]);

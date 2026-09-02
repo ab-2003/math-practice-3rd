@@ -159,6 +159,28 @@ const PLANS: Record<Silhouette, Plan> = {
     spine: [[26, 134], [60, 114], [104, 104], [150, 116]],
     tailAnchor: [16, 150],
   },
+  // WRECKARM (0.18.3): wolf muzzle, dragon wings, two legs and one enormous
+  // fist. Towers over everything but SKYHOOK.
+  wrecker: {
+    body: "M56 176 L50 106 L72 68 L112 56 L150 74 L160 128 L150 176 Z",
+    head: "M124 58 L196 42 L210 64 L192 84 L128 88 Z",
+    face: { x: 140, y: 56, scale: 1 },
+    legs: ["M66 168 L52 196 L90 196 L92 168 Z", "M118 168 L114 196 L150 196 L142 168 Z"],
+    spine: [[56, 140], [60, 94], [90, 64], [126, 58]],
+    tailAnchor: [54, 160],
+    wings: "M70 92 L28 26 L76 60 L92 18 L112 58 L148 30 L142 88 Z",
+    arms: ["M62 104 L36 132 L48 140 L74 114 Z"],
+  },
+  // PANTHERACLAW (0.18.3): long, low and sleek on four legs, a short round
+  // muzzle, ears up, a whip of a tail.
+  panther: {
+    body: "M28 148 L40 116 L70 104 L120 100 L156 108 L172 124 L168 148 Z",
+    head: "M148 90 L200 82 L206 104 L190 118 L150 118 Z",
+    face: { x: 158, y: 90, scale: 0.9 },
+    legs: ["M40 142 L30 182 L54 182 L62 142 Z", "M62 144 L58 182 L80 182 L86 144 Z", "M118 144 L114 182 L136 182 L142 144 Z", "M144 142 L146 182 L170 182 L168 142 Z"],
+    spine: [[38, 124], [70, 104], [118, 100], [152, 108]],
+    tailAnchor: [30, 140],
+  },
   // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
   // the tail curling behind.
   chameleon: {
@@ -541,6 +563,27 @@ export const creatureSvg = (
   headG.append(poly(plan.head, body, SW + 1));
   // PANDAMONIUM wears the red panda's cream mask; the eyes sit on it.
   if (c.id === "pandamonium") headG.append(poly("M132 64 L170 60 L177 82 L164 95 L134 93 Z", c.palette[2], 3));
+  // PANTHERACLAW's ears, up, gold inside; and gold claws on every paw.
+  if (c.id === "pantheraclaw") {
+    headG.append(poly("M154 90 L158 68 L172 86 Z", body, 4));
+    headG.append(poly("M178 86 L186 66 L196 84 Z", body, 4));
+    headG.append(svg("path", { d: "M159 84 L160 76 L166 83 Z M183 82 L185 74 L190 81 Z", fill: c.palette[2] }));
+    for (const px of [52, 78, 134, 168]) {
+      root.append(svg("path", { d: `M${px - 6} 182 L${px - 4} 190 L${px - 1} 182 Z M${px} 182 L${px + 2} 191 L${px + 5} 182 Z`, fill: c.palette[2], stroke: INK, "stroke-width": 1.5, "stroke-linejoin": "round" }));
+    }
+    // A gold tuft on the tail tip, or the black tail is lost on the panel.
+    root.append(svg("circle", { cx: 20, cy: 66, r: 6, fill: c.palette[2], stroke: INK, "stroke-width": 3 }));
+  }
+  // WRECKARM's fist: its own rig, so the act can wind it up and swing it.
+  if (c.id === "wreckarm") {
+    const arm = svg("g", { class: "fist-arm" });
+    // Carried low at rest, so the fist shows under the jaw; the wind-up
+    // lifts it over the head and the punch brings it down on the tower.
+    arm.append(poly("M136 106 L184 98 L190 114 L146 128 Z", body, SW - 1));
+    arm.append(svg("circle", { cx: 197, cy: 110, r: 16, fill: body, stroke: INK, "stroke-width": SW - 1 }));
+    arm.append(svg("path", { d: "M188 100 L192 96 M196 98 L200 93 M204 100 L209 96", fill: "none", stroke: INK, "stroke-width": 3, "stroke-linecap": "round" }));
+    root.append(arm); // the head goes on after, so the arm sits behind it
+  }
   if (lvl >= 2) {
     // The deck-sticker star, planted on the flank. From level 3 it carries
     // the level number, so every level-up changes something the eye can
@@ -927,6 +970,51 @@ export const creatureSvg = (
     fly.append(svg("path", { d: "M222 52 l-4 -6 M230 52 l4 -6", fill: "none", stroke: INK, "stroke-width": 2, "stroke-linecap": "round" }));
     rig.append(fly);
     rig.append(svg("path", { class: "tongue", d: "M198 96 L224 58", fill: "none", stroke: "#FF3D8B", "stroke-width": 6, "stroke-linecap": "round" }));
+    root.append(rig);
+  }
+
+  // WRECKARM wrecks a skyscraper: the tower rises at the right, the fist
+  // winds up and lands, the top storeys tip and fall, debris flies, dust.
+  if (opts.idle !== undefined && c.id === "wreckarm") {
+    const rig = svg("g", { class: "wreckrig" });
+    const tower = svg("g", { class: "tower" });
+    const storeys = (cls: string, y: number, h: number): SVGElement => {
+      const g2 = svg("g", { class: cls });
+      g2.append(svg("rect", { x: 202, y, width: 30, height: h, fill: "#3A4656", stroke: INK, "stroke-width": 3.5 }));
+      for (let wy = y + 6; wy < y + h - 6; wy += 11) {
+        g2.append(svg("rect", { x: 207, y: wy, width: 6, height: 6, fill: "#FFE14D", opacity: 0.9 }));
+        g2.append(svg("rect", { x: 219, y: wy, width: 6, height: 6, fill: wy % 22 === 0 ? "#FFE14D" : "#8FB7D6", opacity: 0.9 }));
+      }
+      return g2;
+    };
+    tower.append(storeys("tower-base", 112, 82));
+    tower.append(storeys("tower-top", 16, 96));
+    tower.append(svg("path", { class: "tower-crack", d: "M202 110 l8 -6 l4 6 l8 -8 l6 6", fill: "none", stroke: INK, "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0 }));
+    rig.append(tower);
+    for (const [k, x, y] of [[1, 214, 60], [2, 222, 40], [3, 208, 84]] as const) {
+      rig.append(svg("path", { class: `debris debris-${k}`, d: `M${x - 6} ${y + 4} L${x - 2} ${y - 6} L${x + 6} ${y - 4} L${x + 5} ${y + 5} Z`, fill: "#55657A", stroke: INK, "stroke-width": 2, "stroke-linejoin": "round", opacity: 0 }));
+    }
+    const dust = svg("g", { class: "dust-w" });
+    for (const [dx, r] of [[196, 6], [208, 8], [222, 6], [234, 5]] as const) dust.append(svg("circle", { cx: dx, cy: 190, r, fill: "#8A97A6", opacity: 0.85 }));
+    rig.append(dust);
+    root.append(rig);
+  }
+
+  // PANTHERACLAW slashes: a paw of gold claws sweeps down and three gold
+  // marks are left hanging in the air, then fade.
+  if (opts.idle !== undefined && c.id === "pantheraclaw") {
+    const rig = svg("g", { class: "clawrig" });
+    const paw = svg("g", { class: "claw-paw" });
+    paw.append(poly("M150 110 L194 116 L192 132 L148 126 Z", body, SW - 2));
+    paw.append(svg("circle", { cx: 194, cy: 124, r: 10, fill: body, stroke: INK, "stroke-width": SW - 2 }));
+    for (const [dy, len] of [[-8, 26], [0, 30], [8, 26]] as const) {
+      paw.append(svg("path", { class: "claw", d: `M200 ${124 + dy - 3} L${200 + len} ${124 + dy + 2} L200 ${124 + dy + 3} Z`, fill: c.palette[2], stroke: INK, "stroke-width": 1.8, "stroke-linejoin": "round" }));
+    }
+    rig.append(paw);
+    for (const [k, x] of [[1, 196], [2, 212], [3, 228]] as const) {
+      rig.append(svg("path", { class: `slash slash-${k}`, d: `M${x + 14} 54 L${x - 10} 134`, stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round", opacity: 0 }));
+    }
+    rig.append(svg("path", { class: "slash-spark", d: "M232 60 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z", fill: "#FFFFFF", stroke: INK, "stroke-width": 1.2, opacity: 0 }));
     root.append(rig);
   }
 

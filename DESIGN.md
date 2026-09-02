@@ -887,6 +887,8 @@ clock the way PUCKJAW takes a slapshot:
 | MOONHOWL | 550 | the moon rises, the head tips back, three rings of howl ride out of the muzzle |
 | CHROMALEON | 700 | the hue sweeps the whole wheel and back; the tongue zaps a fly off the edge of the tile |
 | TRIOMAW | 950 | three heads on three necks snap one after another, a chomp star at each bite |
+| PANTHERACLAW (0.18.3) | 250 | crouch, pounce, a paw of gold claws sweeps down, three gold marks hang in the air |
+| WRECKARM (0.18.3, wolf-dragon on two legs) | 600 | the skyscraper rises, the fist winds up and lands, the top storeys tip and fall, debris, dust |
 
 SKYHOOK is the 150-coin door in, as asked; the rest are a real save. They
 sit before VOIDWYRM, who keeps the last tile because that one is Kallen's.
@@ -1003,6 +1005,9 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.3 - Two more kaiju.** WRECKARM (600), half wolf half dragon on
+      two legs, wrecks a skyscraper with one fist; PANTHERACLAW (250), a
+      black panther, slashes with gold claws. (Andy, 2026-09-02.)
 - [x] **0.18.2 - The themed four.** AFTERBURNER (a jet: nose cone,
       canopy, swept wing, tail fin, afterburner trail), SLAPSHOT (rink
       lines, stick, puck, ice-shaving trail), BUZZER BEATER (hardwood,

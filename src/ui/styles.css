@@ -1086,9 +1086,72 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .tonguerig .fly { animation: fly-gone var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes fly-gone { 0%, 3% { opacity: 0; transform: translate(0, 0); } 5% { opacity: 1; } 8% { transform: translate(-3px, 3px); } 10.5% { opacity: 1; transform: translate(0, -2px); } 11.5%, 100% { opacity: 0; } }
 
+/* WRECKARM: rear back, lunge, the fist winds up and lands, the tower's top
+   storeys tip and fall, debris flies, dust rolls. */
+.creature.idle-wrecker { animation-name: idle-wreck; }
+@keyframes idle-wreck {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateX(-10px) rotate(-3deg); }
+  10% { transform: translateX(10px) rotate(2deg); }
+  12% { transform: translate(8px, 3px); }
+  17% { transform: translateX(2px); }
+}
+.fist-arm { transform-box: fill-box; transform-origin: 8% 55%; animation: fist-swing var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes fist-swing {
+  0%, 3%, 20%, 100% { transform: rotate(0); }
+  6% { transform: rotate(-60deg); }
+  9% { transform: rotate(-64deg); }
+  10.5% { transform: rotate(14deg); }
+  14% { transform: rotate(10deg); }
+}
+.wreckrig .tower { opacity: 0; animation: tower-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes tower-in { 0%, 1.5%, 24%, 100% { opacity: 0; } 4% { opacity: 1; } 21% { opacity: 1; } }
+.wreckrig .tower-top { transform-box: fill-box; transform-origin: 100% 100%; animation: tower-fall var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes tower-fall {
+  0%, 10.5%, 100% { transform: none; opacity: 1; }
+  11.5% { transform: translate(6px, -4px) rotate(4deg); }
+  14% { transform: translate(14px, 10px) rotate(28deg); opacity: 1; }
+  18% { transform: translate(30px, 70px) rotate(62deg); opacity: 1; }
+  19% { opacity: 0; transform: translate(34px, 80px) rotate(66deg); }
+  21% { opacity: 0; transform: none; }
+}
+.wreckrig .tower-crack { animation: crack-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes crack-in { 0%, 10%, 20%, 100% { opacity: 0; } 10.6% { opacity: 1; } 18% { opacity: 1; } }
+.debris { animation: debris-fly var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.debris-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.08s); }
+.debris-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.16s); }
+@keyframes debris-fly { 0%, 10.5% { opacity: 0; transform: none; } 11.5% { opacity: 1; transform: translate(-6px, -10px) rotate(-20deg); } 17% { opacity: 1; transform: translate(-30px, 90px) rotate(-160deg); } 18%, 100% { opacity: 0; transform: translate(-32px, 100px) rotate(-170deg); } }
+.dust-w { opacity: 0; animation: dust-roll var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes dust-roll { 0%, 16.5% { opacity: 0; transform: none; } 17.5% { opacity: 1; } 21% { opacity: 0; transform: translate(-6px, -8px) scale(1.4); } 100% { opacity: 0; } }
+
+/* PANTHERACLAW: crouch, pounce, the gold paw sweeps down, three marks. */
+.creature.idle-panther { animation-name: idle-pounce; }
+@keyframes idle-pounce {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: translateY(5px) scaleY(0.93); }
+  8% { transform: translate(10px, -16px) rotate(-4deg); }
+  12% { transform: translate(14px, 0); }
+  18% { transform: translate(4px, 0); }
+}
+.claw-paw { opacity: 0; transform-box: fill-box; transform-origin: 4% 50%; animation: claw-swipe var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes claw-swipe {
+  0%, 3% { opacity: 0; transform: rotate(-70deg); }
+  4% { opacity: 1; transform: rotate(-70deg); }
+  7.5% { opacity: 1; transform: rotate(-75deg); }
+  9% { transform: rotate(28deg); }
+  13% { opacity: 1; transform: rotate(24deg); }
+  16%, 100% { opacity: 0; transform: rotate(24deg); }
+}
+.slash { stroke-dasharray: 90; stroke-dashoffset: 90; animation: slash-draw var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.slash-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.05s); }
+.slash-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.1s); }
+@keyframes slash-draw { 0%, 8% { opacity: 0; stroke-dashoffset: 90; } 8.6% { opacity: 1; } 10.5% { stroke-dashoffset: 0; opacity: 1; } 15% { opacity: 1; } 19%, 100% { opacity: 0; stroke-dashoffset: 0; } }
+.slash-spark { animation: spark-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes spark-pop { 0%, 8.5%, 12%, 100% { opacity: 0; } 9.5% { opacity: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */
