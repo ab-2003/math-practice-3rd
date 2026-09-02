@@ -14,6 +14,7 @@
  *    launches a browser window.
  */
 
+import { isSettingsDoc, type Fields, type SettingsDoc } from "../core/sync";
 import { currentProfileId, exportAll, importAll, MAIN_PROFILE, type Backup } from "./store";
 
 export const CLOUD_URL = "https://math-pra3-cloudshare.beyer-games.workers.dev";
@@ -139,6 +140,52 @@ export const deleteShare = async (code: string): Promise<boolean> => {
 
 export const loadBackup = (b: Backup): Promise<void> => importAll(b);
 
+// ---- the settings document: two writers, merged by the worker -------------
+export type SettingsResult =
+  | { kind: "ok"; doc: SettingsDoc }
+  | { kind: "missing" }
+  | { kind: "offline" }
+  | { kind: "bad" };
+
+export const getSettings = async (code: string, ms = 6000): Promise<SettingsResult> => {
+  try {
+    const r = await timedFetch(`${CLOUD_URL}/v1/share/${code}/settings`, {}, ms);
+    if (r.status === 404) return { kind: "missing" };
+    if (!r.ok) return { kind: "offline" };
+    const raw: unknown = await r.json();
+    return isSettingsDoc(raw) ? { kind: "ok", doc: raw } : { kind: "bad" };
+  } catch { return { kind: "offline" }; }
+};
+
+/** Send only the fields that changed; the worker merges and hands back the
+ *  whole document, later stamp winning per field. */
+export const putSettings = async (code: string, fields: Fields): Promise<SettingsResult> => {
+  try {
+    const body = JSON.stringify({ app: "trickline", version: 1, fields } satisfies SettingsDoc);
+    const r = await timedFetch(`${CLOUD_URL}/v1/share/${code}/settings`, {
+      method: "PUT", headers: { "content-type": "application/json" }, body,
+    });
+    if (!r.ok) return { kind: "offline" };
+    const raw: unknown = await r.json();
+    return isSettingsDoc(raw) ? { kind: "ok", doc: raw } : { kind: "bad" };
+  } catch { return { kind: "offline" }; }
+};
+
+/** Who stamped a field. Random per device, never a name, never sent
+ *  anywhere but into the stamps. */
+const DEVICE_KEY = "tl-device-id";
+export const deviceId = (): string => {
+  try {
+    const have = localStorage.getItem(DEVICE_KEY);
+    if (have) return have;
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    const id = "d" + Array.from(bytes, (b) => ALPHABET[b % 32]).join("");
+    localStorage.setItem(DEVICE_KEY, id);
+    return id;
+  } catch { return "d-private"; }
+};
+
 // ---- the device's memory of its share (plain localStorage, WO4 precedent) --
 // One code PER RIDER: the first profile keeps the original key, so a device
 // linked before profiles existed stays linked.
@@ -191,6 +238,11 @@ export const cloudAutoPush = (): void => {
 };
 
 export const cloudPending = (): boolean => trailing !== null || inFlight;
+
+// ---- a device that chose to VIEW, or said "start fresh", is not asked again --
+const DECLINED_KEY = "tl-restore-declined";
+export const restoreDeclined = (code: string): boolean => { try { return localStorage.getItem(keyFor(DECLINED_KEY)) === code; } catch { return false; } };
+export const declineRestore = (code: string): void => { try { localStorage.setItem(keyFor(DECLINED_KEY), code); } catch { /* */ } };
 
 // ---- the grown-ups' door remembers ITS code, apart from any rider's --------
 const PARENT_KEY = "tl-parent-code";

@@ -148,6 +148,16 @@ await step("the dashboard fits in far fewer screens than it did", async () => {
   must(h < 3000, `the progress tab is ${h}px tall`);
 });
 
+await step("the trends tab measures improvement, on the iPad too", async () => {
+  await page.click('[data-probe="tab-trends"]');
+  await page.waitForSelector('[data-probe="trends-tab"]', { timeout: 4000 });
+  must(await page.$('[data-probe="improvement"]') !== null, "no improvement card");
+  must((await page.$$('[data-probe="trends-tab"] svg.chart')).length >= 3, "the trend charts are missing");
+  must(await page.$('[data-probe="trend-table"]') !== null, "no week-by-week table");
+  await page.click('[data-probe="tab-progress"]');
+  await page.waitForSelector('[data-probe="progress-tab"]', { timeout: 4000 });
+});
+
 await step("the settings tab holds the controls, and the code is not asked again", async () => {
   await page.click('[data-probe="tab-settings"]');
   await page.waitForSelector('[data-probe="settings-tab"]', { timeout: 4000 });

@@ -12,7 +12,7 @@ import qrcode from "qrcode-generator";
 import jsQR from "jsqr";
 import type { App } from "./appstate";
 import {
-  cloudPushNow, cloudWhose, connectedCode, deleteShare, fmtCode, forgetCode, genCode,
+  cloudPushNow, cloudWhose, connectedCode, declineRestore, deleteShare, fmtCode, forgetCode, genCode,
   getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, sessionsText, type CloudOk,
 } from "./cloud";
 import { el, mount, on } from "./dom";
@@ -272,6 +272,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
         },
         onCancel: () => {
           rememberCode(norm);
+          declineRestore(norm); // viewing is not owning: never offer to restore over this device
           if (opts.onView) opts.onView(norm, res);
           else { render(); toast(`Connected to ${whose}.`); }
         },

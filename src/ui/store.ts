@@ -20,6 +20,7 @@
 
 import { DEFAULT_STRANDS } from "../core/config";
 import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
+import type { Stamp, SyncKey } from "../core/sync";
 import type { Caps, FactState, Response, SessionRecord, Strands } from "../core/types";
 export type { SessionRecord } from "../core/types";
 
@@ -200,6 +201,9 @@ export interface Meta {
   elapsedAnalog: boolean;
   /** The day of the last weekly cold check. See core/config COLD_CHECK. */
   lastColdDay: number | null;
+  /** When and by which device each synced setting was last set, so the
+   *  cloud's copy and this one can be merged field by field (core/sync). */
+  settingsStamps: Partial<Record<SyncKey, Stamp>>;
 }
 
 export const freshMeta = (): Meta => ({
@@ -214,6 +218,7 @@ export const freshMeta = (): Meta => ({
   elapsedLevel: 1,
   elapsedAnalog: false,
   lastColdDay: null,
+  settingsStamps: {},
 });
 
 const tx = async <T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
@@ -242,6 +247,7 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   elapsedAnalog: raw.elapsedAnalog ?? false,
   lastColdDay: raw.lastColdDay ?? null,
   shopPeekSpent: raw.shopPeekSpent ?? false,
+  settingsStamps: raw.settingsStamps ?? {},
 });
 
 export const getMeta = async (): Promise<Meta> => {

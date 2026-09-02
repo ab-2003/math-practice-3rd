@@ -9,7 +9,7 @@
 # Usage: ./run-gauntlet.sh [--quick [sense...]] [--no-deploy] [--branch <name>]
 #
 # Senses: probe-core probe-settings probe-juice probe-shop probe-cloud probe-speed
-#         probe-parent answer-eye human-eye tap-audit legible-check offline-check
+#         probe-parent probe-sync answer-eye human-eye tap-audit legible-check offline-check
 #         (probe-loop selects all six probe suites)
 #
 # CHANNELS. Production is the main branch at math-practice-3rd.pages.dev.
@@ -80,7 +80,7 @@ launch() {
 }
 stage "stage 4/5: the senses, in parallel"
 B="BASE=http://localhost:$PREVIEW_PORT"
-for s in core settings juice shop cloud speed parent; do
+for s in core settings juice shop cloud speed parent sync; do
   wants probe-$s && launch probe-$s "$B node tools/probe/$s.mjs"
 done
 wants answer-eye    && launch answer-eye    "$B node tools/answer-eye.mjs"

@@ -2,7 +2,7 @@
  * PROBE: THE GROWN-UPS' DOOR at /parent/. No PIN, no game; connect a code
  * or open a file; the report; refresh with a verdict; the code remembered.
  */
-import { BASE, suite } from "./_shared.mjs";
+import { BASE, suite, toasts } from "./_shared.mjs";
 
 const { page, step, must, done, browser } = await suite("parent");
 const DOOR = BASE.replace(/\/$/, "") + "/parent/";
@@ -26,9 +26,19 @@ const fakeBackup = (sessions = 1) => {
 };
 
 let cloud = fakeBackup(1);
+let settingsDoc = { app: "trickline", version: 1, fields: {} };
+const puts = [];
 await page.route("**/math-pra3-cloudshare**", (route) => {
-  if (route.request().method() === "GET") void route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cloud) });
-  else void route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+  const m = route.request().method();
+  if (route.request().url().endsWith("/settings")) {
+    if (m === "GET") return route.fulfill({ status: Object.keys(settingsDoc.fields).length ? 200 : 404, contentType: "application/json", body: JSON.stringify(settingsDoc) });
+    const body = JSON.parse(route.request().postData() ?? "{}");
+    puts.push(body);
+    for (const [k, f] of Object.entries(body.fields ?? {})) settingsDoc.fields[k] = f;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(settingsDoc) });
+  }
+  if (m === "GET") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cloud) });
+  return route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
 });
 
 await step("the door opens on a connect form: no PIN, no game, no shop", async () => {
@@ -47,9 +57,9 @@ await step("connecting a code lands on the report, says so, and remembers the co
   await page.click('[data-probe="cloud-connect"]');
   await page.waitForSelector('[data-probe="parent-view"]', { timeout: 8000 });
   const banner = (await page.textContent('[data-probe="viewer-banner"]')) ?? "";
-  must(banner.includes("KALLEN") && banner.includes("Read only"), `the banner reads "${banner}"`);
-  const t = (await page.textContent('[data-probe="toast"]').catch(() => "")) ?? "";
-  must(t.includes("Connected") && t.includes("KALLEN"), `the toast reads "${t}"`);
+  must(banner.includes("KALLEN") && banner.includes("cloud copy"), `the banner reads "${banner}"`);
+  const ts = await toasts(page);
+  must(ts.some((t) => t.includes("Connected") && t.includes("KALLEN")), `the toasts read ${JSON.stringify(ts)}`);
   const text = (await page.textContent('[data-probe="progress-tab"]')) ?? "";
   must(text.includes("Of 12 correct answers"), "the report is not the cloud copy's");
   must(await page.evaluate(() => window.__parent.code()) === "ABCDEFGHJKMNPQRSTVWX", "the code was not remembered");
@@ -85,14 +95,69 @@ await step("the next launch opens straight onto the record", async () => {
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForSelector('[data-probe="parent-view"]', { timeout: 10000 });
   must(await page.$('[data-probe="parent-connect"]') === null, "a remembered code still showed the connect form");
-  const t = (await page.textContent('[data-probe="toast"]').catch(() => "")) ?? "";
-  must(t.includes("Viewing KALLEN"), `the launch toast reads "${t}"`);
+  const ts = await toasts(page);
+  must(ts.some((t) => t.includes("Viewing KALLEN")), `the launch toasts read ${JSON.stringify(ts)}`);
 });
 
-await step("forgetting the code returns to the door and stays forgotten", async () => {
-  await page.click('[data-probe="parent-forget"]');
-  await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 6000 });
+await step("Riders is not destructive: the list still holds the rider, and Open returns to the record", async () => {
+  await page.click('[data-probe="parent-riders"]');
+  await page.waitForSelector('[data-probe="riders-list"]', { timeout: 6000 });
+  const list = await page.evaluate(() => window.__parent.riders());
+  must(list.length === 1 && list[0].name === "KALLEN", `the riders list holds ${JSON.stringify(list)}`);
+  must(await page.evaluate(() => window.__parent.code()) !== null, "leaving the record forgot the code");
+  await page.click('[data-open-rider="ABCDEFGHJKMNPQRSTVWX"]');
+  await page.waitForSelector('[data-probe="parent-view"]', { timeout: 8000 });
+});
+
+await step("the Trends tab measures improvement from the copy", async () => {
+  await page.click('[data-probe="tab-trends"]');
+  await page.waitForSelector('[data-probe="trends-tab"]', { timeout: 6000 });
+  must(await page.$('[data-probe="improvement"]') !== null, "no improvement card");
+  must((await page.$$('[data-probe="trends-tab"] svg.chart')).length >= 3, "the trend charts are missing");
+  must(await page.$('[data-probe="trend-table"]') !== null, "no week-by-week table");
+});
+
+await step("the Settings tab sets a field in the cloud and shows it waiting for the device", async () => {
+  await page.click('[data-probe="tab-settings"]');
+  await page.waitForSelector('[data-probe="settings-tab"]', { timeout: 6000 });
+  must(await page.$('[data-probe="settings-applied"]') !== null, "with no document, nothing should be pending");
+  must(await page.$('[data-strand="mul"]') !== null, "no practice table on the door");
+  await page.click('[data-strand="mul"]');
+  await page.waitForTimeout(500);
+  must(puts.length === 1 && puts[0].fields.strands?.v.mul === true, `the push was ${JSON.stringify(puts[0])}`);
+  must(Object.keys(puts[0].fields).length === 1, "more than the changed field went up");
+  must(typeof puts[0].fields.strands.at === "number" && typeof puts[0].fields.strands.by === "string", "the field is not stamped");
+  await page.waitForSelector('[data-probe="settings-pending"]', { timeout: 4000 });
+  const pend = (await page.textContent('[data-probe="settings-pending"]')) ?? "";
+  must(pend.includes("multiplication"), `the pending line reads "${pend}"`);
+  const ts = await toasts(page);
+  must(ts.some((t) => t.includes("Saved") && t.includes("multiplication")), `the toasts read ${JSON.stringify(ts)}`);
+  // The device catches up: its next mirror runs multiplication. Refresh says so.
+  cloud = fakeBackup(1);
+  cloud.meta.strands.mul = true;
+  await page.waitForTimeout(3000);
+  await page.click('[data-probe="viewer-refresh"]');
+  await page.waitForSelector('[data-probe="settings-applied"]', { timeout: 8000 });
+  must(await page.$('[data-probe="settings-pending"]') === null, "still pending after the device caught up");
+});
+
+await step("forgetting a rider needs a confirm, says what it costs, and stays forgotten", async () => {
+  await page.click('[data-probe="parent-riders"]');
+  await page.waitForSelector('[data-probe="riders-list"]', { timeout: 6000 });
+  await page.click('[data-forget-rider="ABCDEFGHJKMNPQRSTVWX"]');
+  await page.waitForSelector(".sheet", { timeout: 4000 });
+  const text = (await page.textContent(".sheet")) ?? "";
+  must(text.includes("MATH-PRA3-ABCDE") && text.includes("backup file"), `the confirm reads "${text.slice(0, 100)}"`);
+  await page.click(".sheet .btn.ghost"); // Keep
+  await page.waitForTimeout(250);
+  must((await page.evaluate(() => window.__parent.riders())).length === 1, "Keep forgot the rider");
+  await page.click('[data-forget-rider="ABCDEFGHJKMNPQRSTVWX"]');
+  await page.waitForSelector(".sheet .btn.warm", { timeout: 4000 });
+  await page.click(".sheet .btn.warm");
+  await page.waitForTimeout(300);
+  must((await page.evaluate(() => window.__parent.riders())).length === 0, "the rider was not forgotten");
   must(await page.evaluate(() => window.__parent.code()) === null, "the code is still remembered");
+  must(await page.$('[data-probe="riders-list"]') === null, "an empty riders list is still shown");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
 });
@@ -104,6 +169,8 @@ await step("a backup file opens into the same report, read only", async () => {
   const banner = (await page.textContent('[data-probe="viewer-banner"]')) ?? "";
   must(banner.includes("backup file") && banner.includes("KALLEN"), `the file banner reads "${banner}"`);
   must(await page.$('[data-probe="viewer-refresh"]') === null, "a file offers a cloud refresh");
+  must(await page.$('[data-probe="tab-settings"]') === null, "a file offers settings it cannot send anywhere");
+  must(await page.$('[data-probe="tab-trends"]') !== null, "a file has no trends tab");
   must(await page.evaluate(() => window.__parent.kind()) === "file", "the source is not the file");
   // Nothing on this door writes a rider's data: no kid database was created.
   const dbs = await page.evaluate(async () => (await indexedDB.databases?.())?.map((d) => d.name) ?? []);
@@ -114,7 +181,7 @@ await step("a backup file opens into the same report, read only", async () => {
 });
 
 await step("a bad file is refused with a reason, not a blank screen", async () => {
-  await page.click('[data-probe="parent-change"]');
+  await page.click('[data-probe="parent-riders"]');
   await page.waitForSelector('[data-probe="parent-connect"]');
   await page.setInputFiles('[data-probe="parent-file"]', { name: "nope.json", mimeType: "application/json", buffer: Buffer.from('{"app":"other"}') });
   // The previous step's toast may still be up: wait for THIS one's words.

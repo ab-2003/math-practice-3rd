@@ -7,9 +7,10 @@
  * Pure: no DOM, no clock. The UI only lays these out.
  */
 
-import { isoOf } from "./clock";
+import { dayLabel, isoOf } from "./clock";
 import { DERIVED_MAX_MS, RETRIEVED_MAX_MS } from "./config";
-import type { Caps, Deck, FactKind, Response, SessionRecord, States, Strands } from "./types";
+import { applyResponse, freshState } from "./scheduler";
+import type { Caps, Deck, FactKind, FactState, Response, SessionRecord, States, Strands } from "./types";
 
 /** Everything the report needs, from wherever it came. */
 export interface Snapshot {
@@ -240,4 +241,146 @@ export const csv = (rs: readonly Response[], sessions: readonly SessionRecord[])
     ].join(","));
   }
   return lines.join("\n");
+};
+
+// ---------------------------------------------------------------------------
+// TRENDS: improvement over time, measured, not felt (Andy, 2026-09-02).
+//
+// Everything below replays the stored response log, so a week's figures are
+// what the log says happened that week and mastery dates are what the
+// scheduler's own transition would have produced from those responses.
+// ---------------------------------------------------------------------------
+
+export interface KindWeek { items: number; retrievedPct: number }
+
+export interface TrendRow {
+  week: number;
+  /** The week's first day as a short date. */
+  label: string;
+  items: number;
+  correct: number;
+  accuracyPct: number;
+  retrievedPct: number;
+  medianMs: number | null;
+  sessions: number;
+  minutes: number;
+  /** Facts from memory / facts met, as of the end of this week. */
+  masteredCum: number;
+  introducedCum: number;
+  byKind: Partial<Record<FactKind, KindWeek>>;
+}
+
+/** Replay the log through the scheduler's own transition, fact by fact, and
+ *  note the day each fact was first met and first mastered. */
+export const replayMilestones = (
+  deck: Deck, rs: readonly Response[],
+): { introducedOn: Map<string, number>; masteredOn: Map<string, number> } => {
+  const states = new Map<string, FactState>();
+  const introducedOn = new Map<string, number>();
+  const masteredOn = new Map<string, number>();
+  const ordered = [...rs].filter((r) => deck.has(r.factId)).sort((a, b) => a.at - b.at || a.day - b.day);
+  for (const r of ordered) {
+    if (r.isRetry) continue;
+    const prev = states.get(r.factId) ?? freshState();
+    const next = applyResponse(prev, r);
+    states.set(r.factId, next);
+    if (!introducedOn.has(r.factId)) introducedOn.set(r.factId, r.day);
+    if (next.mastered && !masteredOn.has(r.factId)) masteredOn.set(r.factId, r.day);
+  }
+  return { introducedOn, masteredOn };
+};
+
+export const trendRows = (deck: Deck, rs: readonly Response[], sessions: readonly SessionRecord[]): TrendRow[] => {
+  const scored = scoreable(rs);
+  if (scored.length === 0) return [];
+  const { introducedOn, masteredOn } = replayMilestones(deck, rs);
+  const weeks = new Map<number, Response[]>();
+  for (const r of scored) {
+    const w = weekOf(r.day);
+    const list = weeks.get(w);
+    if (list) list.push(r); else weeks.set(w, [r]);
+  }
+  const first = Math.min(...weeks.keys());
+  const last = Math.max(...weeks.keys());
+  const rows: TrendRow[] = [];
+  for (let w = first; w <= last; w++) {
+    const list = weeks.get(w) ?? [];
+    const correct = list.filter((r) => r.correct);
+    const weekEnd = w * 7 + 6;
+    const inWeek = sessions.filter((s) => weekOf(s.day) === w);
+    const byKind: Partial<Record<FactKind, KindWeek>> = {};
+    for (const k of KINDS) {
+      const mine = correct.filter((r) => r.factId.startsWith(`${k}:`));
+      if (mine.length === 0) continue;
+      byKind[k] = { items: mine.length, retrievedPct: Math.round((mine.filter((r) => r.cls === "retrieved").length / mine.length) * 100) };
+    }
+    rows.push({
+      week: w, label: dayLabel(w * 7),
+      items: list.length, correct: correct.length,
+      accuracyPct: list.length === 0 ? 0 : Math.round((correct.length / list.length) * 100),
+      retrievedPct: correct.length === 0 ? 0 : Math.round((correct.filter((r) => r.cls === "retrieved").length / correct.length) * 100),
+      medianMs: median(correct.filter((r) => r.firstKeyMs !== null).map((r) => r.firstKeyMs!)),
+      sessions: inWeek.length,
+      minutes: Math.round(inWeek.reduce((a, s) => a + Math.max(0, s.endedAt - s.startedAt), 0) / 60000),
+      masteredCum: [...masteredOn.values()].filter((d) => d <= weekEnd).length,
+      introducedCum: [...introducedOn.values()].filter((d) => d <= weekEnd).length,
+      byKind,
+    });
+  }
+  return rows;
+};
+
+export interface Improvement {
+  /** How many weeks each side of the comparison covers. */
+  span: number;
+  retrievedBefore: number; retrievedAfter: number;
+  medianBefore: number | null; medianAfter: number | null;
+  masteredBefore: number; masteredAfter: number;
+}
+
+/** The latest weeks with practice against the ones before them. Null until
+ *  there are at least two weeks with answers in them. */
+export const improvement = (rows: readonly TrendRow[]): Improvement | null => {
+  const active = rows.filter((r) => r.items > 0);
+  if (active.length < 2) return null;
+  const span = active.length >= 4 ? 2 : 1;
+  const after = active.slice(-span);
+  const before = active.slice(-span * 2, -span);
+  const pct = (xs: TrendRow[]): number => {
+    const correct = xs.reduce((a, r) => a + r.correct, 0);
+    const retrieved = xs.reduce((a, r) => a + Math.round((r.retrievedPct / 100) * r.correct), 0);
+    return correct === 0 ? 0 : Math.round((retrieved / correct) * 100);
+  };
+  const med = (xs: TrendRow[]): number | null => median(xs.filter((r) => r.medianMs !== null).map((r) => r.medianMs!));
+  return {
+    span,
+    retrievedBefore: pct(before), retrievedAfter: pct(after),
+    medianBefore: med(before), medianAfter: med(after),
+    masteredBefore: before[before.length - 1]!.masteredCum, masteredAfter: after[after.length - 1]!.masteredCum,
+  };
+};
+
+export interface Projection {
+  /** Facts from memory per week over the pace window. */
+  perWeek: number;
+  weeksOfPace: number;
+  remaining: number;
+  /** Day index the total would be reached at this pace. */
+  etaDay: number | null;
+}
+
+/** A straight line through the last few weeks of mastery, toward a total.
+ *  A projection, never a promise, and null when there is no pace to read. */
+export const projection = (rows: readonly TrendRow[], total: number, todayDay: number, span = 4): Projection | null => {
+  if (rows.length < 2) return null;
+  const tail = rows.slice(-Math.min(span, rows.length));
+  const gained = tail[tail.length - 1]!.masteredCum - tail[0]!.masteredCum;
+  const weeks = tail.length - 1;
+  if (weeks <= 0) return null;
+  const perWeek = gained / weeks;
+  const remaining = Math.max(0, total - tail[tail.length - 1]!.masteredCum);
+  return {
+    perWeek: Math.round(perWeek * 10) / 10, weeksOfPace: weeks, remaining,
+    etaDay: perWeek <= 0 ? null : Math.round(todayDay + (remaining / perWeek) * 7),
+  };
 };

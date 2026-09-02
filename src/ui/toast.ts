@@ -11,11 +11,20 @@ import { el } from "./dom";
 const TOAST_MS = 2_800;
 const QUEUE_KEY = "tl-toast";
 
+/** Toasts STACK: a second one sits above the first rather than replacing
+ *  it, so "Restored" is not eaten by "Settings updated" a moment later. */
 export const toast = (text: string): void => {
-  for (const old of Array.from(document.querySelectorAll(".toast"))) old.remove();
   const t = el("div", { class: "toast", role: "status", "aria-live": "polite", "data-probe": "toast", text });
+  const restack = (): void => {
+    let offset = 0;
+    for (const s of Array.from(document.querySelectorAll<HTMLElement>(".toast"))) {
+      s.style.setProperty("--stack", `${offset}px`);
+      offset += s.offsetHeight + 8;
+    }
+  };
   document.body.append(t);
-  window.setTimeout(() => t.remove(), TOAST_MS);
+  restack();
+  window.setTimeout(() => { t.remove(); restack(); }, TOAST_MS);
 };
 
 /** A toast for AFTER a reload: the load-from-cloud path reloads the page,

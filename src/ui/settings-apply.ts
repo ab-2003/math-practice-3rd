@@ -1,0 +1,86 @@
+/**
+ * ONE WAY TO CHANGE A SETTING, wherever the change comes from.
+ *
+ * The settings screen on the iPad, and the grown-ups' door on a phone via
+ * the cloud, both end here. Turning an operation on or raising a cap
+ * REVIVES the facts it lets back in (see core/scheduler reviveStrand), so a
+ * remote change can no more avalanche a session than a local one. A local
+ * change stamps the field with now and this device and pushes it to the
+ * settings document; a remote one adopts the remote stamp so it is never
+ * pushed back as if it were new.
+ */
+
+import { reviveStrand } from "../core/scheduler";
+import { sameValue, SYNCED_KEYS, type Field, type SyncedSettings, type SyncKey, settingsOf } from "../core/sync";
+import type { Caps, FactKind, Strands } from "../core/types";
+import type { App } from "./appstate";
+import { connectedCode, deviceId, putSettings } from "./cloud";
+
+const KINDS: readonly FactKind[] = ["add", "sub", "mul", "div"];
+
+/** The dials this device is running. */
+export const currentSettings = (app: App): SyncedSettings => settingsOf(app.meta);
+
+/**
+ * Apply one setting. Returns whether anything changed. Does not save: the
+ * caller saves once, after one or several changes.
+ */
+export const applySetting = <K extends SyncKey>(
+  app: App, key: K, value: SyncedSettings[K], from: { remote?: Field } = {},
+): boolean => {
+  const before = currentSettings(app)[key];
+  if (sameValue(before, value)) return false;
+
+  if (key === "strands") {
+    const next = value as Strands;
+    if (!KINDS.some((k) => next[k])) return false; // the last one cannot go off
+    const prev = before as Strands;
+    app.meta.strands = { ...next };
+    for (const k of KINDS) if (next[k] && !prev[k]) app.states = reviveStrand(app.deck, app.states, k, app.day);
+  } else if (key === "caps") {
+    const next = value as Caps;
+    const prev = before as Caps;
+    app.meta.caps = { ...next };
+    // Raising or clearing a cap lets facts back in that may be overdue by
+    // weeks; revive them to today so they cannot avalanche.
+    for (const k of KINDS) {
+      const was = prev[k];
+      const now = next[k];
+      if (now === null ? was !== null : (was !== null && now > was)) app.states = reviveStrand(app.deck, app.states, k, app.day);
+    }
+  } else if (key === "missing") {
+    app.meta.missing = { ...(value as SyncedSettings["missing"]) };
+  } else if (key === "dailyGoal") {
+    app.meta.dailyGoal = value as number;
+  } else if (key === "speedLimit") {
+    app.meta.speedLimit = value as number;
+  } else if (key === "elapsedLevel") {
+    app.meta.elapsedLevel = value as 1 | 2 | 3;
+  } else if (key === "elapsedAnalog") {
+    app.meta.elapsedAnalog = value as boolean;
+  }
+
+  const stamp = from.remote ? { at: from.remote.at, by: from.remote.by } : { at: Date.now(), by: deviceId() };
+  app.meta.settingsStamps = { ...app.meta.settingsStamps, [key]: stamp };
+  if (!from.remote) pushField(key, value, stamp);
+  return true;
+};
+
+/** A local change goes up as one field, fire and forget, never blocking. */
+const pushField = (key: SyncKey, value: unknown, stamp: { at: number; by: string }): void => {
+  const code = connectedCode();
+  if (code === null) return;
+  void putSettings(code, { [key]: { v: value, ...stamp } });
+};
+
+/** Every synced field this device holds, stamped, for a first full push. */
+export const localFields = (app: App): Partial<Record<SyncKey, Field>> => {
+  const out: Partial<Record<SyncKey, Field>> = {};
+  const s = currentSettings(app);
+  for (const k of SYNCED_KEYS) {
+    const st = app.meta.settingsStamps[k];
+    if (!st) continue; // never set on this device: nothing to claim
+    out[k] = { v: s[k], at: st.at, by: st.by };
+  }
+  return out;
+};

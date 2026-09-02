@@ -13,6 +13,7 @@ import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
 import { flushToast } from "./toast";
 import { cloudAutoPush } from "./cloud";
+import { offerRestore, startSync } from "./sync";
 import {
   getFacts, getMeta, loadRegistry, putFacts, putMeta, freshMeta, saveRegistry, useProfile, type Meta,
 } from "./store";
@@ -104,6 +105,10 @@ export const boot = async (root: HTMLElement): Promise<void> => {
 
   render();
   flushToast();
+
+  // The cloud may hold newer settings from the grown-ups' door, or, for a
+  // device that lost its store, the record itself. Both non-blocking.
+  void offerRestore(app).then((offered) => { if (!offered) startSync(app); });
 
   /**
    * iOS evicts IndexedDB from home-screen apps under storage pressure and

@@ -1,5 +1,8 @@
 /**
- * THE SETTINGS TAB: every control, grouped, and none of the charts.
+ * THE SETTINGS TAB on the iPad: every control, grouped, and none of the
+ * charts. The dials themselves come from dash/controls.ts over a model
+ * backed by the live app; the riders, data and cloud cards are this
+ * device's own business.
  */
 
 import { csv } from "../../core/report";
@@ -7,9 +10,10 @@ import type { Response, SessionRecord } from "../../core/types";
 import type { App } from "../appstate";
 import { cloudCard, type CloudViewHandler } from "../cloud-ui";
 import { el, on } from "../dom";
+import { applySetting } from "../settings-apply";
 import { sheet } from "../sheet";
 import { deleteProfileData, eraseAll, exportAll, importAll, newProfileId } from "../store";
-import { practiceTable } from "./practice";
+import { settingsCards, setRow, type SettingsModel } from "./controls";
 
 /** Offer a text file to the viewer without a network round trip. */
 const download = (name: string, text: string, mime: string): void => {
@@ -24,38 +28,6 @@ const download = (name: string, text: string, mime: string): void => {
 
 const section = (text: string): HTMLElement => el("div", { class: "dash-h", text });
 
-/** A compact labelled row with a control on the right. */
-const setRow = (label: string, hint: string, control: HTMLElement): HTMLElement => {
-  const row = el("div", { class: "setrow" });
-  const text = el("div", { class: "grow" });
-  text.append(el("b", { text: label }));
-  if (hint) text.append(el("small", { text: hint }));
-  row.append(text, control);
-  return row;
-};
-
-const stepper = (
-  value: string, probe: string, onMinus: () => void, onPlus: () => void,
-): HTMLElement => {
-  const box = el("div", { class: "mini-stepper" });
-  const minus = el("button", { type: "button", class: "btn small", "data-probe": `${probe}-minus` }, el("span", { text: "−" }));
-  const val = el("span", { class: "stepper-value", "data-probe": probe, text: value });
-  const plus = el("button", { type: "button", class: "btn small", "data-probe": `${probe}-plus` }, el("span", { text: "+" }));
-  on(minus, "click", onMinus);
-  on(plus, "click", onPlus);
-  box.append(minus, val, plus);
-  return box;
-};
-
-const knob = (onNow: boolean, probe: string, label: string, fn: () => void): HTMLElement => {
-  const b = el("button", {
-    type: "button", class: `knob${onNow ? " on" : ""}`, "data-probe": probe,
-    "aria-pressed": String(onNow), "aria-label": label,
-  }, el("i", {}));
-  on(b, "click", fn);
-  return b;
-};
-
 export interface SettingsOpts {
   onView: CloudViewHandler;
   responses: readonly Response[];
@@ -64,75 +36,32 @@ export interface SettingsOpts {
   rerender: () => void;
 }
 
+/** The live app as a settings model: a change applies (with its revives),
+ *  saves, pushes its field to the cloud, and redraws the pane in place. */
+export const appModel = (app: App, rerender: () => void): SettingsModel => ({
+  deck: app.deck,
+  states: app.states,
+  who: "he",
+  get: (key) => ({
+    strands: app.meta.strands, caps: app.meta.caps, missing: app.meta.missing, dailyGoal: app.meta.dailyGoal,
+    speedLimit: app.meta.speedLimit, elapsedLevel: app.meta.elapsedLevel, elapsedAnalog: app.meta.elapsedAnalog,
+  })[key],
+  set: (key, value) => {
+    if (!applySetting(app, key, value)) return;
+    void app.save().then(rerender);
+  },
+});
+
 export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   const wrap = el("div", { "data-probe": "settings-tab" });
-  const saveAndRefresh = (): void => { void app.save().then(() => opts.rerender()); };
+  const model = appModel(app, opts.rerender);
 
-  // ---- what he is practising -------------------------------------------------
+  // ---- the dials --------------------------------------------------------------
   wrap.append(section("Practice"));
-  const focus = el("div", { class: "card" });
-  focus.append(el("h3", { class: "title", text: "What he is practising" }));
-  focus.append(el("p", { class: "note", text:
-    "Switch an operation off and it leaves his sessions entirely; everything learned in it is kept. Missing number asks 7 + ▢ = 15 style items. The cap is a ceiling for the very young." }));
-  focus.append(practiceTable(app, opts.rerender));
-
-  // One shared mix percentage for whichever operations have it on. Still
-  // typed production, so the first-digit clock stays honest at any setting.
-  const anyMissing = Object.entries(app.meta.missing).some(([k, v]) => k !== "pct" && v === true);
-  if (anyMissing) {
-    focus.append(setRow("Missing-number mix", "share of items asked with a blank operand",
-      stepper(`${app.meta.missing.pct}%`, "missing-pct",
-        () => { app.meta.missing = { ...app.meta.missing, pct: Math.max(5, app.meta.missing.pct - 5) }; saveAndRefresh(); },
-        () => { app.meta.missing = { ...app.meta.missing, pct: Math.min(80, app.meta.missing.pct + 5) }; saveAndRefresh(); })));
-  }
-  if (app.meta.strands.div && !app.meta.strands.mul) {
-    focus.append(el("p", { class: "note warn", text:
-      "Division is on but multiplication is off. A division fact only unlocks once its own multiplication family is solid, so nothing new will arrive until multiplication is switched back on." }));
-  }
-  wrap.append(focus);
-
-  // ---- the day -----------------------------------------------------------------
+  const [focus, dayCard, bonus] = settingsCards(model);
+  wrap.append(focus!);
   wrap.append(section("The day"));
-  const dayCard = el("div", { class: "card" });
-  dayCard.append(el("h3", { class: "title", text: "The daily dose" }));
-  dayCard.append(el("p", { class: "note", text:
-    "How many answered problems make a day's work. The DONE badge, the jingle, the extra-practice label and the shop all key off it." }));
-  dayCard.append(setRow("Problems per day", "",
-    stepper(String(app.meta.dailyGoal), "dose-goal",
-      () => { app.meta.dailyGoal = Math.max(10, app.meta.dailyGoal - 5); saveAndRefresh(); },
-      () => { app.meta.dailyGoal = Math.min(80, app.meta.dailyGoal + 5); saveAndRefresh(); })));
-  dayCard.append(setRow("Speed runs per day", "one is allowed before the day's work",
-    stepper(String(app.meta.speedLimit), "speed-limit",
-      () => { app.meta.speedLimit = Math.max(1, app.meta.speedLimit - 1); saveAndRefresh(); },
-      () => { app.meta.speedLimit = Math.min(30, app.meta.speedLimit + 1); saveAndRefresh(); })));
-  wrap.append(dayCard);
-
-  // ---- the bonus round -----------------------------------------------------------
-  const bonus = el("div", { class: "card" });
-  bonus.append(el("h3", { class: "title", text: "Bonus round: elapsed time" }));
-  bonus.append(el("p", { class: "note", text: "A reward, not drill. Problems mix everything up to the level you pick; every time sits on a five minute mark." }));
-  const LEVELS: Array<{ n: 1 | 2 | 3; label: string; hint: string }> = [
-    { n: 1, label: "Same hour", hint: "2:10 to 2:45. Never leaves the hour it started in." },
-    { n: 2, label: "Next hour", hint: "2:50 to 3:10. Crosses the hour, still 60 minutes or less." },
-    { n: 3, label: "Big spans", hint: "2:10 to 3:45. More than an hour, never more than two." },
-  ];
-  const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Highest elapsed-time level" });
-  for (const lvl of LEVELS) {
-    const active = app.meta.elapsedLevel === lvl.n;
-    const b = el("button", {
-      type: "button", class: active ? "on" : "", role: "radio", "aria-checked": String(active),
-      "data-probe": `elapsed-level-${lvl.n}`,
-    }, el("span", { text: `${lvl.n} · ${lvl.label}` }));
-    on(b, "click", () => { app.meta.elapsedLevel = lvl.n; saveAndRefresh(); });
-    seg.append(b);
-  }
-  bonus.append(seg);
-  const chosen = LEVELS.find((l) => l.n === app.meta.elapsedLevel) ?? LEVELS[0]!;
-  bonus.append(el("p", { class: "note", "data-probe": "elapsed-hint", text:
-    `Up to level ${chosen.n}: ${chosen.hint}${chosen.n > 1 ? " Lower levels stay in the mix." : ""}` }));
-  bonus.append(setRow("Analog clock faces", app.meta.elapsedAnalog ? "he reads the times off drawn faces" : "times are written out (2:45)",
-    knob(app.meta.elapsedAnalog, "elapsed-analog", "Analog clock faces", () => { app.meta.elapsedAnalog = !app.meta.elapsedAnalog; saveAndRefresh(); })));
-  wrap.append(bonus);
+  wrap.append(dayCard!, bonus!);
 
   // ---- riders ------------------------------------------------------------------
   wrap.append(section("Riders"));

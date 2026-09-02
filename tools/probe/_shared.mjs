@@ -76,6 +76,10 @@ export const answerN = async (page, n) => {
   }
 };
 
+/** Every toast on screen, oldest first. Toasts stack, so "the toast" is
+ *  a list: judge with .some(), never the first one. */
+export const toasts = (page) => page.$$eval('[data-probe="toast"]', (els) => els.map((e) => e.textContent ?? ""));
+
 /** Persist whatever a probe just poked into the live meta or states. A
  *  mutation on the in-memory objects is invisible to anything that reads the
  *  store, and two probes were fooled by exactly that. */

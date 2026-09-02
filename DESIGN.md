@@ -690,6 +690,56 @@ where a parent picks up Kallen's iPad. `probe-parent` walks the door;
 human-eye, tap-audit, legible-check, offline-check and live-smoke all learned
 the second page.
 
+## 9e. Settings from anywhere, riders, and trends (0.16.0)
+
+Andy, from the door on his phone: the Change button was destructive, and
+"we are missing something on the parents' side": setting what the rider
+works on, from anywhere, with the rider's device picking it up.
+
+**Riders, not Change.** The door remembers every code it has connected,
+with the rider's name and last save; the list is the way between riders,
+and Forget is a per-rider confirm that shows the code and says what it
+costs. A teacher with a class gets the right thing for free.
+
+**Two documents under one code.** The RECORD is written only by the rider's
+device, as before. SETTINGS is a second document written by either side:
+each of the seven synced dials (operations, caps, missing number, dose,
+speed budget, elapsed level, analog faces) is a FIELD stamped with when and
+by which device it was set. The worker merges on every write, later stamp
+winning per field, device id as the tiebreak, so a stale phone can never
+clobber a newer iPad. This is a last-writer-wins register per field, not a
+vector clock, on purpose: two writers on independent dials do not need to
+detect concurrency, and where they do collide the honest answer is still
+"the later one wins". `core/sync.ts` holds the rules and is imported by
+the app, the door and the worker itself.
+
+**The rider's device listens.** At boot, on coming back to the foreground,
+and after each push it fetches the settings document and applies any field
+newer than its own, through the ONE path the settings screen uses
+(`settings-apply.ts`), so a remote change revives overdue facts exactly as
+a local one does. It adopts the remote stamp rather than claiming the field,
+says what changed in a toast, and never blocks. A local change stamps its
+field and pushes just that field.
+
+**The door says what is waiting.** Its settings tab draws the same table
+and controls as the iPad over the cloud document, and compares the document
+with what the last mirrored record says the device is running: "waiting for
+the device" until the next mirror shows the field applied, then "running".
+
+**The safety net.** A device that boots with nothing of its own, a
+remembered code and a record in the cloud is OFFERED its record back. That
+is the iOS eviction case, and it is an offer, not an act.
+
+**Trends.** A third tab on both the iPad and the door: is he getting better
+(the last weeks against the ones before: retrieval share, first-digit
+median, facts from memory), the lines by week (from memory and correct;
+first-digit seconds against the three second guide; facts met and facts
+from memory; retrieval by operation), a straight-line projection per
+standard that calls itself a projection, and the week-by-week table. All
+of it replays the stored log through the scheduler's own transition
+(`replayMilestones`), so mastery dates are what the rules would have
+produced from those responses, never a running total.
+
 # PART III - DESIGN SYSTEM
 
 Bold, chunky, high contrast. Skate-deck graphics and monster-sticker art:
@@ -839,6 +889,13 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.16.0 - settings from anywhere, riders, and trends.** SS9e: the
+      riders list in place of a destructive Change; two documents per code
+      with a per-field merge in the worker (`core/sync.ts`); the rider's
+      device applying newer fields at boot and on return, through the one
+      settings path; the door's settings tab with waiting/running; the
+      restore offer; the Trends tab on both sides. probe-sync joins the
+      loop; cloud-smoke proves the settings route on the real worker.
 - [x] **0.15.0 - the grown-ups' door.** `/parent/`, SS9d: a second entry
       in the same build for parents and teachers, read only, no PIN, by
       code, QR or file, remembered across launches. Plus 0.14.1's scroll

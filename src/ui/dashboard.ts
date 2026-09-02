@@ -30,13 +30,14 @@ import { cloudFrom, cloudWhen, cloudWhose, connectedCode, describeRefresh, getSh
 import { renderPin } from "./dash/pin";
 import { progressTab } from "./dash/progress";
 import { settingsTab } from "./dash/settings";
+import { trendsTab } from "./dash/trends";
 import { el, mount, on } from "./dom";
 import { icoRefresh } from "./icons";
 import { snapshotFromBackup } from "./snapshot";
 import { getResponses, getSessions, hasLocalData } from "./store";
 import { toast } from "./toast";
 
-type Tab = "progress" | "settings";
+type Tab = "progress" | "trends" | "settings";
 
 /** Once the code has been given, it stays given for the rest of the visit.
  *  Re-asking for it after every toggle would make the settings unusable. */
@@ -114,7 +115,7 @@ const renderDash = (app: App, host: HTMLElement): void => {
       });
       return b;
     };
-    tabs.append(tabBtn("progress", "Progress"), tabBtn("settings", "Settings"));
+    tabs.append(tabBtn("progress", "Progress"), tabBtn("trends", "Trends"), tabBtn("settings", "Settings"));
     wrap.append(tabs, pane);
 
     // Connecting or pressing View lands on the report AND says so: a
@@ -193,8 +194,12 @@ const renderDash = (app: App, host: HTMLElement): void => {
     // A setting changed: redraw the pane INSIDE the same scrolling screen, so
     // the parent stays where they were on a long settings list.
     const rerender = (): void => { mount(pane, settingsTab(app, { onView, responses, sessions, rerender })); };
+    const trendsPane = (): HTMLElement => {
+      if (viewing !== null) return trendsTab(snapshotFromBackup(app.deck, viewing.res.backup), app.day);
+      return trendsTab({ deck: app.deck, states: app.states, responses, sessions, strands: app.meta.strands, caps: app.meta.caps }, app.day);
+    };
     const show = (): void => {
-      mount(pane, tab === "progress" ? progressPane() : settingsTab(app, { onView, responses, sessions, rerender }));
+      mount(pane, tab === "progress" ? progressPane() : tab === "trends" ? trendsPane() : settingsTab(app, { onView, responses, sessions, rerender }));
     };
     show();
     mount(host, wrap);
