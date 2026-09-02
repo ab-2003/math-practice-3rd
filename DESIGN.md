@@ -1005,6 +1005,11 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.4 - GRINDJAW's log, finished.** The 24% keyframe brought the
+      whole log back and let it fade over the rest of the loop, and the
+      halves had no hidden base state through the stagger. Now: appear,
+      gnaw, snap, fall and fade, gone. The shop probe freezes the tile at
+      six moments of its own cycle and reads the halves' opacity.
 - [x] **0.18.3 - Two more kaiju.** WRECKARM (600), half wolf half dragon on
       two legs, wrecks a skyscraper with one fist; PANTHERACLAW (250), a
       black panther, slashes with gold claws. (Andy, 2026-09-02.)

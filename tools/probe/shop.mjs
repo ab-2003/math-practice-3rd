@@ -93,6 +93,32 @@ await step("the shop breathes, staggered, and every bespoke act is present", asy
   must(wings.length === 8 && new Set(wings).size === 8, `the winged are palette swaps, not forms (${wings.length} pairs, ${new Set(wings).size} distinct)`);
 });
 
+await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of the loop", async () => {
+  // Freeze the tile's animations at chosen moments of its own cycle: the
+  // log must be hidden before the act, whole while he gnaws, and gone
+  // after the snap through the end of the loop (Andy: "the log reappears").
+  const at = async (fraction) => page.evaluate((f) => {
+    const tile = document.querySelector('[data-mon="grindjaw"]');
+    const art = tile.querySelector(".creature");
+    const delay = parseFloat(art.style.getPropertyValue("--idle-delay")) * 1000;
+    const cycle = parseFloat(getComputedStyle(art).animationDuration) * 1000;
+    for (const a of document.getAnimations()) {
+      const t = a.effect?.target;
+      if (t && tile.contains(t)) { a.pause(); a.currentTime = delay + f * cycle; }
+    }
+    return { l: parseFloat(getComputedStyle(tile.querySelector(".log-l")).opacity), r: parseFloat(getComputedStyle(tile.querySelector(".log-r")).opacity) };
+  }, fraction);
+  const before = await at(0.002);
+  must(before.l === 0 && before.r === 0, `the log is showing before the act (${before.l}/${before.r})`);
+  const gnaw = await at(0.06);
+  must(gnaw.l === 1 && gnaw.r === 1, `the log is not whole while he gnaws (${gnaw.l}/${gnaw.r})`);
+  for (const f of [0.25, 0.5, 0.75, 0.99]) {
+    const rest = await at(f);
+    must(rest.l === 0 && rest.r === 0, `the log is back at ${Math.round(f * 100)}% of the loop (${rest.l}/${rest.r})`);
+  }
+  await page.evaluate(() => { for (const a of document.getAnimations()) a.play(); });
+});
+
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
   // colours at tile size. Body plus wings must be unique across all 29.
