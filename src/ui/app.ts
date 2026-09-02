@@ -11,6 +11,7 @@ import { sessionScreen } from "./session-screen";
 import { speedScreen } from "./speed-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
+import { flushToast } from "./toast";
 import { cloudAutoPush } from "./cloud";
 import {
   getFacts, getMeta, loadRegistry, putFacts, putMeta, freshMeta, saveRegistry, useProfile, type Meta,
@@ -102,6 +103,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   };
 
   render();
+  flushToast();
 
   /**
    * iOS evicts IndexedDB from home-screen apps under storage pressure and

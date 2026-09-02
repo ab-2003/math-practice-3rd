@@ -32,8 +32,9 @@ import { connectedCode, getShare, type CloudResult } from "./cloud";
 import { renderPin } from "./dash/pin";
 import { progressTab } from "./dash/progress";
 import { settingsTab } from "./dash/settings";
-import { el, mount, on } from "./dom";
+import { el, mount, on, svg } from "./dom";
 import { getResponses, getSessions, hasLocalData, type Backup } from "./store";
+import { toast } from "./toast";
 
 type CloudOk = Extract<CloudResult, { kind: "ok" }>;
 type Tab = "progress" | "settings";
@@ -82,8 +83,22 @@ export const snapshotFromBackup = (app: App, b: Backup): Snapshot => {
   };
 };
 
+/** Two arrows chasing each other: the refresh icon. */
+const icoRefresh = (): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 24 24", class: "ico ico-spin", "aria-hidden": "true" });
+  g.append(svg("path", { d: "M12 4 a8 8 0 0 1 7.4 5 L21.5 8 L21.5 14 L15.5 14 L17.6 11.9 A6 6 0 0 0 12 6 Z" }));
+  g.append(svg("path", { d: "M12 20 a8 8 0 0 1 -7.4 -5 L2.5 16 L2.5 10 L8.5 10 L6.4 12.1 A6 6 0 0 0 12 18 Z" }));
+  return g;
+};
+
+const whenOf = (res: CloudOk): string => res.meta.savedAt !== undefined
+  ? new Date(res.meta.savedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+  : "sometime";
+const fromOf = (res: CloudOk): string => (res.meta.device !== undefined ? ` from ${res.meta.device}` : "");
+
 const renderDash = (app: App, host: HTMLElement): void => {
   void (async () => {
+   try {
     const responses = await getResponses();
     const sessions = await getSessions();
     const local = await hasLocalData();
@@ -126,10 +141,13 @@ const renderDash = (app: App, host: HTMLElement): void => {
     tabs.append(tabBtn("progress", "Progress"), tabBtn("settings", "Settings"));
     wrap.append(tabs, pane);
 
+    // Connecting or pressing View lands on the report AND says so: a
+    // silent switch read as nothing happening (Andy, 2026-09-02).
     const onView = (c: string, res: CloudOk): void => {
       viewing = { code: c, res, auto: false };
       tab = "progress";
       renderDash(app, host);
+      toast(`Connected. Viewing ${res.meta.name ?? "the rider"}'s copy: ${res.meta.sessions ?? 0} sessions, saved ${whenOf(res)}${fromOf(res)}.`);
     };
 
     const progressPane = (): HTMLElement => {
@@ -142,11 +160,41 @@ const renderDash = (app: App, host: HTMLElement): void => {
         const banner = el("div", { class: "viewer-banner", "data-probe": "viewer-banner" });
         banner.append(el("span", { class: "grow", text:
           `Viewing ${res.meta.name ?? "the rider"}'s cloud copy · saved ${when}${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. Read only.` }));
-        const refresh = el("button", { type: "button", class: "btn small", "data-probe": "viewer-refresh" }, el("span", { text: "Refresh" }));
+        // REFRESH says what it did: new data, or already the latest. A button
+        // that changed nothing visible felt like a button that did nothing.
+        const refreshLabel = el("span", { text: "Refresh" });
+        const refresh = el("button", { type: "button", class: "btn small", "data-probe": "viewer-refresh" }, icoRefresh(), refreshLabel);
         on(refresh, "click", () => {
+          if (refresh.classList.contains("busy")) return;
+          refresh.classList.add("busy");
+          refreshLabel.textContent = "Refreshing…";
+          const before = res;
           void getShare(c).then((fresh) => {
-            if (fresh.kind === "ok") viewing = { code: c, res: fresh, auto: viewing?.auto ?? false };
+            if (fresh.kind !== "ok") {
+              refresh.classList.remove("busy");
+              refreshLabel.textContent = "Refresh";
+              toast(fresh.kind === "missing" ? "The cloud holds nothing under this code any more." : "The cloud is not answering. Showing the last copy.");
+              return;
+            }
+            // "Updated" means the PRACTICE changed: answers or sessions. The
+            // mirror re-saves after any change at all (a mute toggle counts),
+            // so the save time alone would call an identical report new.
+            const answersBefore = before.backup.responses?.length ?? 0;
+            const answersNow = fresh.backup.responses?.length ?? 0;
+            const sessionsBefore = before.meta.sessions ?? 0;
+            const sessionsNow = fresh.meta.sessions ?? 0;
+            const same = answersNow === answersBefore && sessionsNow === sessionsBefore;
+            viewing = { code: c, res: fresh, auto: viewing?.auto ?? false };
             renderDash(app, host);
+            if (same) {
+              toast(`Refreshed. Already the latest (mirror saved ${whenOf(fresh)}${fromOf(fresh)}).`);
+            } else {
+              const more = sessionsNow - sessionsBefore;
+              const answers = answersNow - answersBefore;
+              const what = more > 0 ? `${more} new ${more === 1 ? "session" : "sessions"}`
+                : answers > 0 ? `${answers} new ${answers === 1 ? "answer" : "answers"}` : "new data";
+              toast(`Refreshed. Updated: ${what}, saved ${whenOf(fresh)}${fromOf(fresh)}.`);
+            }
           });
         });
         banner.append(refresh);
@@ -193,5 +241,16 @@ const renderDash = (app: App, host: HTMLElement): void => {
     };
     show();
     mount(host, wrap);
+   } catch (err) {
+    // The report failing to draw must READ as a failure, never as the old
+    // pane sitting there with a stale note on it.
+    const card = el("div", { class: "card", "data-probe": "dash-error" });
+    card.append(el("h3", { class: "title", text: "Could not draw the report" }));
+    card.append(el("p", { class: "note warn", text: String(err) }));
+    const back = el("button", { type: "button", class: "btn small ghost" }, el("span", { text: "← Back" }));
+    on(back, "click", () => { relock(); app.go("home"); });
+    card.append(back);
+    mount(host, card);
+   }
   })();
 };

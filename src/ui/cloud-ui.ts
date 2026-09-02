@@ -15,6 +15,7 @@ import {
 import { el, mount, on } from "./dom";
 import { exportAll } from "./store";
 import { sheet } from "./sheet";
+import { queueToast, toast } from "./toast";
 
 export type CloudOk = Extract<CloudResult, { kind: "ok" }>;
 /** The dashboard's way into VIEWER MODE: show this copy, read-only. */
@@ -116,7 +117,10 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
           title: "Load the cloud copy?",
           body: `It holds ${res.meta.sessions ?? 0} sessions. Loading REPLACES everything on this device.`,
           cancel: "Keep this device's data", confirm: "Load", danger: true,
-          onConfirm: () => { void loadBackup(res.backup).then(() => location.reload()); },
+          onConfirm: () => {
+            queueToast(`Loaded ${res.meta.name ?? "the rider"}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+            void loadBackup(res.backup).then(() => location.reload());
+          },
         });
       });
     });
@@ -206,6 +210,8 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
         if (res.kind === "offline") { err.textContent = "The cloud is not answering. Try again in a bit."; return; }
         if (res.kind === "bad") { err.textContent = "That copy needs a newer app than this device runs."; return; }
         stopScan?.();
+        // The cloud answered: the note must not sit there saying it is still asking.
+        err.textContent = "";
         const whose = res.meta.name !== undefined ? `${res.meta.name}'s record` : "the record";
         sheet({
           title: "Code connected",
@@ -218,10 +224,18 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
               title: "Replace this device's data?",
               body: "Loading the cloud copy replaces everything currently on this device for this rider.",
               cancel: "Cancel", confirm: "Replace", danger: true,
-              onConfirm: () => { rememberCode(norm); void loadBackup(res.backup).then(() => location.reload()); },
+              onConfirm: () => {
+                rememberCode(norm);
+                queueToast(`Loaded ${res.meta.name ?? "the rider"}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+                void loadBackup(res.backup).then(() => location.reload());
+              },
             });
           },
-          onCancel: () => { rememberCode(norm); if (opts.onView) opts.onView(norm, res); else render(); },
+          onCancel: () => {
+            rememberCode(norm);
+            if (opts.onView) opts.onView(norm, res);
+            else { render(); toast(`Connected to ${whose}.`); }
+          },
         });
       });
     });

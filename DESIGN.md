@@ -955,6 +955,17 @@ zero image requests.
   12px. `legible-check` measured it; both were raised.
 - **The breather button fell off a phone.** The trick strip pushed it past the
   right edge at 390px. The strip yields now; the way out never does.
+- **Connecting a code felt like nothing happened.** "Asking the cloud…"
+  stayed on the form after the cloud had answered, and Refresh on the viewer
+  changed nothing visible when the data was already current. Neither could
+  be reproduced on WebKit against production (the banner arrived 24ms after
+  Just view), so the fix is feedback that cannot be missed: a TOAST (fixed
+  length, no tap) says Connected with whose copy and how many sessions, the
+  note clears the moment the cloud answers, a load-from-cloud queues its
+  toast across the reload, and Refresh carries an icon, says Refreshing…,
+  then says whether it found new sessions or was already the latest. A
+  report that fails to draw now mounts an error card instead of leaving the
+  old pane in place.
 - **Changing a setting threw the parent back to the top.** Every settings
   change called a full screen refresh, which rebuilt the screen at scroll 0
   (and the shop did the same after a helmet). The settings pane now redraws

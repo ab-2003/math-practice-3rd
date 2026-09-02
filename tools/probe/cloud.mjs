@@ -89,6 +89,36 @@ await step("viewer mode: a device with nothing of its own shows the cloud copy, 
   await p2.waitForSelector('[data-probe="viewer-banner"]', { timeout: 6000 });
   const banner = (await p2.textContent('[data-probe="viewer-banner"]')) ?? "";
   must(banner.includes("KALLEN") && banner.includes("Read only"), `the banner reads "${banner}"`);
+  // It SAYS it connected, and the "asking" note is gone with the form.
+  const t1 = (await p2.textContent('[data-probe="toast"]').catch(() => "")) ?? "";
+  must(t1.includes("Connected") && t1.includes("KALLEN") && t1.includes("1 session"), `the connect toast reads "${t1}"`);
+  must(await p2.$(".note.warn:not(:empty)") === null || !((await p2.textContent(".note.warn")) ?? "").includes("Asking"), "the asking note lingered");
+  // REFRESH: an icon, a busy state, and a verdict: already the latest.
+  must(await p2.$('[data-probe="viewer-refresh"] svg') !== null, "the refresh button has no icon");
+  await p2.waitForTimeout(3000); // let the connect toast go
+  await p2.click('[data-probe="viewer-refresh"]');
+  await p2.waitForSelector('[data-probe="toast"]', { timeout: 6000 });
+  const t2 = (await p2.textContent('[data-probe="toast"]')) ?? "";
+  must(t2.includes("Already the latest"), `refreshing unchanged data said "${t2}"`);
+  // The cloud moves on: two more sessions saved later. Refresh must say so.
+  await p2.unroute("**/math-pra3-cloudshare**");
+  await p2.route("**/math-pra3-cloudshare**", (route) => {
+    const b = fakeBackup();
+    b.savedAt = new Date(Date.now() + 60_000).toISOString();
+    b.sessions.push({ ...b.sessions[0], id: "s2" }, { ...b.sessions[0], id: "s3" });
+    void route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(b) });
+  });
+  await p2.waitForTimeout(3000);
+  await p2.click('[data-probe="viewer-refresh"]');
+  await p2.waitForSelector('[data-probe="toast"]', { timeout: 6000 });
+  const t3 = (await p2.textContent('[data-probe="toast"]')) ?? "";
+  must(t3.includes("Updated") && t3.includes("2 new sessions"), `refreshing changed data said "${t3}"`);
+  await p2.unroute("**/math-pra3-cloudshare**");
+  await p2.route("**/math-pra3-cloudshare**", (route) => {
+    const m = route.request().method();
+    if (m === "GET") void route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fakeBackup()) });
+    else void route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+  });
   // The report is drawn from the cloud copy, not this empty device.
   const text = (await p2.textContent('[data-probe="progress-tab"]')) ?? "";
   must(text.includes("Of 12 correct answers"), "the headline is not the cloud copy's");
