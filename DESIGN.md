@@ -946,6 +946,12 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.17.2 - Get Parent App.** A button in the grown-ups' top bar, on
+      the kid's app, opens a sheet with the door's link (this origin plus
+      /parent/), a QR that opens it, Copy and Share, and the iOS and
+      Android home-screen steps, with its own Back pinned at the top so the
+      way out never scrolls away. Behind one button on purpose: known, not
+      clutter.
 - [x] **0.17.1 - gender-neutral copy.** Andy: "generalize the gender of the child ... keep it simple and gender neutral." Every user-facing pronoun is now they/them, the settings heading names the rider instead ("What KALLEN is practising", as the door already did), and the elapsed-time scene says the rider. Profiles ask for a name only.
 - [x] **0.17.0 - loop-eye, and the board rack.** SS9g: the loop instrument
       and the four defects it found, fixed and proven. SS9f: nine boards

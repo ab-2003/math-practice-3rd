@@ -3,7 +3,7 @@
  * trick, and the new dashboard's report tab. Every bug ever fixed earns a
  * permanent step in one of these suites.
  */
-import { answerN, answerOf, calmMeta, closeSheets, goHome, pinIn, readStore, suite, typeAnswer } from "./_shared.mjs";
+import { answerN, answerOf, BASE as BASE_URL, calmMeta, closeSheets, goHome, pinIn, readStore, suite, typeAnswer } from "./_shared.mjs";
 
 const { page, step, must, done } = await suite("core");
 
@@ -130,6 +130,28 @@ await step("the PIN opens two tabs, PROGRESS first, with the report cards", asyn
   must(((await page.textContent('[data-probe="baseline"]')) ?? "").includes("floor"), "no personal floor sentence");
   // The controls live on the OTHER tab: the report has no steppers.
   must(await page.$('[data-probe="dose-goal"]') === null, "a setting is sitting in the report");
+});
+
+await step("Get Parent App sits in the top bar and opens a sheet with the link, a QR, and a Back that stays put", async () => {
+  must(await page.$('.topbar [data-probe="get-parent-app"]') !== null, "no Get Parent App button in the top bar");
+  await page.click('[data-probe="get-parent-app"]');
+  await page.waitForSelector('[data-probe="parent-app-sheet"]', { timeout: 4000 });
+  const href = await page.getAttribute('[data-probe="parent-link"]', "href");
+  must(href !== null && href.endsWith("/parent/") && href.startsWith(new URL(BASE_URL).origin), `the link is ${href}`);
+  must(await page.$('[data-probe="parent-qr"]') !== null, "no QR of the link");
+  const text = (await page.textContent('[data-probe="parent-app-sheet"]')) ?? "";
+  must(text.includes("Add to Home Screen") && text.includes("Install app"), "the install blurbs are missing");
+  must(text.includes("share code"), "the sheet does not say the code is still needed");
+  // The Back is at the TOP of the sheet, inside it, and closes it.
+  const backTop = await page.evaluate(() => {
+    const b = document.querySelector('[data-probe="parent-app-back"]');
+    const s = document.querySelector(".sheet");
+    return b && s ? b.getBoundingClientRect().top - s.getBoundingClientRect().top : -1;
+  });
+  must(backTop >= 0 && backTop < 120, `the Back button sits ${backTop}px into the sheet`);
+  await page.click('[data-probe="parent-app-back"]');
+  await page.waitForSelector('[data-probe="parent-app-sheet"]', { state: "detached", timeout: 4000 });
+  must(await page.$(".scrim") === null, "the sheet did not close on Back");
 });
 
 await step("the heat maps are collapsed to summary bars and open on request", async () => {

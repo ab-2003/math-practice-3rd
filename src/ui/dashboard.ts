@@ -27,6 +27,7 @@
 import type { Snapshot } from "../core/report";
 import type { App } from "./appstate";
 import { cloudFrom, cloudWhen, cloudWhose, connectedCode, describeRefresh, getShare, sessionsText, type CloudOk } from "./cloud";
+import { parentAppButton } from "./dash/parent-app";
 import { renderPin } from "./dash/pin";
 import { progressTab } from "./dash/progress";
 import { settingsTab } from "./dash/settings";
@@ -94,7 +95,9 @@ const renderDash = (app: App, host: HTMLElement): void => {
     const bar = el("div", { class: "topbar" });
     const back = el("button", { type: "button", class: "btn small ghost", "data-probe": "back" }, el("span", { text: "← Back" }));
     on(back, "click", () => { relock(); app.go("home"); });
-    bar.append(back, el("div", { class: "grow" }), el("h3", { text: "Grown-ups" }));
+    // The grown-ups' door, advertised where a parent already is: one button,
+    // the details behind it, so it is known without being clutter.
+    bar.append(back, parentAppButton(), el("div", { class: "grow" }), el("h3", { text: "Grown-ups" }));
     wrap.append(bar);
 
     const tabs = el("div", { class: "dash-tabs", role: "tablist" });

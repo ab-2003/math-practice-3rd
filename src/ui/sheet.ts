@@ -15,7 +15,7 @@ export interface SheetOpts {
  * not need to: a modal without an escape once showed up as a scrim that ate
  * the next tap and looked like a dead screen.
  */
-export const sheet = (opts: SheetOpts): void => {
+export const sheet = (opts: SheetOpts): { close: () => void } => {
   const scrim = el("div", { class: "scrim" });
   const box = el("div", { class: "sheet", role: "dialog", "aria-modal": "true" });
   box.append(el("h2", { text: opts.title }));
@@ -48,4 +48,5 @@ export const sheet = (opts: SheetOpts): void => {
   on(scrim, "click", (e) => { if (e.target === scrim) close(true); });
   scrim.append(box);
   document.body.append(scrim);
+  return { close: () => close(true) };
 };

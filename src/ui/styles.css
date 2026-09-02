@@ -1087,6 +1087,11 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .profile-sub { font-size: 13px; color: var(--dim); font-weight: 700; }
 .name-chip { cursor: pointer; font-family: var(--display); color: var(--cyan); background: var(--panel-2); text-transform: uppercase; letter-spacing: 0.04em; }
 
+/* ---------- get parent app ---------- */
+.parent-link { display: block; color: var(--cyan); text-decoration: underline; margin: 6px 0 10px; font-size: 16px; }
+.parent-app .qr-canvas { margin: 6px auto; }
+@media (max-width: 560px) { .topbar .btn.small.alt span { font-size: 12px; } }
+
 /* ---------- the grown-ups' door ---------- */
 .hero .sub.door { font-size: 16px; }
 
