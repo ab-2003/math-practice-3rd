@@ -50,7 +50,8 @@ body::before {
 
 .screen {
   flex: 1; display: flex; flex-direction: column; gap: 4px;
-  padding: calc(var(--pad-t) + 12px) 16px calc(var(--pad-b) + 30px);
+  /* The bottom pad clears the fixed build stamp: content once slid under it. */
+  padding: calc(var(--pad-t) + 12px) 16px calc(var(--pad-b) + 58px);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   max-width: 1100px; margin: 0 auto; width: 100%;
 }
@@ -964,3 +965,118 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .cap-row { margin: 4px 0 6px 34px; }
 .cap-row .stepper-value { min-width: 92px; font-size: 17px; }
+
+/* ---------- the grown-ups screen: two tabs, a table, and room to breathe ---------- */
+.dash-tabs { display: flex; gap: 8px; margin: 0 0 12px; }
+.tab {
+  flex: 1; font-family: var(--display); font-weight: 900; font-size: 15px; letter-spacing: 0.06em;
+  text-transform: uppercase; min-height: 48px; border: 4px solid var(--ink); border-radius: 14px;
+  background: var(--panel-2); color: var(--dim); box-shadow: 0 4px 0 var(--ink); cursor: pointer;
+}
+.tab.on { background: var(--acid); color: var(--ink); }
+.tab:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+/* Section rhythm: an acid kicker with a rule, so the page reads in chapters
+   instead of one long run of identical dim headings. */
+.dash-h {
+  font-size: 13px; font-weight: 900; letter-spacing: 0.14em; color: var(--acid); text-transform: uppercase;
+  margin: 14px 0 8px; display: flex; align-items: center; gap: 10px;
+}
+.dash-h::after { content: ""; flex: 1; height: 3px; background: var(--line); border-radius: 2px; }
+.card h3.title { color: var(--text); font-size: 18px; letter-spacing: 0.04em; margin-bottom: 4px; }
+
+/* the practice table */
+.ptable { display: grid; gap: 6px; margin-top: 10px; }
+.prow {
+  display: grid; grid-template-columns: minmax(0, 1fr) 60px 64px 92px; align-items: center; gap: 8px;
+  min-height: 60px; padding: 6px 8px; background: var(--panel-2); border: 4px solid var(--ink); border-radius: 14px;
+}
+.prow.off .plabel { opacity: 0.6; }
+.prow.phead { background: none; border: none; min-height: 0; padding: 0 8px; }
+.prow.phead span { font-size: 13px; font-weight: 900; letter-spacing: 0.08em; color: var(--dim); text-transform: uppercase; text-align: center; }
+.prow.phead span:first-child { text-align: left; }
+.plabel { display: flex; flex-direction: column; min-width: 0; }
+.plabel b { font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plabel small { font-size: 13px; color: var(--dim); font-weight: 700; }
+/* A knob is a switch that reads as a switch: the pill moves and lights. */
+.knob { width: 60px; height: 44px; background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.knob i { display: block; width: 54px; height: 30px; border-radius: 999px; border: 4px solid var(--ink); background: #10151B; position: relative; }
+.knob i::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px;
+  background: var(--line); transition: transform 140ms, background 140ms;
+}
+.knob.on i { background: var(--acid); }
+.knob.on i::after { transform: translateX(24px); background: var(--ink); }
+.knob.small i { width: 46px; height: 26px; }
+.knob.small i::after { width: 14px; height: 14px; }
+.knob.small.on i::after { transform: translateX(20px); }
+.chip {
+  font-family: var(--display); font-weight: 900; font-size: 15px; min-height: 44px; padding: 6px 12px;
+  border: 4px solid var(--ink); border-radius: 999px; background: var(--panel); color: var(--acid);
+  cursor: pointer; box-shadow: 0 3px 0 var(--ink); white-space: nowrap;
+}
+.chip.dim { color: var(--dim); }
+.chip.sel { background: var(--acid); color: var(--ink); }
+.chip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
+/* the segmented control: one choice of several, and it looks like one */
+.seg { display: flex; border: 4px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--panel-2); margin-top: 10px; }
+.seg button {
+  flex: 1; font-family: var(--display); font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em;
+  min-height: 48px; border: none; background: none; color: var(--dim); cursor: pointer; border-right: 3px solid var(--ink); padding: 4px 6px;
+}
+.seg button:last-child { border-right: none; }
+.seg button.on { background: var(--acid); color: var(--ink); }
+/* compact settings rows */
+.setrow { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0; border-top: 2px solid var(--line); margin-top: 6px; }
+.setrow .grow { flex: 1; min-width: 0; }
+.setrow b { font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; }
+.setrow small { display: block; font-size: 13px; color: var(--dim); font-weight: 700; text-transform: none; }
+.mini-stepper { display: flex; align-items: center; gap: 8px; flex: none; }
+.mini-stepper .btn.small { min-width: 48px; padding: 6px 10px; font-size: 20px; }
+.mini-stepper .stepper-value { min-width: 52px; font-size: 19px; }
+/* the per-operation summary bars, with the grid on request */
+.sum-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 4px 0;
+  background: none; border: none; cursor: pointer; font-family: var(--display); color: var(--text); text-align: left;
+}
+.sum-label { width: 124px; flex: none; font-weight: 900; font-size: 15px; text-transform: uppercase; letter-spacing: 0.02em; }
+.sum-bar { flex: 1; height: 22px; border: 4px solid var(--ink); border-radius: 999px; overflow: hidden; display: flex; background: #1B2029; }
+.sum-bar span { display: block; height: 100%; }
+.sum-n { flex: none; font-size: 13px; color: var(--dim); font-weight: 700; width: 96px; text-align: right; }
+.heat-wrap { margin: 4px 0 12px; }
+@media (max-width: 560px) {
+  .sum-label { width: 88px; font-size: 13px; }
+  .sum-n { width: 84px; }
+  .prow { grid-template-columns: minmax(0, 1fr) 56px 56px 84px; gap: 6px; padding: 6px; }
+  .plabel b { font-size: 14px; }
+}
+/* viewer mode: whose record this is, unmistakably */
+.viewer-banner {
+  background: var(--cyan); color: var(--ink); border: 5px solid var(--ink); border-radius: 16px; padding: 10px 14px;
+  margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-weight: 800; font-size: 15px;
+}
+.viewer-banner .grow { flex: 1; min-width: 200px; }
+.viewer-banner .btn.small { background: var(--ink); color: var(--cyan); border-color: var(--ink); box-shadow: none; }
+
+/* ---------- riders ---------- */
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin: 10px 0; }
+.profile-tile {
+  font-family: var(--display); background: var(--panel); border: 5px solid var(--ink); border-radius: 20px;
+  box-shadow: 0 6px 0 var(--ink); padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; color: var(--text); min-height: 210px; justify-content: flex-end;
+}
+.profile-tile:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.profile-art { width: min(40vw, 150px); height: auto; display: block; }
+.profile-name { font-size: 20px; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.profile-sub { font-size: 13px; color: var(--dim); font-weight: 700; }
+.name-chip { cursor: pointer; font-family: var(--display); color: var(--cyan); background: var(--panel-2); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ---------- small icons on the corner buttons ---------- */
+.ico { width: 22px; height: 22px; display: block; fill: currentColor; }
+.btn.small.ghost .ico { color: var(--text); }
+
+/* ---------- the dose chip in a session: a count, never a clock ---------- */
+.dose-chip { flex: none; font-size: 13px; color: var(--acid); border-color: var(--line); padding: 4px 10px; }
+
+/* ---------- idle acts pause off-stage: twenty-one animating tiles is a battery ---------- */
+.mon.offstage .creature, .mon.offstage .creature * { animation-play-state: paused; }

@@ -4,28 +4,25 @@
  * No chart library: the whole app has to boot offline from a tiny bundle, and
  * these are three shapes.
  *
- * Every figure here is recomputed from the stored raw response log rather than
- * from a running total, so the dashboard can never drift away from the
- * evidence underneath it.
+ * Every figure here arrives from core/report.ts, recomputed from the stored
+ * raw response log rather than from a running total, so the dashboard can
+ * never drift away from the evidence underneath it.
  */
 
+import { MAX_BOX } from "../core/config";
+import type { HeatCell, WeekPoint } from "../core/report";
 import { el, svg } from "./dom";
+export type { HeatCell, WeekPoint } from "../core/report";
 
 const INK = "#05070A";
 const GRID = "#2A323C";
 
-export interface WeekPoint {
-  label: string;
-  retrievedPct: number;
-  items: number;
-}
-
 /**
  * THE HEADLINE. Percentage of correct answers under three seconds, by week.
  * This is the evidence that automaticity is or is not building, and it is the
- * one chart a teacher will actually read.
+ * one chart a teacher will actually read. The cold series wears its own tint.
  */
-export const retrievalTrend = (points: readonly WeekPoint[]): SVGElement => {
+export const retrievalTrend = (points: readonly WeekPoint[], tint = "#B6FF3C"): SVGElement => {
   const w = 640;
   const h = 240;
   const pad = { l: 58, r: 16, t: 16, b: 40 };
@@ -47,28 +44,21 @@ export const retrievalTrend = (points: readonly WeekPoint[]): SVGElement => {
   const py = (v: number): number => pad.t + (1 - v / 100) * (h - pad.t - pad.b);
 
   const d = points.map((p, i) => `${i === 0 ? "M" : "L"}${px(i)} ${py(p.retrievedPct)}`).join(" ");
-  g.append(svg("path", { d, fill: "none", stroke: "#B6FF3C", "stroke-width": 6, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  g.append(svg("path", { d, fill: "none", stroke: tint, "stroke-width": 6, "stroke-linejoin": "round", "stroke-linecap": "round" }));
   points.forEach((p, i) => {
-    g.append(svg("circle", { cx: px(i), cy: py(p.retrievedPct), r: 8, fill: "#B6FF3C", stroke: INK, "stroke-width": 4 }));
+    g.append(svg("circle", { cx: px(i), cy: py(p.retrievedPct), r: 8, fill: tint, stroke: INK, "stroke-width": 4 }));
     g.append(svg("text", { x: px(i), y: h - 14, "text-anchor": "middle", fill: "#8A97A6", "font-size": 14 }, p.label));
   });
   return g;
 };
 
-export interface HeatCell {
-  id: string;
-  label: string;
-  box: number;
-  mastered: boolean;
-  medianMs: number | null;
-  seen: number;
-}
-
-/** Box colour, weakest to strongest. Never red: nothing here is a failure. */
+/** Box colour, weakest to strongest across all seven rungs. Never red:
+ *  nothing here is a failure. */
+const RUNGS = ["#4A3B2A", "#6B5230", "#8A6A33", "#A88A3A", "#C9B04A", "#D6C25A", "#E3D46C"];
 const boxColour = (c: HeatCell): string => {
   if (c.seen === 0) return "#1B2029";
   if (c.mastered) return "#B6FF3C";
-  return ["#4A3B2A", "#6B5230", "#8A6A33", "#A88A3A", "#C9B04A"][Math.min(c.box, 5) - 1] ?? "#4A3B2A";
+  return RUNGS[Math.min(c.box, MAX_BOX) - 1] ?? "#4A3B2A";
 };
 
 /** Every fact in the set, at a glance. The specific gaps become visible. */
