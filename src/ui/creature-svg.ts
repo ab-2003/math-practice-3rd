@@ -106,12 +106,84 @@ const PLANS: Record<Silhouette, Plan> = {
 };
 
 /**
- * Six dragons, six FORMS (Andy 2026-09-01): not palette swaps. Each overrides
- * the base dragon's wings at minimum, and most reshape body and head too:
+ * FORMS, not palette swaps. The dragons came first (Andy 2026-09-01): each
+ * overrides the base wings at minimum, and most reshape body and head too:
  * bat-winged ember, fin-winged sea serpent, leaf-winged glider, swept-wing
  * night hunter, crystal-winged glacier, high-winged regal gold.
+ *
+ * Then the rest of the company (alpha): the brutes, plated, raptors, horned,
+ * serpents and titans each shared one body plan, so at tile size GRINDJAW,
+ * PUCKJAW and GLACIODON read as the same animal in three colours. Every
+ * monster that shared a plan with another now has its own mass: a humped
+ * mammoth, a squat board-checker, a chiselled slab, a low spined crawler, a
+ * blocky scrap-heap, a long low speedster, a raised-neck charger, a tighter
+ * coil, a taller leaner titan. The probe asserts no two bodies match.
  */
-const DRAGON_VARIANTS: Record<string, Partial<Plan>> = {
+const VARIANTS: Record<string, Partial<Plan>> = {
+  // the brutes: GRINDJAW keeps the base plan
+  glaciodon: {
+    body: "M24 160 L28 118 L48 84 L92 66 L136 78 L166 110 L176 160 Z",
+    head: "M144 100 L194 92 L200 120 L184 134 L144 130 Z",
+    face: { x: 154, y: 104, scale: 1 },
+    legs: ["M48 152 L40 186 L76 186 L76 152 Z", "M120 152 L114 186 L152 186 L148 152 Z"],
+    spine: [[38, 124], [62, 90], [98, 68], [138, 82]],
+  },
+  puckjaw: {
+    body: "M18 160 L22 118 L44 100 L100 92 L156 100 L178 118 L182 160 Z",
+    head: "M148 98 L200 92 L202 128 L186 136 L148 132 Z",
+    face: { x: 156, y: 104, scale: 1.05 },
+    legs: ["M40 152 L34 184 L72 184 L72 152 Z", "M128 152 L124 184 L162 184 L160 152 Z"],
+    spine: [[34, 126], [60, 104], [100, 92], [146, 100]],
+  },
+  // the plated: MAGMASPYNE low and long, QUARRYBACK a chiselled slab
+  quarryback: {
+    body: "M20 160 L26 118 L60 92 L124 88 L164 108 L180 160 Z",
+    head: "M152 104 L200 94 L202 126 L188 140 L152 136 Z",
+    face: { x: 160, y: 110, scale: 0.92 },
+    legs: ["M42 154 L36 184 L70 184 L70 154 Z", "M126 154 L122 184 L156 184 L152 154 Z"],
+    spine: [[34, 124], [64, 94], [110, 88], [150, 106]],
+  },
+  magmaspyne: {
+    body: "M14 160 L24 130 L60 112 L120 104 L160 118 L182 160 Z",
+    head: "M154 112 L200 104 L202 130 L186 142 L154 138 Z",
+    face: { x: 160, y: 116, scale: 0.88 },
+    spine: [[30, 132], [64, 110], [110, 104], [148, 116]],
+  },
+  // the raptors: VOLTMAW keeps the base plan
+  rustfang: {
+    body: "M40 140 L50 96 L86 74 L126 76 L148 98 L144 134 L100 152 L58 150 Z",
+    head: "M130 80 L192 70 L198 96 L182 110 L134 110 Z",
+    face: { x: 146, y: 82, scale: 0.98 },
+    legs: ["M66 144 L54 186 L88 186 L92 144 Z", "M114 144 L110 186 L140 186 L134 144 Z"],
+  },
+  bladeback: {
+    body: "M30 138 L52 104 L94 86 L138 88 L158 104 L150 132 L104 146 L52 146 Z",
+    head: "M138 86 L196 74 L202 90 L186 104 L140 106 Z",
+    face: { x: 150, y: 84, scale: 0.9 },
+    legs: ["M66 140 L56 184 L82 184 L88 140 Z", "M114 140 L110 184 L136 184 L130 140 Z"],
+    spine: [[44, 118], [74, 96], [110, 86], [138, 92]],
+  },
+  // the horned: SKATHORN keeps the base plan, EMBERCLAW raises its neck
+  emberclaw: {
+    body: "M30 158 L40 118 L70 96 L110 90 L136 108 L156 158 Z",
+    head: "M116 78 L184 62 L200 92 L186 120 L124 124 Z",
+    face: { x: 140, y: 84, scale: 1.15 },
+    spine: [[42, 124], [70, 98], [104, 90], [126, 100]],
+  },
+  // the serpents: TIDEWRECK keeps the base plan, NIGHTCOIL coils tighter
+  nightcoil: {
+    body: "M16 156 L22 130 L44 118 L70 120 L86 102 L74 78 L94 62 L128 64 L150 86 L142 112 L118 124 L90 134 L58 156 Z",
+    head: "M124 56 L186 46 L198 66 L180 80 L130 82 Z",
+    face: { x: 140, y: 58, scale: 0.92 },
+    spine: [[28, 132], [64, 118], [90, 88], [122, 62]],
+  },
+  // the titans: STORMHIDE keeps the base plan, VOIDCREST stands taller
+  voidcrest: {
+    body: "M56 176 L54 104 L74 60 L112 46 L146 70 L152 126 L144 176 Z",
+    head: "M124 50 L188 34 L200 62 L182 84 L128 86 Z",
+    face: { x: 142, y: 52, scale: 1.05 },
+    spine: [[58, 140], [62, 90], [88, 56], [124, 52]],
+  },
   cinderwyrm: {}, // the base dragon IS the ember: jagged bat wings
   tidalwyrm: {
     body: "M24 150 C36 118 64 116 78 96 C92 76 118 72 140 84 C158 94 162 118 166 150 Z",
@@ -316,7 +388,7 @@ export const creatureSvg = (
   opts: { level?: number; helmet?: Helmet; idle?: number; fastIdle?: boolean } = {},
 ): SVGElement => {
   const lvl = opts.level ?? 1;
-  const plan: Plan = { ...PLANS[c.silhouette], ...(DRAGON_VARIANTS[c.id] ?? {}) };
+  const plan: Plan = { ...PLANS[c.silhouette], ...(VARIANTS[c.id] ?? {}) };
   const [body, , glow] = c.palette;
   const root = svg("svg", {
     viewBox: "-14 -6 246 214", role: "img", "aria-label": c.name,
@@ -339,7 +411,9 @@ export const creatureSvg = (
   }
   root.append(...crest(c, plan));
   for (const l of plan.legs) root.append(poly(l, body));
-  root.append(poly(plan.body, body, SW + 2));
+  const mass = poly(plan.body, body, SW + 2);
+  mass.classList.add("body");
+  root.append(mass);
   // A highlight shape rather than a gradient: sticker art has no shading.
   root.append(svg("path", {
     d: `M${plan.spine[1]?.[0] ?? 60} ${(plan.spine[1]?.[1] ?? 100) + 16} L${plan.spine[2]?.[0] ?? 100} ${(plan.spine[2]?.[1] ?? 90) + 12} L${plan.spine[2]?.[0] ?? 100} ${(plan.spine[2]?.[1] ?? 90) + 26} L${plan.spine[1]?.[0] ?? 60} ${(plan.spine[1]?.[1] ?? 100) + 32} Z`,

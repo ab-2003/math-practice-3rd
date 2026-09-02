@@ -15,13 +15,18 @@
  *    items he is offered a real way out at every line break.
  */
 
-import { COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_AFTER_ITEMS } from "../core/config";
+import {
+  COIN_PER_BONUS, COIN_PER_LINE, COIN_PER_TRICK, LINE_LENGTH, OFFER_EXIT_AFTER_ITEMS,
+  OFFER_EXIT_WHEN_TIRED_AFTER, STREAK_MILESTONES,
+} from "../core/config";
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
-import { canAffordAny } from "../core/creatures";
+import { canAffordAny, riderVoice } from "../core/creatures";
 import { presentFact, type Presented } from "../core/present";
-import { currentFactId, recordResponse, sessionIsOver, startSession } from "../core/session";
-import type { Fact, Response, SessionState } from "../core/types";
+import {
+  coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued, recordResponse, sessionIsOver, startSession,
+} from "../core/session";
+import type { EndReason, Fact, Response, SessionState } from "../core/types";
 import type { App } from "./appstate";
 import { el, mount, on } from "./dom";
 import { clockSvg } from "./clock-svg";
@@ -49,13 +54,16 @@ export const sessionScreen = (app: App): HTMLElement => {
   const strip = el("div", { class: "grow" });
   const quit = el("button", { type: "button", class: "btn small ghost", "data-probe": "quit" }, el("span", { text: "Take a breather" }));
   const isExtra = doseDone(app);
-  bar.append(chip, strip, quit);
+  // DISTANCE TO DONE: a count of today's answers against the dose, in the
+  // topbar where he can see the end coming. A count, never a clock.
+  const doseChip = el("span", { class: "pill dose-chip", "data-probe": "dose-chip" });
+  bar.append(chip, doseChip, strip, quit);
   if (isExtra) bar.append(el("span", { class: "pill extra-tag", "data-probe": "extra-tag", text: "EXTRA PRACTICE" }));
   root.append(bar);
 
   const wrap = el("div", { class: "session" });
   const left = el("div", { class: "left" });
-  left.append(spotLayer(spotForDay(app.meta.linesLanded, app.day).id));
+  left.append(spotLayer(spotForDay(app.meta.linesLanded, app.day, new Date().getMonth()).id));
   const stage = el("div", { class: "stage" });
   const slot = el("div", { class: "answer-slot", "data-probe": "answer" });
   // The answer sits on the same line as an equals sign, so the whole thing
@@ -66,7 +74,13 @@ export const sessionScreen = (app: App): HTMLElement => {
   root.append(wrap);
 
   // ---- session state -----------------------------------------------------
-  let session: SessionState = startSession(app.deck, app.states, app.day, app.meta.strands, app.meta.caps);
+  // THE COLD CHECK: once a week, a few mastered facts open the session before
+  // anything has primed him. Nothing on screen marks them.
+  const cold = coldCheckDue(app.meta.lastColdDay, app.day)
+    ? coldCheckIds(app.deck, app.states, app.day, app.meta.strands, app.meta.caps)
+    : [];
+  if (cold.length > 0) { app.meta.lastColdDay = app.day; void app.save(); }
+  let session: SessionState = startSession(app.deck, app.states, app.day, app.meta.strands, app.meta.caps, cold);
   const startedAt = Date.now();
   const collected: Response[] = [];
   let landed = 0;          // tricks in the CURRENT line
@@ -82,6 +96,15 @@ export const sessionScreen = (app: App): HTMLElement => {
   // moment: the one fanfare, the big banner, and the badge waiting at home.
   const doseBase = app.meta.doseDay === app.day ? app.meta.doseCount : 0;
   let doseCelebrated = doseBase >= app.meta.dailyGoal;
+  const paintDose = (): void => {
+    const n = doseBase + itemsDone;
+    doseChip.textContent = `${Math.min(n, app.meta.dailyGoal)} / ${app.meta.dailyGoal}`;
+    doseChip.hidden = n >= app.meta.dailyGoal;
+  };
+  // Why the run ended early, for the stamina log. Set by whichever door he
+  // left through; stays undefined on a run that reached its own end.
+  let reason: EndReason | undefined;
+  let tiredOffered = false;
 
   const showDailyDone = (): Promise<void> =>
     new Promise((resolve) => {
@@ -144,6 +167,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     onSubmit: (v) => { void submit(Number(v)); },
   });
   wrap.append(pad.root);
+  paintDose();
 
   const currentTricks = (): ReturnType<typeof lineTricks> => {
     const total = app.meta.linesLanded + linesThisRun;
@@ -262,6 +286,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     session = step.session;
     app.states = step.states;
     itemsDone += 1;
+    paintDose();
 
     if (correct) {
       // Identical treatment whether he retrieved it or worked it out. This is
@@ -333,6 +358,9 @@ export const sessionScreen = (app: App): HTMLElement => {
     firstKeyMs, submitMs, correct, answered: given,
     cls: classify(correct, firstKeyMs), isRetry,
     format: cur?.format ?? "standard",
+    // The cold flag rides on the position under the cursor, judged BEFORE
+    // the response advances it. Retries are never cold: he was just shown it.
+    ...(!isRetry && isColdItem(session) ? { cold: true } : {}),
   });
 
   /** The bail: warm, brief, and then his own method handed back to him. */
@@ -381,10 +409,16 @@ export const sessionScreen = (app: App): HTMLElement => {
     paint();
   };
 
-  /** A real, celebrated way out at every line break once he has done enough. */
+  /** A real, celebrated way out at every line break once he has done enough.
+   *  When the clock says he is TIRING (core isFatigued), the same offer comes
+   *  a few lines earlier: identical words, identical sheet, nothing about
+   *  speed anywhere on the glass. */
   const lineBreak = (): Promise<void> =>
     new Promise((resolve) => {
-      if (itemsDone < OFFER_EXIT_AFTER_ITEMS || sessionIsOver(session)) { resolve(); return; }
+      const tired = isFatigued(session);
+      const threshold = tired ? OFFER_EXIT_WHEN_TIRED_AFTER : OFFER_EXIT_AFTER_ITEMS;
+      if (itemsDone < threshold || sessionIsOver(session)) { resolve(); return; }
+      if (tired) tiredOffered = true;
       sheet({
         title: "Line landed!",
         body: `That is ${itemsDone} so far and ${coins} coins. Keep rolling, or call it a good run?`,
@@ -392,8 +426,9 @@ export const sessionScreen = (app: App): HTMLElement => {
         confirm: "Keep rolling",
         onConfirm: () => resolve(),
         // Calling it is his decision and it is not quitting. It is logged as
-        // endedEarly so the dashboard can tell it apart from walking away.
-        onCancel: () => { void finish("endedEarly"); resolve(); },
+        // endedEarly so the dashboard can tell it apart from walking away,
+        // and as "tired" when the offer came early because the clock crept.
+        onCancel: () => { reason = tiredOffered ? "tired" : "choice"; void finish("endedEarly"); resolve(); },
       });
     });
 
@@ -407,6 +442,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     const real = collected.filter((r) => !r.isRetry);
     const status: SessionRecord["status"] =
       forced ?? (session.status === "endedEarly" ? "endedEarly" : "complete");
+    if (status === "endedEarly" && reason === undefined) reason = session.status === "endedEarly" ? "struggle" : "breather";
 
     app.meta.coins += coins;
     app.meta.linesLanded += linesThisRun;
@@ -416,9 +452,12 @@ export const sessionScreen = (app: App): HTMLElement => {
     if (newBestTricks) app.meta.bestTricksRun = tricksThisRun;
     const newBestLines = linesThisRun > app.meta.bestLinesRun;
     if (newBestLines) app.meta.bestLinesRun = linesThisRun;
+    let streakStamp: number | null = null;
     if (app.meta.lastSessionDay !== app.day) {
       app.meta.streak = app.meta.lastSessionDay === app.day - 1 ? app.meta.streak + 1 : 1;
       app.meta.lastSessionDay = app.day;
+      // A milestone is stamped the day it is reached, and only that day.
+      if ((STREAK_MILESTONES as readonly number[]).includes(app.meta.streak)) streakStamp = app.meta.streak;
     }
 
     await appendResponses(collected);
@@ -429,6 +468,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       retrieved: real.filter((r) => r.cls === "retrieved").length,
       derived: real.filter((r) => r.cls === "derived").length,
       status, coins,
+      ...(status === "endedEarly" && reason !== undefined ? { reason } : {}),
     });
     await app.save();
 
@@ -449,9 +489,12 @@ export const sessionScreen = (app: App): HTMLElement => {
     else if (newBestLines && linesThisRun >= 2) body.append(el("p", { class: "best-line", text: "MOST LINES EVER!" }));
     if (newTrickName !== null) body.append(el("p", { class: "best-line", text: `NEW TRICK UNLOCKED: ${newTrickName}` }));
     if (newSpotName !== null) body.append(el("p", { class: "best-line", text: `NEW SPOT UNLOCKED: ${newSpotName}` }));
+    if (streakStamp !== null) body.append(el("p", { class: "best-line", "data-probe": "streak-stamp", text: `${streakStamp} DAY STREAK!` }));
     const riderName = app.meta.names[rider.id] ?? rider.name;
     if (tricksThisRun > 0 && app.meta.owned.includes(rider.id)) {
-      body.append(el("p", { class: "note", text: `${riderName} was riding.` }));
+      // The monster gets a line. The lore was trapped in the shop; this is
+      // it talking to him where it counts.
+      body.append(el("p", { class: "note rider-quip", "data-probe": "rider-quip", text: `${riderName}: "${riderVoice(rider, app.day)}"` }));
     }
 
     const inReach = canAffordAny(app.meta.owned, app.meta.coins);
@@ -500,7 +543,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       title: "Take a breather?",
       body: "Everything you landed is saved. You can drop back in whenever.",
       cancel: "Keep rolling", confirm: "Take a breather",
-      onConfirm: () => { void finish("endedEarly"); },
+      onConfirm: () => { reason = "breather"; void finish("endedEarly"); },
     });
   });
 
@@ -518,6 +561,9 @@ export const sessionScreen = (app: App): HTMLElement => {
     coins: (): number => coins,
     bonus: offerBonus,
     over: (): boolean => finished,
+    cold: (): number => session.coldCount,
+    isCold: (): boolean => isColdItem(session),
+    tired: (): boolean => isFatigued(session),
   };
 
   if (session.queue.length === 0) {

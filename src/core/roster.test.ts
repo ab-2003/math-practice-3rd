@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAffordAny, cheapestLocked, ROSTER } from "./creatures";
+import { canAffordAny, cheapestLocked, riderVoice, ROSTER } from "./creatures";
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
@@ -22,6 +22,15 @@ describe("the open shop", () => {
   it("gives the seven dragons seven different colours", () => {
     const bodies = ROSTER.filter((c) => c.silhouette === "dragon").map((c) => c.palette[0]);
     expect(new Set(bodies).size).toBe(7);
+  });
+
+  it("gives every monster two lines of its own, with no em-dashes", () => {
+    const all = ROSTER.flatMap((c) => c.voice);
+    expect(all.length).toBe(42);
+    expect(new Set(all).size).toBe(42);
+    for (const line of all) expect(line).not.toContain("—");
+    expect(riderVoice(ROSTER[0]!, 0)).toBe(ROSTER[0]!.voice[0]);
+    expect(riderVoice(ROSTER[0]!, 1)).toBe(ROSTER[0]!.voice[1]);
   });
 
   it("still knows the cheapest target and affordability", () => {

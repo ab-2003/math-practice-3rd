@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  BASE_TRICKS, lineTricks, SPOTS, spotForDay, spotUnlockedBetween,
+  BASE_TRICKS, lineTricks, seasonalSpots, SPOTS, spotForDay, spotUnlockedBetween,
   trickUnlockedBetween, UNLOCKABLE_TRICKS, unlockedTricks,
 } from "./tricks";
 
@@ -59,5 +59,17 @@ describe("the spots", () => {
     const seen = new Set<string>();
     for (let day = 0; day < 10; day++) seen.add(spotForDay(999, day).id);
     expect(seen.size).toBe(SPOTS.length);
+  });
+
+  it("opens the seasonal spots in their season only, to everyone", () => {
+    expect(seasonalSpots(0).map((s) => s.id)).toEqual(["frostpark"]);
+    expect(seasonalSpots(6).map((s) => s.id)).toEqual(["boardwalk"]);
+    expect(seasonalSpots(3)).toEqual([]);
+    expect(seasonalSpots(undefined)).toEqual([]);
+    const winter = new Set<string>();
+    for (let day = 0; day < 10; day++) winter.add(spotForDay(0, day, 0).id);
+    expect(winter.has("frostpark")).toBe(true);
+    expect(winter.has("street")).toBe(true);
+    for (let day = 0; day < 10; day++) expect(spotForDay(0, day, 3).id).toBe("street");
   });
 });

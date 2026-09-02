@@ -63,7 +63,9 @@ export const lineTricks = (lineIndex: number, linesLanded: number): Trick[] => {
 // lives in the UI.
 // ---------------------------------------------------------------------------
 
-export const SPOTS: ReadonlyArray<{ id: string; name: string; atLines: number }> = [
+export interface Spot { id: string; name: string; atLines: number }
+
+export const SPOTS: ReadonlyArray<Spot> = [
   { id: "street", name: "THE STREET", atLines: 0 },
   { id: "halfpipe", name: "THE HALFPIPE", atLines: 15 },
   { id: "rooftop", name: "THE ROOFTOP", atLines: 40 },
@@ -71,15 +73,29 @@ export const SPOTS: ReadonlyArray<{ id: string; name: string; atLines: number }>
   { id: "megaramp", name: "THE MEGA RAMP", atLines: 140 },
 ];
 
-export const unlockedSpots = (linesLanded: number): typeof SPOTS[number][] =>
+/**
+ * SEASONAL SPOTS (alpha): the world keeps moving after the last unlock. A
+ * winter park through the cold months and a boardwalk through the summer,
+ * open to everyone while their season lasts, gone when it ends. Months are
+ * zero-based like the platform's; the UI passes the current one.
+ */
+export const SEASONAL_SPOTS: ReadonlyArray<Spot & { months: readonly number[] }> = [
+  { id: "frostpark", name: "FROST PARK", atLines: 0, months: [11, 0, 1] },
+  { id: "boardwalk", name: "THE BOARDWALK", atLines: 0, months: [5, 6, 7] },
+];
+
+export const seasonalSpots = (month: number | undefined): Spot[] =>
+  month === undefined ? [] : SEASONAL_SPOTS.filter((s) => s.months.includes(month));
+
+export const unlockedSpots = (linesLanded: number): Spot[] =>
   SPOTS.filter((s) => linesLanded >= s.atLines);
 
-export const spotUnlockedBetween = (before: number, after: number): typeof SPOTS[number] | null =>
+export const spotUnlockedBetween = (before: number, after: number): Spot | null =>
   SPOTS.find((s) => s.atLines > 0 && before < s.atLines && after >= s.atLines) ?? null;
 
-/** Today's spot: rotate the unlocked set by day so sessions vary without a
+/** Today's spot: rotate the open set by day so sessions vary without a
  *  picker. Deterministic, so two sessions the same day match. */
-export const spotForDay = (linesLanded: number, day: number): typeof SPOTS[number] => {
-  const open = unlockedSpots(linesLanded);
+export const spotForDay = (linesLanded: number, day: number, month?: number): Spot => {
+  const open = [...unlockedSpots(linesLanded), ...seasonalSpots(month)];
   return open[day % open.length] ?? SPOTS[0]!;
 };

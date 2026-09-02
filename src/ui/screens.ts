@@ -61,12 +61,48 @@ const iconMonster = (): SVGElement => {
 const coinChip = (n: number): HTMLElement =>
   el("div", { class: "coins" }, el("span", { text: "◆" }), el("span", { text: String(n) }));
 
+/** The corner icons, drawn in the same ink as everything else: emoji looked
+ *  like a different app sitting on top of this one. */
+const ico = (paths: string[], extra: SVGElement[] = []): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 24 24", class: "ico", "aria-hidden": "true" });
+  for (const d of paths) g.append(svg("path", { d }));
+  for (const e of extra) g.append(e);
+  return g;
+};
+const icoBoard = (): SVGElement => ico(
+  ["M4 9 C1.5 9 1.5 13 4 13 L20 13 C22.5 13 22.5 9 20 9 Z"],
+  [svg("circle", { cx: 8, cy: 16.5, r: 2.2 }), svg("circle", { cx: 16, cy: 16.5, r: 2.2 })],
+);
+const icoMoon = (): SVGElement => ico(["M14 3 A9 9 0 1 0 21 15.5 A7 7 0 0 1 14 3 Z"]);
+const icoSound = (): SVGElement => {
+  const g = ico(["M3 9 L7.5 9 L13 4.5 L13 19.5 L7.5 15 L3 15 Z"]);
+  g.append(svg("path", { d: "M16 8.5 Q19 12 16 15.5 M18.5 5.5 Q23.5 12 18.5 18.5", fill: "none", stroke: "currentColor", "stroke-width": 2.2, "stroke-linecap": "round" }));
+  return g;
+};
+const icoMuted = (): SVGElement => {
+  const g = ico(["M3 9 L7.5 9 L13 4.5 L13 19.5 L7.5 15 L3 15 Z"]);
+  g.append(svg("path", { d: "M16.5 8.5 L22 15.5 M22 8.5 L16.5 15.5", fill: "none", stroke: "currentColor", "stroke-width": 2.4, "stroke-linecap": "round" }));
+  return g;
+};
+const icoGear = (): SVGElement => {
+  const teeth = Array.from({ length: 8 }, (_, i) => {
+    const a = (i / 8) * Math.PI * 2;
+    const x = 12 + Math.cos(a) * 8.5;
+    const y = 12 + Math.sin(a) * 8.5;
+    return `M${x - 2.2} ${y - 2.2} h4.4 v4.4 h-4.4 Z`;
+  }).join(" ");
+  const g = ico([teeth]);
+  g.append(svg("circle", { cx: 12, cy: 12, r: 7 }));
+  g.append(svg("circle", { cx: 12, cy: 12, r: 3, fill: "var(--panel)" }));
+  return g;
+};
+
 /** A small round button, used for the corner controls. */
-const iconBtn = (label: string, title: string, fn: () => void, probe?: string): HTMLElement => {
+const iconBtn = (icon: SVGElement, title: string, fn: () => void, probe?: string): HTMLElement => {
   const b = el("button", {
     type: "button", class: "btn small ghost", "aria-label": title, title,
     ...(probe === undefined ? {} : { "data-probe": probe }),
-  }, el("span", { text: label }));
+  }, icon);
   on(b, "click", fn);
   return b;
 };
@@ -76,21 +112,28 @@ export const homeScreen = (app: App): HTMLElement => {
 
   const bar = el("div", { class: "topbar" });
   bar.append(coinChip(app.meta.coins));
+  // More than one rider on this iPad: whose coins these are, and the way to
+  // the picker. With one rider the bar stays clean.
+  if (app.registry.profiles.length > 1) {
+    const who = el("button", { type: "button", class: "pill name-chip", "data-probe": "name-chip" }, el("span", { text: app.profile.name }));
+    on(who, "click", () => app.go("profiles"));
+    bar.append(who);
+  }
   bar.append(el("div", { class: "grow" }));
-  if (app.meta.streak > 1) bar.append(el("span", { class: "pill", text: `${app.meta.streak} day streak` }));
+  if (app.meta.streak > 1) bar.append(el("span", { class: `pill${app.meta.streak >= 7 ? " streak-hot" : ""}`, "data-probe": "streak-pill", text: `${app.meta.streak} day streak` }));
   // Two kid controls, side by side: sound, and the trick animations.
-  bar.append(iconBtn(app.meta.animations ? "🛹" : "💤",
+  bar.append(iconBtn(app.meta.animations ? icoBoard() : icoMoon(),
     app.meta.animations ? "Turn trick animations off" : "Turn trick animations on", () => {
       app.meta.animations = !app.meta.animations;
       void app.save();
       app.refresh();
     }, "anim-toggle"));
-  bar.append(iconBtn(app.meta.muted ? "🔇" : "🔊", app.meta.muted ? "Unmute" : "Mute", () => {
+  bar.append(iconBtn(app.meta.muted ? icoMuted() : icoSound(), app.meta.muted ? "Unmute" : "Mute", () => {
     app.meta.muted = !app.meta.muted;
     void app.save();
     app.refresh();
   }, "mute-toggle"));
-  bar.append(iconBtn("⚙", "Grown-ups", () => app.go("dashboard")));
+  bar.append(iconBtn(icoGear(), "Grown-ups", () => app.go("dashboard"), "grownups"));
   root.append(bar);
 
   const hero = el("div", { class: "hero" });
@@ -246,6 +289,14 @@ export const collectionScreen = (app: App): HTMLElement => {
     grid.append(tile);
   }
   root.append(grid);
+  // Twenty-one tiles animating at once is a battery on an older iPad. Tiles
+  // that have scrolled off stage pause their acts until they are back.
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) e.target.classList.toggle("offstage", !e.isIntersecting);
+    }, { rootMargin: "120px" });
+    for (const t of Array.from(grid.children)) io.observe(t);
+  }
 
   // THE GEAR RACK: twenty helmets, bought once, worn by anyone he owns.
   // Locked until the first monster: gear for a crew you do not have yet is
