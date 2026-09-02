@@ -810,7 +810,7 @@ zero image requests.
 
 # PART VI - THE LADDER
 
-- [ ] **0.14.0-alpha - the holistic review, built.** Everything in SS7d and
+- [x] **0.14.0 - the holistic review, built.** Everything in SS7d and
       SS9c: the seven-box ladder with top-up from any owned box (the
       simulation's cliff), band interleaving, the fatigue detector, the
       cold check and its series, the floor, tomorrow, the two-tab grown-ups
@@ -818,8 +818,10 @@ zero image requests.
       streak stamps, rider voices, SVG icons, nine body forms, off-stage
       pause, seasonal spots, the stamp clearance; `core/report.ts` as the
       one source of every figure; `day.ts` under test; the probe split into
-      six parallel suites; the gauntlet's `--branch` channel. Published to
-      the alpha channel for Andy to test before any of it reaches main.
+      six parallel suites; the gauntlet's `--branch` channel. Tested by
+      Andy on the alpha channel first, which caught the dashboard fading to
+      black (a class collision) and the shop peek admitting several visits
+      inside its minute; promoted to production on his word, 2026-09-02.
 - [x] **M1 - the model.** Deck, tiers, Leitner scheduler, response-time
       classification, session assembly with requeue, closer cascade and
       struggle detector. 51 unit tests, three proven mutations, and the
