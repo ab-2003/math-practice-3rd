@@ -361,7 +361,7 @@ export const collectionScreen = (app: App): HTMLElement => {
   }
   root.append(rack);
 
-  // THE BOARD RACK (Andy 2026-09-02): nine decks, plain always owned, the
+  // THE BOARD RACK (Andy 2026-09-02): thirteen decks, plain always owned, the
   // rest a real save, worn by whichever monster he puts them under. Shut
   // until the first monster, for the same reason the helmets are.
   root.append(el("h2", { text: "The Board Rack", style: "margin-top:18px" }));

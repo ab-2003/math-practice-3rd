@@ -3,15 +3,19 @@
  * whichever monster he puts them under.
  *
  * PLAIN BOARD is always owned and costs nothing, so there is always a way
- * back. The eight custom boards are priced as a real save: the first is a
- * quick win, the rest are the spring's long arc. VOID BOARD matches
+ * back. The custom boards are priced as a real save: the first is a
+ * quick win, the rest are the spring's long arc, the themed four (0.18.2) at
+ * the top of the ladder. VOID BOARD matches
  * VOIDWYRM, Kallen's commission, and costs what the dragon costs.
  *
  * Pure data, like the monsters and helmets: the drawing lives in
  * ui/board-svg.ts, keyed by theme.
  */
 
-export type BoardTheme = "plain" | "ember" | "void" | "frost" | "storm" | "tide" | "gilded" | "magma" | "neon";
+export type BoardTheme =
+  | "plain" | "ember" | "void" | "frost" | "storm" | "tide" | "gilded" | "magma" | "neon"
+  // 0.18.2 (Andy): a fighter jet, a rink, a court, and a wall of tags.
+  | "jet" | "hockey" | "hoops" | "tag";
 
 export interface Board {
   readonly id: string;
@@ -53,6 +57,19 @@ export const BOARDS: readonly Board[] = [
   { id: "neon", name: "NEON GHOST", cost: 1100, theme: "neon",
     lore: "You can see through it. The glow you cannot.",
     palette: ["#10151B", "#B6FF3C", "#35E6FF"] },
+  // THE THEMED FOUR (Andy, 2026-09-02): the ladder keeps climbing.
+  { id: "jet", name: "AFTERBURNER", cost: 1200, theme: "jet",
+    lore: "A cockpit up front, wings out the sides. It does not fly. It nearly does.",
+    palette: ["#55657A", "#1A2230", "#FF8A1F"] },
+  { id: "hockey", name: "SLAPSHOT", cost: 1300, theme: "hockey",
+    lore: "Rink lines on the deck and a puck on the tail. Ice shavings on every stop.",
+    palette: ["#E4F2FC", "#D33A3A", "#2F7DFF"] },
+  { id: "hoops", name: "BUZZER BEATER", cost: 1400, theme: "hoops",
+    lore: "Hardwood, court lines, and a ball that bounces along behind.",
+    palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },
+  { id: "tag", name: "STREET TAG", cost: 1500, theme: "tag",
+    lore: "Tagged, dripped and crowned. The wall started it.",
+    palette: ["#1E242C", "#FF3D8B", "#FFE14D"] },
 ];
 
 export const boardById = (id: string): Board | undefined => BOARDS.find((b) => b.id === id);

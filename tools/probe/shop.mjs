@@ -120,18 +120,23 @@ await step("with no monsters yet, the racks are on display but shut", async () =
   must((await page.$$(".helm-tile[disabled]")).length === 22, "a helmet is tappable before the first monster");
   const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
   must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
-  // THE BOARD RACK: nine decks, plain always owned, shut until the first monster.
+  // THE BOARD RACK: thirteen decks, plain always owned, shut until the first monster.
   must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
-  must((await page.$$(".board-tile")).length === 9, "the board rack is not nine boards");
-  must((await page.$$(".board-tile[disabled]")).length === 9, "a board is tappable before the first monster");
+  must((await page.$$(".board-tile")).length === 13, "the board rack is not thirteen boards");
+  must((await page.$$(".board-tile[disabled]")).length === 13, "a board is tappable before the first monster");
   must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
   must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
   const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
-  must(prices.includes("◆ 100") && prices.includes("◆ 500") && prices.includes("◆ 1100"), `the prices read ${JSON.stringify(prices)}`);
-  // Nine forms, not one deck in nine colours: the graphics differ, and Void has its stars.
+  must(prices.includes("◆ 100") && prices.includes("◆ 500") && prices.includes("◆ 1100") && prices.includes("◆ 1500"), `the prices read ${JSON.stringify(prices)}`);
+  // Thirteen forms, not one deck in thirteen colours: the graphics differ, and Void has its stars.
   const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
-  must(new Set(marks).size >= 8, "the boards are palette swaps");
+  must(new Set(marks).size >= 12, "the boards are palette swaps");
   must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
+  // THE THEMED FOUR (0.18.2): cockpit and wings, a puck, a ball, a crowned tag.
+  for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"]]) {
+    must(await page.$(`[data-board-tile="${id}"] ${prop}`) !== null, `the ${id} board lost its ${prop}`);
+  }
+  must(await page.$eval('[data-board-tile="hoops"] .ball', (e) => e.getAttribute("fill")) === "#EE6730", "the court ball is not basketball orange");
 });
 
 await step("tiles that scroll off stage pause their acts", async () => {

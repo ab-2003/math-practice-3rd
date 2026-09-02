@@ -1,5 +1,5 @@
 /**
- * THE BOARDS, DRAWN. One renderer, nine themes: a real deck silhouette with
+ * THE BOARDS, DRAWN. One renderer, thirteen themes: a real deck silhouette with
  * a kicked nose and tail, trucks, wheels with hub colour, a deck-top graphic
  * per theme, and a TRAIL that plays while the board rides (fixed duration,
  * decorative, stands down under reduced motion). The plain board is the old
@@ -58,8 +58,49 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       out.push(svg("path", { d: DECK, fill: "none", stroke: accent, "stroke-width": 2.2, opacity: 0.9 }));
       out.push(svg("path", { d: "M30 17 L90 17", stroke: glow, "stroke-width": 2, "stroke-linecap": "round", opacity: 0.8 }));
       break;
+    case "jet":
+      // The deck rides to the right, so the nose cone leads and the tail
+      // fin trails: cone, canopy bubble, swept wing on the deck, fin.
+      out.push(svg("path", { class: "jet-nose", d: "M106 9.5 L124 15.5 L106 20.5 Z", fill: deck, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M108 13 L120 15.5", stroke: glow, "stroke-width": 1.6, "stroke-linecap": "round" }));
+      out.push(svg("path", { class: "jet-wing", d: "M36 11 L64 11 L54 23 L28 23 Z", fill: accent, stroke: INK, "stroke-width": 1.5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M40 14 L58 14", stroke: glow, "stroke-width": 1.6, "stroke-linecap": "round", opacity: 0.8 }));
+      out.push(svg("path", { class: "jet-canopy", d: "M70 11 Q80 -2 96 11 Z", fill: "#9EE8FF", stroke: INK, "stroke-width": 2.5, "stroke-linejoin": "round", opacity: 0.9 }));
+      out.push(svg("path", { d: "M76 8 Q82 3 90 6", fill: "none", stroke: "#FFFFFF", "stroke-width": 1.4, "stroke-linecap": "round", opacity: 0.8 }));
+      out.push(svg("path", { class: "jet-fin", d: "M12 11 L6 -2 L28 11 Z", fill: accent, stroke: INK, "stroke-width": 2.5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M14 9 L10 1", stroke: glow, "stroke-width": 1.4, "stroke-linecap": "round" }));
+      break;
+    case "hockey":
+      // Ice: the red centre line, two blue lines, a stick and a puck.
+      out.push(svg("path", { d: "M60 10 L60 24", stroke: accent, "stroke-width": 2.6 }));
+      out.push(svg("path", { d: "M42 10 L42 24 M78 10 L78 24", stroke: glow, "stroke-width": 2 }));
+      out.push(svg("circle", { cx: 60, cy: 17, r: 4, fill: "none", stroke: accent, "stroke-width": 1.4 }));
+      out.push(svg("path", { class: "stick", d: "M22 12 L30 21 L38 21", fill: "none", stroke: "#C98A3A", "stroke-width": 2.6, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      out.push(svg("ellipse", { class: "puck", cx: 94, cy: 20, rx: 5, ry: 2.6, fill: INK, stroke: "#8FB7D6", "stroke-width": 1.2 }));
+      break;
+    case "hoops":
+      // Hardwood: plank seams, the key and its arc, a ball on the tail.
+      for (const x of [34, 50, 66, 82]) out.push(svg("path", { d: `M${x} 10 L${x} 24`, stroke: accent, "stroke-width": 1, opacity: 0.5 }));
+      out.push(svg("rect", { x: 22, y: 11.5, width: 22, height: 11, fill: "none", stroke: "#FFFFFF", "stroke-width": 1.4, opacity: 0.85 }));
+      out.push(svg("path", { d: "M44 12 Q56 17 44 22", fill: "none", stroke: "#FFFFFF", "stroke-width": 1.4, opacity: 0.85 }));
+      out.push(svg("path", { d: "M58 11 L58 23", stroke: "#FFFFFF", "stroke-width": 1.4, opacity: 0.6 }));
+      out.push(svg("circle", { class: "ball", cx: 90, cy: 16.5, r: 5.5, fill: glow, stroke: INK, "stroke-width": 1.5 }));
+      out.push(svg("path", { d: "M84.5 16.5 L95.5 16.5 M90 11 L90 22 M86.5 13 Q90 16.5 86.5 20 M93.5 13 Q90 16.5 93.5 20", fill: "none", stroke: INK, "stroke-width": 1 }));
+      break;
+    case "tag":
+      // The tag: TL in fat pink over a yellow outline, drips, a crown,
+      // and a spray of dots. Skate culture started on a wall.
+      out.push(svg("path", { d: "M30 12 L50 12 M40 12 L40 24 M58 11 L58 24 L76 24", fill: "none", stroke: glow, "stroke-width": 6.5, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      out.push(svg("path", { class: "tag-letters", d: "M30 12 L50 12 M40 12 L40 24 M58 11 L58 24 L76 24", fill: "none", stroke: accent, "stroke-width": 3.6, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M46 14 L46 20 M66 25 L66 30", stroke: accent, "stroke-width": 1.8, "stroke-linecap": "round" }));
+      out.push(svg("circle", { cx: 46, cy: 21.5, r: 1.3, fill: accent }));
+      out.push(svg("circle", { cx: 66, cy: 31, r: 1.3, fill: accent }));
+      out.push(svg("path", { class: "tag-crown", d: "M34 9 L35 4 L38 7 L40 3 L42 7 L45 4 L46 9 Z", fill: glow, stroke: INK, "stroke-width": 1.2, "stroke-linejoin": "round" }));
+      for (const [x, y, r] of [[84, 13, 1.2], [90, 19, 1.6], [96, 12, 1], [86, 22, 1], [100, 20, 1.3]] as const) {
+        out.push(svg("circle", { cx: x, cy: y, r, fill: "#35E6FF", opacity: 0.85 }));
+      }
+      break;
   }
-  void deck;
   return out;
 };
 
@@ -98,6 +139,25 @@ const trail = (theme: BoardTheme, [, accent, glow]: readonly [string, string, st
     case "neon":
       g.append(svg("path", { d: "M-2 17 L-44 17", stroke: accent, "stroke-width": 3, "stroke-linecap": "round", opacity: 0.8 }));
       g.append(svg("path", { d: "M-2 22 L-30 22", stroke: glow, "stroke-width": 2, "stroke-linecap": "round", opacity: 0.6 }));
+      break;
+    case "jet": // afterburner
+      g.append(svg("path", { d: "M-2 12 L-34 9 L-20 15 L-40 20 L-2 20 Z", fill: glow, stroke: INK, "stroke-width": 1.5, "stroke-linejoin": "round" }));
+      g.append(svg("path", { d: "M-4 14 L-22 13 L-14 16 L-24 18 L-4 18 Z", fill: "#FFE14D" }));
+      break;
+    case "hockey": // ice shavings
+      for (const [x, y] of [[-8, 26], [-16, 22], [-22, 30], [-30, 25], [-36, 31]] as const) {
+        g.append(svg("path", { d: `M${x - 2.5} ${y + 1.5} L${x + 2.5} ${y - 1.5}`, stroke: "#FFFFFF", "stroke-width": 2, "stroke-linecap": "round", opacity: 0.9 }));
+      }
+      break;
+    case "hoops": // the ball bouncing along behind
+      g.append(svg("path", { d: "M-4 30 Q-14 8 -24 30 Q-32 14 -40 30", fill: "none", stroke: glow, "stroke-width": 1.6, "stroke-dasharray": "3 3", opacity: 0.8 }));
+      g.append(svg("circle", { cx: -24, cy: 28, r: 4.5, fill: glow, stroke: INK, "stroke-width": 1.4 }));
+      g.append(svg("path", { d: "M-28.5 28 L-19.5 28 M-24 23.5 L-24 32.5", stroke: INK, "stroke-width": 0.9 }));
+      break;
+    case "tag": // spray mist
+      for (const [x, y, r, col] of [[-8, 18, 2, accent], [-14, 26, 1.4, glow], [-20, 15, 1.7, accent], [-28, 24, 2.2, glow], [-36, 18, 1.5, "#35E6FF"], [-42, 28, 1.2, accent]] as const) {
+        g.append(svg("circle", { cx: x, cy: y, r, fill: col, opacity: 0.85 }));
+      }
       break;
   }
   return g;

@@ -1003,6 +1003,12 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.2 - The themed four.** AFTERBURNER (a jet: nose cone,
+      canopy, swept wing, tail fin, afterburner trail), SLAPSHOT (rink
+      lines, stick, puck, ice-shaving trail), BUZZER BEATER (hardwood,
+      court lines, a basketball-orange ball that bounces along behind),
+      STREET TAG (a crowned TL tag in pink over yellow, drips, spray mist).
+      1200 to 1500, the top of the ladder. (Andy, 2026-09-02.)
 - [x] **0.18.1 - DRAGON tags.** The seven dragons wear a tag in the shop the way the kaiju do (Andy, 2026-09-02).
 - [x] **0.18.0 - The Kaiju six, the pilot's lid, and the spend law.** SS9h:
       six original hybrid kaiju with bespoke acts (SKYHOOK's jump shot at
