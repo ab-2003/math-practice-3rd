@@ -27,7 +27,7 @@ export const trendsTab = (snap: Snapshot, day: number): HTMLElement => {
   wrap.append(section("Improvement"));
   const imp = improvement(rows);
   const head = el("div", { class: "card", "data-probe": "improvement" });
-  head.append(el("h3", { class: "title", text: "Is he getting better?" }));
+  head.append(el("h3", { class: "title", text: "Are they getting better?" }));
   if (imp === null) {
     head.append(el("p", { class: "note", text: "Needs two weeks with practice in them to compare. The lines below start filling in from the first week." }));
   } else {
@@ -91,7 +91,7 @@ export const trendsTab = (snap: Snapshot, day: number): HTMLElement => {
   if (kinds.length > 0) {
     const byOp = el("div", { class: "card" });
     byOp.append(el("h3", { class: "title", text: "From memory, by operation" }));
-    byOp.append(el("p", { class: "note", text: "The same retrieval share, one line per operation he has practised." }));
+    byOp.append(el("p", { class: "note", text: "The same retrieval share, one line per operation they have practised." }));
     const colors: Record<string, string> = { add: "#B6FF3C", sub: "#35E6FF", mul: "#FFE14D", div: "#FF8A1F" };
     byOp.append(trendChart(kinds.map((k) => ({
       label: KIND_LABEL[k].toLowerCase(), color: colors[k]!,

@@ -8,7 +8,7 @@ describe("the open shop", () => {
     expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
   });
 
-  it("keeps VOIDWYRM last, because he is Kallen's", () => {
+  it("keeps VOIDWYRM last, because that one is Kallen's", () => {
     expect(ROSTER[ROSTER.length - 1]!.id).toBe("voidwyrm");
     expect(ROSTER[ROSTER.length - 1]!.cost).toBe(500);
   });

@@ -37,7 +37,7 @@ await step("the shop breathes, staggered, and every bespoke act is present", asy
   }
   const breaths = await page.evaluate(() => [...document.querySelectorAll(".roster .flame")].map((f) => f.innerHTML));
   must(new Set(breaths).size === 7, "the dragons share breaths that should be their own");
-  must(await page.$('[data-mon="puckjaw"] .puck-shot .stick') !== null, "PUCKJAW lost his stick");
+  must(await page.$('[data-mon="puckjaw"] .puck-shot .stick') !== null, "PUCKJAW lost the stick");
   const wings = await page.evaluate(() => [...document.querySelectorAll(".roster .wings")].map((w) => w.getAttribute("d")));
   must(wings.length === 7 && new Set(wings).size === 7, "the seven dragons are palette swaps, not forms");
 });
@@ -188,7 +188,7 @@ await step("before today's run the shop is ONE peek: one visit, one minute, with
   await page.waitForSelector('[data-probe="start"]');
 });
 
-await step("he buys the dragon he WANTS, not the cheapest, and the confirm cancels clean", async () => {
+await step("the rider buys the dragon they WANT, not the cheapest, and the confirm cancels clean", async () => {
   await page.evaluate(() => {
     const m = window.__app.meta();
     m.coins = 5000; m.owned = []; m.rider = null;
@@ -214,15 +214,15 @@ await step("he buys the dragon he WANTS, not the cheapest, and the confirm cance
   await page.waitForTimeout(300);
   const m = await page.evaluate(() => window.__app.meta());
   must(m.owned.includes("cinderwyrm"), "the chosen dragon was not bought");
-  must(!m.owned.includes("grindjaw"), "the shop bought the cheapest instead of his pick");
+  must(!m.owned.includes("grindjaw"), "the shop bought the cheapest instead of the pick");
   must(m.coins === 5000 - 350, `coins went to ${m.coins}, wanted 4650`);
-  must(await page.$(".gear-rack.rack-locked") === null, "the rack stayed locked after his first monster");
-  must((await page.$$(".helm-tile[disabled]")).length === 0, "helmets still disabled after his first monster");
+  must(await page.$(".gear-rack.rack-locked") === null, "the rack stayed locked after the first monster");
+  must((await page.$$(".helm-tile[disabled]")).length === 0, "helmets still disabled after the first monster");
 });
 
-await step("a board is bought once, ridden by the monster he puts it under, and shows in the trick", async () => {
+await step("a board is bought once, ridden by the monster it is put under, and shows in the trick", async () => {
   // The rack opened with the first monster. Cancel spends nothing.
-  must(await page.$('[data-probe="board-rack"].rack-locked') === null, "the board rack stayed locked after his first monster");
+  must(await page.$('[data-probe="board-rack"].rack-locked') === null, "the board rack stayed locked after the first monster");
   await page.click('[data-board-tile="ember"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   must(((await page.textContent(".sheet")) ?? "").includes("left"), "the board confirm does not say what remains");
@@ -278,7 +278,7 @@ await step("a board is bought once, ridden by the monster he puts it under, and 
   await page.waitForSelector(".roster");
 });
 
-await step("a helmet is bought once and lands on the monster he puts it on", async () => {
+await step("a helmet is bought once and lands on the monster it is put on", async () => {
   await page.click('[data-helm="cap-fire"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   await page.click(".sheet .btn.ghost");

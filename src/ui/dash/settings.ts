@@ -42,7 +42,7 @@ export interface SettingsOpts {
 export const appModel = (app: App, rerender: () => void): SettingsModel => ({
   deck: app.deck,
   states: app.states,
-  who: "he",
+  who: app.profile.name, // never a pronoun: the rider by name, as the door does
   get: (key) => ({
     strands: app.meta.strands, caps: app.meta.caps, missing: app.meta.missing, dailyGoal: app.meta.dailyGoal,
     speedLimit: app.meta.speedLimit, elapsedLevel: app.meta.elapsedLevel, elapsedAnalog: app.meta.elapsedAnalog,

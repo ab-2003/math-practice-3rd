@@ -57,7 +57,7 @@ let missingSeen = 0;
 const seen = new Set();
 
 /** Day one plans only a handful of new facts, so reaching a useful sample
- *  means running several sessions, exactly as he would over several days. */
+ *  means running several sessions, exactly as a rider would over several days. */
 /**
  * A state machine, in priority order. An earlier version checked for a
  * problem before checking for a sheet, and since the finished problem stays in

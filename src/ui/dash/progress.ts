@@ -16,7 +16,7 @@ import { el, on } from "../dom";
 const secs = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 const REASON: Record<EndReason, string> = {
-  struggle: "the app called it", tired: "tiring, offered the exit", choice: "his call at a line", breather: "took a breather",
+  struggle: "the app called it", tired: "tiring, offered the exit", choice: "their call at a line", breather: "took a breather",
 };
 
 const section = (text: string): HTMLElement => el("div", { class: "dash-h", text });
@@ -41,8 +41,8 @@ export const progressTab = (snap: Snapshot, day: number, viewer: boolean): HTMLE
   const cold = el("div", { class: "card", "data-probe": "cold-card" });
   cold.append(el("h3", { class: "title", text: "From cold" }));
   cold.append(el("p", { class: "note", text:
-    "Once a week the first few items of a session are facts he has mastered, asked before anything has warmed him up. " +
-    "The headline above can be flattered by a fact he saw minutes earlier; this line cannot. It is the honest measure of durable automaticity." }));
+    "Once a week the first few items of a session are facts they have mastered, asked before anything has warmed them up. " +
+    "The headline above can be flattered by a fact they saw minutes earlier; this line cannot. It is the honest measure of durable automaticity." }));
   if (coldPts.length === 0) {
     cold.append(el("p", { class: "note", "data-probe": "cold-empty", text: "No cold check yet. The first one arrives once a few facts are mastered." }));
   } else {
@@ -89,8 +89,8 @@ export const progressTab = (snap: Snapshot, day: number, viewer: boolean): HTMLE
   const hist = el("div", { class: "card", "data-probe": "histogram" });
   hist.append(el("h3", { class: "title", text: "How long answers take" }));
   hist.append(el("p", { class: "note", "data-probe": "baseline", text: floor.medianMs === null
-    ? "His personal floor is not measurable yet: it is the median first-digit time on facts he has mastered, and there are none."
-    : `His personal floor: on facts he owns, the first digit lands in a median ${secs(floor.medianMs)} (${floor.n} answers). ` +
+    ? "Their personal floor is not measurable yet: it is the median first-digit time on facts they have mastered, and there are none."
+    : `Their personal floor: on facts they own, the first digit lands in a median ${secs(floor.medianMs)} (${floor.n} answers). ` +
       `The 3 second retrieval line sits ${floor.headroom}x above that${(floor.headroom ?? 0) < 1.5 ? ", which is TIGHT: the derived band may be starving, and the threshold deserves a look" : ", which leaves room"}.` }));
   hist.append(el("p", { class: "note", text:
     "First-digit time on correct answers. The first two bands are answers from memory (under 3s); the middle two are worked out (3–8s); the last is the long tail." }));
@@ -177,7 +177,7 @@ export const progressTab = (snap: Snapshot, day: number, viewer: boolean): HTMLE
   const log = el("div", { class: "card" });
   log.append(el("h3", { class: "title", text: "Sessions" }));
   log.append(el("p", { class: "note", text:
-    "Stamina is itself worth watching. \"Ended early\" is working as intended: the app called it when he was grinding, the exit was offered early when he was tiring, or he chose to stop at a line break." }));
+    "Stamina is itself worth watching. \"Ended early\" is working as intended: the app called it when they were grinding, the exit was offered early when they were tiring, or they chose to stop at a line break." }));
   const table = el("table", { class: "rows" });
   table.append(el("tr", {}, ...["Date", "Min", "Items", "Correct", "Retrieved", "How it ended"].map((t) => el("th", { text: t }))));
   for (const s of [...sessions].reverse().slice(0, 20)) {

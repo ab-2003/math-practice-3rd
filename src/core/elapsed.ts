@@ -50,7 +50,7 @@ const SCENES: ReadonlyArray<readonly [string, string, string, string]> = [
   ["Hockey practice starts at", "It ends at", "starts", "ends"],
   ["The bus leaves at", "It gets there at", "leaves", "arrives"],
   ["The movie starts at", "It finishes at", "starts", "finishes"],
-  ["He drops in at", "He rolls out at", "drops in", "rolls out"],
+  ["The rider drops in at", "The rider rolls out at", "drops in", "rolls out"],
   ["Recess starts at", "Recess ends at", "starts", "ends"],
 ];
 

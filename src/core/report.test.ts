@@ -55,7 +55,7 @@ describe("the cold series", () => {
   });
 });
 
-describe("his personal floor", () => {
+describe("the personal floor", () => {
   it("is the median first-digit time on MASTERED facts only", () => {
     const states = allStates(deck);
     states.set("add:7+8", { ...freshState(), introduced: true, mastered: true, box: 5 });

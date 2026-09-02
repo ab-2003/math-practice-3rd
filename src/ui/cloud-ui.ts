@@ -131,7 +131,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
 
     if (code === null) {
       box.append(el("p", { class: "note", text:
-        "Mirror the practice record to a private share code, so you or a teacher can see it from another device. The iPad stays the real copy; the cloud is a best-effort mirror that never interrupts him." }));
+        "Mirror the practice record to a private share code, so you or a teacher can see it from another device. The iPad stays the real copy; the cloud is a best-effort mirror that never interrupts them." }));
       const row = el("div", { class: "stepper" });
       const create = el("button", { type: "button", class: "btn small alt", "data-probe": "cloud-create" }, el("span", { text: "Create a share code" }));
       on(create, "click", () => {

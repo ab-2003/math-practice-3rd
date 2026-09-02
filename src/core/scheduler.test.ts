@@ -93,7 +93,7 @@ describe("the Leitner transition", () => {
 });
 
 describe("placement on first sight", () => {
-  it("sends a fact he retrieved instantly, never having seen it, to a far box", () => {
+  it("sends a fact retrieved instantly, never having been seen, to a far box", () => {
     const s = applyResponse(freshState(), resp("retrieved", 10));
     expect(s.box).toBe(FIRST_SIGHT_BOX);
     expect(s.dueOn).toBe(10 + boxInterval(FIRST_SIGHT_BOX));
@@ -131,11 +131,11 @@ describe("mastery", () => {
     expect(s.mastered).toBe(true);
   });
 
-  it("never promotes on derivation alone, however many times he is right", () => {
+  it("never promotes on derivation alone, however many times the answer is right", () => {
     const s = walk([["derived", 1], ["derived", 2], ["derived", 3], ["derived", 4], ["derived", 5]]);
     expect(s.mastered).toBe(false);
     expect(s.box).toBe(1);
-    expect(s.correct).toBe(5); // but he was credited every single time
+    expect(s.correct).toBe(5); // but every one of them was credited
   });
 
   it("loses the label when a mastered fact is missed", () => {

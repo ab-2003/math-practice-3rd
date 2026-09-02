@@ -152,12 +152,12 @@ describe("requeueing", () => {
 });
 
 describe("the struggle detector", () => {
-  it("stays quiet while he is doing fine", () => {
+  it("stays quiet while the rider is doing fine", () => {
     const { session } = runSession(withDue(20), "derived");
     expect(session.status).toBe("complete");
   });
 
-  it("ends the session early, and says so, when he is grinding", () => {
+  it("ends the session early, and says so, when the rider is grinding", () => {
     const states = withDue(30);
     let s = startSession(deck, states, 0);
     let st: States = states;
@@ -191,7 +191,7 @@ describe("the fatigue detector", () => {
   });
   const opening = Array.from({ length: FATIGUE_WINDOW }, () => 900);
 
-  it("says tired when the clock has crept well above where he started", () => {
+  it("says tired when the clock has crept well above where the sitting started", () => {
     const s = session([...opening, ...Array.from({ length: FATIGUE_WINDOW }, () => 2400)]);
     expect(isFatigued(s)).toBe(true);
   });
@@ -477,7 +477,7 @@ describe("switching an operation back on", () => {
     expect(reviveStrand(deck, states, "mul", 95).get(f.id)!.dueOn).toBe(120);
   });
 
-  it("never revives a fact he has not met yet", () => {
+  it("never revives a fact the rider has not met yet", () => {
     const states = allStates(deck);
     const f = [...deck.values()].find((x) => x.kind === "mul")!;
     const revived = reviveStrand(deck, states, "mul", 95);

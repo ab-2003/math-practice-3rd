@@ -946,6 +946,7 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.17.1 - gender-neutral copy.** Andy: "generalize the gender of the child ... keep it simple and gender neutral." Every user-facing pronoun is now they/them, the settings heading names the rider instead ("What KALLEN is practising", as the door already did), and the elapsed-time scene says the rider. Profiles ask for a name only.
 - [x] **0.17.0 - loop-eye, and the board rack.** SS9g: the loop instrument
       and the four defects it found, fixed and proven. SS9f: nine boards
       in the shop, ridden in every trick and lap.

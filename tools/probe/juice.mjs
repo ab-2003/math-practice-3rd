@@ -39,7 +39,7 @@ await step("the run's end offers the shop, and Later spends nothing", async () =
   const coinsBefore = await page.evaluate(() => window.__app.meta().coins);
   await page.click(".sheet .btn.ghost");
   await page.waitForTimeout(300);
-  must(await page.evaluate(() => window.__app.meta().coins) === coinsBefore, "Later spent his coins");
+  must(await page.evaluate(() => window.__app.meta().coins) === coinsBefore, "Later spent the coins");
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "Later bought a monster anyway");
 });
 
@@ -162,7 +162,7 @@ await step("the rider speaks on the end sheet, and a streak milestone is stamped
   must(await page.$('[data-probe="streak-pill"].streak-hot') !== null, "the home streak pill is not hot at seven");
 });
 
-await step("the exit is offered earlier when the clock says he is tiring, in the same words", async () => {
+await step("the exit is offered earlier when the clock says the rider is tiring, in the same words", async () => {
   // Drive the timings by hand: eight quick, then eight slow correct answers,
   // through the real submit path so nothing but the clock differs.
   await goHome(page);
