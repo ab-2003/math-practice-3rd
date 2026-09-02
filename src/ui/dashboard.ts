@@ -95,7 +95,10 @@ const renderDash = (app: App, host: HTMLElement): void => {
       if (res.kind === "ok") viewing = { code, res, auto: true };
     }
 
-    const wrap = el("div", { class: "dash" });
+    // NOT "dash": that class already belonged to BLADEBACK's speed streaks
+    // (opacity 0 with a flash animation), and the whole grown-ups screen spent
+    // ten minutes on Andy's phone fading to black once every 4.8 seconds.
+    const wrap = el("div", { class: "grownups", "data-probe": "grownups-screen" });
     const bar = el("div", { class: "topbar" });
     const back = el("button", { type: "button", class: "btn small ghost", "data-probe": "back" }, el("span", { text: "← Back" }));
     on(back, "click", () => { relock(); app.go("home"); });

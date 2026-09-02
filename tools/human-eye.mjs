@@ -24,7 +24,7 @@ const inspect = (pass) => {
   const problems = [];
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const vis = [...document.querySelectorAll("button, .mon, .heat-cell, .problem, .answer-slot, h1, h2, .btn, .key, .note, .step")]
+  const vis = [...document.querySelectorAll("button, .mon, .heat-cell, .problem, .answer-slot, h1, h2, h3, .btn, .key, .note, .step")]
     .filter((e) => {
       const s = getComputedStyle(e);
       return s.display !== "none" && s.visibility !== "hidden" && Number(s.opacity) > 0.05;
@@ -39,6 +39,22 @@ const inspect = (pass) => {
       problems.push(`${tag} text clipped (${e.scrollWidth} in ${e.clientWidth})`);
     }
     if (r.bottom > vh + 2 || r.top < -2) offscreen.push(tag);
+    // EFFECTIVE opacity, through every ancestor. A parent at opacity 0 hides
+    // a child whose own computed opacity reads 1, which is how a class
+    // collision (the dashboard wrapper named like a monster's speed streaks)
+    // kept a whole screen invisible while every element-level check passed.
+    let eff = 1;
+    const anims = [];
+    for (let n = e; n && n !== document.documentElement; n = n.parentElement) {
+      eff *= Number(getComputedStyle(n).opacity);
+      // A running animation on a STRICT ancestor of content is a flag on its
+      // own: a single opacity sample can land inside a flash's visible
+      // window (this check first passed the fading dashboard for exactly
+      // that reason), but the animation is there whatever the phase.
+      if (n !== e) for (const a of n.getAnimations()) anims.push(a.animationName ?? "animation");
+    }
+    if (eff < 0.3) problems.push(`${tag} hidden by an ancestor's opacity (effective ${eff.toFixed(2)})`);
+    if (anims.length > 0) problems.push(`${tag} sits under an animating ancestor (${[...new Set(anims)].join(",")})`);
   }
   if (document.body.scrollWidth > vw + 2) problems.push(`the PAGE scrolls horizontally (${document.body.scrollWidth} > ${vw})`);
   if (vis.length < 3) problems.push("the screen is essentially blank");

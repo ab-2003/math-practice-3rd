@@ -104,6 +104,20 @@ await step("the PIN opens two tabs, PROGRESS first, with the report cards", asyn
   for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
   await page.waitForSelector(".chart", { timeout: 6000 });
   must(await page.$('[data-probe="tab-progress"].on') !== null, "progress is not the open tab");
+  // The screen must actually be ON THE GLASS: effective opacity through every
+  // ancestor, and no animation running on any of them. A class collision once
+  // had the whole thing flashing to black on a 4.8s cycle.
+  const paint = await page.evaluate(() => {
+    let e = document.querySelector('[data-probe="progress-tab"]');
+    let eff = 1; const anims = [];
+    for (let n = e; n && n !== document.documentElement; n = n.parentElement) {
+      eff *= Number(getComputedStyle(n).opacity);
+      for (const a of n.getAnimations()) anims.push(a.animationName ?? "anim");
+    }
+    return { eff, anims };
+  });
+  must(paint.eff > 0.95, `the grown-ups screen is at effective opacity ${paint.eff}`);
+  must(paint.anims.length === 0, `an animation is running on the grown-ups screen: ${paint.anims.join(",")}`);
   must(await page.$('[data-probe="progress-tab"]') !== null, "no progress pane");
   const text = (await page.textContent(".screen")) ?? "";
   must(text.includes("2.CE.1") && text.includes("3.CE.2"), "the SOL standards are not reported");

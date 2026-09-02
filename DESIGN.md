@@ -947,6 +947,15 @@ zero image requests.
   12px. `legible-check` measured it; both were raised.
 - **The breather button fell off a phone.** The trick strip pushed it past the
   right edge at 390px. The strip yields now; the way out never does.
+- **The grown-ups screen faded to black on Andy's phone.** The rebuilt
+  dashboard's wrapper was `class="dash"`, and `.dash` already belonged to
+  BLADEBACK's speed streaks: opacity 0 with a 4.8 second flash. Every
+  element-level check passed because children of an opacity-0 parent report
+  opacity 1, and the Chromium captures that came out blank were explained
+  away as a screenshot artefact, which they were not. A blank picture is
+  evidence until proven otherwise. human-eye now measures EFFECTIVE opacity
+  through the ancestor chain, and the core probe asserts nothing animates on
+  the grown-ups screen.
 - **The long boxes emptied the sessions.** Adding boxes at 32 and 64 days
   fixed the maintenance arithmetic and, in the 200-day simulation, produced
   three-item sessions and empty days once the deck was owned, because top-up
