@@ -33,7 +33,12 @@ const cloudRoute = (role: string, ctx: BrowserContext) => async (route: Route): 
   const res = await handle({ method: req.method(), path: url.pathname, body: req.postData() ?? "" }, kv);
   await route.fulfill({ status: res.status, contentType: "application/json", body: res.body ?? "" });
 };
-const settingsDoc = (code = CODE): Fields => { const raw = kv.map.get(`${code}:settings`); return raw ? (JSON.parse(raw) as { fields: Fields }).fields : {}; };
+/** The cloud's settings as the worker serves them: every writer's document,
+ *  merged on read. Never a peek at a single key; the store is per writer now. */
+const settingsDoc = async (code = CODE): Promise<Fields> => {
+  const r = await handle({ method: "GET", path: `/v1/share/${code}/settings`, body: "" }, kv);
+  return r.status === 200 ? (JSON.parse(r.body!) as { fields: Fields }).fields : {};
+};
 const record = (code = CODE): { meta: Record<string, unknown> } | null => { const raw = kv.map.get(code); return raw ? (JSON.parse(raw) as { meta: Record<string, unknown> }) : null; };
 
 // ---- the harness --------------------------------------------------------------
@@ -191,7 +196,7 @@ await step("B. the door reads the record, and never writes it", async () => {
 await step("C. every synced field set on the door reaches the device, is said, and reads as running", async () => {
   for (const key of SYNCED_KEYS) {
     await doorSet(phone, key);
-    const f = settingsDoc()[key];
+    const f = (await settingsDoc())[key];
     must(f !== undefined && eq(f.v, doorExpect[key]), `${key}: the cloud holds ${JSON.stringify(f)}`);
     must(typeof f!.by === "string" && f!.by !== "", `${key}: no device on the stamp`);
     const pend = await doorPending(phone);
@@ -216,7 +221,7 @@ await step("D. every synced field set on the device reaches the door as running,
     must(changed === true, `${key}: the device refused its own change`);
     await rider.page.waitForTimeout(250);
     const id = await hooks(rider.page).deviceId(); // minted on the first local stamp
-    const f = settingsDoc()[key];
+    const f = (await settingsDoc())[key];
     must(f !== undefined && eq(f.v, riderValues[key]) && f.by === id, `${key}: the cloud holds ${JSON.stringify(f)}, device ${id}`);
     await mirror(rider);
     await doorRefresh(phone);
@@ -232,7 +237,7 @@ await step("E. the same field changed on both sides: the later change wins every
   await phone.page.waitForTimeout(300);
   await hooks(rider.page).set("dailyGoal", 60); // device later
   await rider.page.waitForTimeout(250);
-  must(settingsDoc()["dailyGoal"]?.v === 60, "the device's later change did not win in the cloud");
+  must((await settingsDoc())["dailyGoal"]?.v === 60, "the device's later change did not win in the cloud");
   must((await hooks(rider.page).pull()).length === 0, "the device took back an older value");
   await mirror(rider);
   await doorRefresh(phone);
@@ -244,7 +249,7 @@ await step("E. the same field changed on both sides: the later change wins every
   await doorTab(phone, "settings");
   await phone.page.click('[data-probe="dose-goal-plus"]');
   await phone.page.waitForTimeout(300);
-  const wrote = settingsDoc()["dailyGoal"]!;
+  const wrote = (await settingsDoc())["dailyGoal"]!;
   must(wrote.v !== 70 && wrote.at > (await hooks(rider.page).meta()).settingsStamps["dailyGoal"]!.at, `the door's write did not land later (${JSON.stringify(wrote)})`);
   const changed = await hooks(rider.page).pull();
   must(changed.includes("dailyGoal") && (await hooks(rider.page).running())["dailyGoal"] === wrote.v, "the door's later change did not win on the device");
@@ -261,7 +266,7 @@ await step("F. equal stamps break by device id the same way on both sides", asyn
   const below = { app: "trickline", version: 1, fields: { elapsedLevel: { v: 1, at: stamps["elapsedLevel"]!.at, by: "0000" } } };
   await handle({ method: "PUT", path: `/v1/share/${CODE}/settings`, body: JSON.stringify(below) }, kv);
   must(!(await hooks(rider.page).pull()).includes("elapsedLevel"), "a tie broken by a lower device id was applied");
-  must(settingsDoc()["elapsedLevel"]?.by === id, "the cloud did not settle on the device's own field after the tie");
+  must((await settingsDoc())["elapsedLevel"]?.by === id, "the cloud did not settle on the device's own field after the tie");
 });
 
 await step("G. an older stamp arriving late is ignored, and the cloud heals to the newer value", async () => {
@@ -271,7 +276,7 @@ await step("G. an older stamp arriving late is ignored, and the cloud heals to t
   kv.map.set(`${CODE}:settings`, JSON.stringify({ app: "trickline", version: 1, fields: { ...settingsDoc(), ...stale.fields } }));
   const changed = await hooks(rider.page).pull();
   must(!changed.includes("elapsedAnalog"), "a stale field was applied");
-  const healed = settingsDoc()["elapsedAnalog"];
+  const healed = (await settingsDoc())["elapsedAnalog"];
   must(healed !== undefined && healed.v === local && healed.at === stamps["elapsedAnalog"]!.at, "the cloud kept the stale field after the device pulled");
 });
 
@@ -293,7 +298,7 @@ await step("I. two doors editing different fields converge, and both see both", 
   await doorTab(laptop, "settings");
   await laptop.page.click('[data-probe="speed-limit-plus"]');
   await laptop.page.waitForTimeout(300);
-  const doc = settingsDoc();
+  const doc = (await settingsDoc());
   must(doc["dailyGoal"]?.by !== doc["speedLimit"]?.by, "the two doors share a device id");
   await doorRefresh(phone);
   const seen = await phone.page.evaluate(() => (window as unknown as Hooks).__parent.settings());
@@ -306,10 +311,10 @@ await step("J. a change made offline heals when the device comes back, and the d
   offline.add(rider.ctx);
   await hooks(rider.page).set("elapsedLevel", 1); // the push fails silently
   await rider.page.waitForTimeout(300);
-  must(settingsDoc()["elapsedLevel"]?.v !== 1, "an offline push reached the cloud");
+  must((await settingsDoc())["elapsedLevel"]?.v !== 1, "an offline push reached the cloud");
   offline.delete(rider.ctx);
   await hooks(rider.page).pull();
-  must(settingsDoc()["elapsedLevel"]?.v === 1, "the offline change never healed into the cloud");
+  must((await settingsDoc())["elapsedLevel"]?.v === 1, "the offline change never healed into the cloud");
   await mirror(rider);
   await doorRefresh(phone);
   must((await doorPending(phone)) === null, "the door is still waiting after the heal");
@@ -376,7 +381,7 @@ await step("M. a second rider on the same device has its own code and its own se
   await rider.page.evaluate((c) => localStorage.setItem(`tl-cloud-code:${(window as unknown as Hooks).__app.profile().id}`, c), CODE2);
   const changed = await hooks(rider.page).pull();
   must(changed.includes("dailyGoal") && (await hooks(rider.page).running())["dailyGoal"] === 20, "MAYA did not apply her own document");
-  must(settingsDoc(CODE)["dailyGoal"]?.v !== 20, "MAYA's change leaked into the first rider's document");
+  must((await settingsDoc(CODE))["dailyGoal"]?.v !== 20, "MAYA's change leaked into the first rider's document");
   // Back to the first rider: untouched.
   const first = reg.profiles.find((p) => p.name !== "MAYA")!;
   await rider.page.evaluate(() => sessionStorage.clear());
@@ -410,13 +415,13 @@ await step("N. a backup from before stamps existed adopts the cloud's fields cle
   must(typeof m.settingsStamps === "object", "a legacy meta has no stamps object");
   await legacy.page.waitForFunction(() => (window as unknown as Hooks).__app.meta()["dailyGoal"] !== 40, null, { timeout: 8000 }).catch(() => undefined);
   const run = await hooks(legacy.page).running();
-  must(eq(run["dailyGoal"], settingsDoc()["dailyGoal"]?.v), `a legacy device runs ${JSON.stringify(run["dailyGoal"])} against the cloud's ${JSON.stringify(settingsDoc()["dailyGoal"]?.v)}`);
+  must(eq(run["dailyGoal"], (await settingsDoc())["dailyGoal"]?.v), `a legacy device runs ${JSON.stringify(run["dailyGoal"])} against the cloud's ${JSON.stringify((await settingsDoc())["dailyGoal"]?.v)}`);
   await legacy.ctx.close();
 });
 
 await step("O. nothing that must not sync ever did, and the door never wrote the record", async () => {
-  for (const k of Object.keys(settingsDoc())) must((SYNCED_KEYS as readonly string[]).includes(k), `a foreign field is in the cloud: ${k}`);
-  must(!Object.keys(settingsDoc()).some((k) => /pin|mute|anim|coin|owned/i.test(k)), "a device-level or progress field synced");
+  for (const k of Object.keys((await settingsDoc()))) must((SYNCED_KEYS as readonly string[]).includes(k), `a foreign field is in the cloud: ${k}`);
+  must(!Object.keys((await settingsDoc())).some((k) => /pin|mute|anim|coin|owned/i.test(k)), "a device-level or progress field synced");
   const doorRecordPuts = ledger.filter((l) => (l.role === "phone" || l.role === "laptop") && l.method === "PUT" && !l.path.endsWith("/settings"));
   must(doorRecordPuts.length === 0, `the doors wrote the record ${doorRecordPuts.length} times`);
   // Only OWNERS write the record: the rider, the wiped rider before its wipe,
