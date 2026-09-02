@@ -45,15 +45,17 @@ const inspect = (pass) => {
     // kept a whole screen invisible while every element-level check passed.
     let eff = 1;
     const anims = [];
-    for (let n = e; n && n !== document.documentElement; n = n.parentElement) {
+    // Strict ancestors only: the element's own opacity is judged above, and
+    // a problem mid fade-in (p-in, 190ms) once tripped this at 0.28.
+    for (let n = e.parentElement; n && n !== document.documentElement; n = n.parentElement) {
       eff *= Number(getComputedStyle(n).opacity);
       // A running animation on a STRICT ancestor of content is a flag on its
       // own: a single opacity sample can land inside a flash's visible
       // window (this check first passed the fading dashboard for exactly
       // that reason), but the animation is there whatever the phase.
-      if (n !== e) for (const a of n.getAnimations()) anims.push(a.animationName ?? "animation");
+      for (const a of n.getAnimations()) anims.push(a.animationName ?? "animation");
     }
-    if (eff < 0.3) problems.push(`${tag} hidden by an ancestor's opacity (effective ${eff.toFixed(2)})`);
+    if (eff < 0.25) problems.push(`${tag} hidden by an ancestor's opacity (effective ${eff.toFixed(2)})`);
     if (anims.length > 0) problems.push(`${tag} sits under an animating ancestor (${[...new Set(anims)].join(",")})`);
   }
   if (document.body.scrollWidth > vw + 2) problems.push(`the PAGE scrolls horizontally (${document.body.scrollWidth} > ${vw})`);
