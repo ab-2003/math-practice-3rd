@@ -4,7 +4,7 @@
  */
 import { answerN, answerOf, calmMeta, closeSheets, goHome, readStore, suite, typeAnswer } from "./_shared.mjs";
 
-const { page, step, must, done } = await suite("juice");
+const { page, step, must, done, browser } = await suite("juice");
 
 await step("the session coin chip counts up the moment a trick lands", async () => {
   await page.waitForSelector('[data-probe="start"]');
@@ -209,6 +209,39 @@ await step("the exit is offered earlier when the clock says he is tiring, in the
   const sessions = await readStore(page, "sessions");
   const last = sessions[sessions.length - 1];
   must(last.status === "endedEarly" && last.reason === "tired", `logged as ${last.status}/${last.reason}`);
+});
+
+await step("on a phone in extra practice, the five decks, the tag and the way out all fit", async () => {
+  // Andy's phone: the strip had collapsed behind the breather button and the
+  // EXTRA PRACTICE pill. The bar wraps; nothing is squeezed to nothing.
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  const p2 = await ctx2.newPage();
+  await p2.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+  await p2.waitForSelector('[data-probe="start"]');
+  await p2.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false; m.strands = { add: true, sub: true, mul: false, div: false };
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; // extra practice
+  });
+  await p2.click('[data-probe="start"]');
+  await p2.waitForSelector('[data-probe="problem"]');
+  const geo = await p2.evaluate(() => {
+    const r = (sel) => { const e = document.querySelector(sel); const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, w: b.width, h: b.height, top: b.top, bottom: b.bottom, hidden: e.hidden || getComputedStyle(e).display === "none" }; };
+    const cells = [...document.querySelectorAll(".line-cell")].map((c) => c.getBoundingClientRect().width);
+    const bar = document.querySelector(".session-bar").getBoundingClientRect();
+    return { cells, quit: r('[data-probe="quit"]'), tag: r('[data-probe="extra-tag"]'), chip: r('[data-probe="dose-chip"]'), barH: bar.height, vw: window.innerWidth,
+      tagText: document.querySelector('[data-probe="extra-tag"]').innerText.trim() };
+  });
+  must(geo.cells.length === 5 && geo.cells.every((w) => w >= 40), `deck cells are ${geo.cells.map(Math.round).join(",")}px wide`);
+  must(geo.quit.r <= geo.vw && geo.quit.l >= 0 && geo.quit.w >= 44, `the breather button sits at ${Math.round(geo.quit.l)}..${Math.round(geo.quit.r)} of ${geo.vw}`);
+  must(!geo.tag.hidden && geo.tag.r <= geo.vw, "the extra tag is off screen or hidden");
+  must(geo.tagText === "EXTRA", `the phone tag reads "${geo.tagText}"`);
+  must(geo.chip.hidden, "the dose chip shows during extra practice");
+  must(geo.barH < 120, `the session bar is ${geo.barH}px tall on a phone`);
+  // Nothing overlaps: the strip row sits below the controls row.
+  const stripTop = await p2.evaluate(() => document.querySelector(".line-strip").getBoundingClientRect().top);
+  must(stripTop >= geo.quit.bottom - 1, "the strip shares a row with the breather button on a phone");
+  await ctx2.close();
 });
 
 await step("today's spot is the street or the season's, by the day, and never a third thing", async () => {

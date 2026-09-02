@@ -71,7 +71,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
       // the on-device data is the gold standard.
       cloudAutoPush();
     },
-    refresh: () => render(),
+    refresh: () => render(true),
     pin: () => app.registry.pin,
     setPin: (code) => { app.registry.pin = code; app.meta.pin = code; saveRegistry(app.registry); void app.save(); },
     saveRegistry: () => saveRegistry(app.registry),
@@ -83,7 +83,12 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     },
   };
 
-  const render = (): void => {
+  const render = (keepScroll = false): void => {
+    // A refresh in place (a setting flipped, a helmet bought) must not throw
+    // him back to the top of a long screen (Andy, 2026-09-02). The WINDOW is
+    // the scroller here (#app grows with its content; only the session screen
+    // clips), and the old screen is torn down, so carry the position across.
+    const prev = keepScroll ? Math.max(window.scrollY, root.querySelector(".screen")?.scrollTop ?? 0) : 0;
     const screen =
       route === "session" ? sessionScreen(app)
       : route === "speed" ? speedScreen(app)
@@ -92,7 +97,8 @@ export const boot = async (root: HTMLElement): Promise<void> => {
       : route === "profiles" ? profilesScreen(app)
       : homeScreen(app);
     mount(root, screen);
-    window.scrollTo(0, 0);
+    window.scrollTo(0, prev);
+    if (prev > 0) screen.scrollTop = prev;
   };
 
   render();

@@ -60,11 +60,13 @@ export interface SettingsOpts {
   onView: CloudViewHandler;
   responses: readonly Response[];
   sessions: readonly SessionRecord[];
+  /** Redraw this pane in place, keeping the screen's scroll position. */
+  rerender: () => void;
 }
 
 export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   const wrap = el("div", { "data-probe": "settings-tab" });
-  const saveAndRefresh = (): void => { void app.save().then(() => app.refresh()); };
+  const saveAndRefresh = (): void => { void app.save().then(() => opts.rerender()); };
 
   // ---- what he is practising -------------------------------------------------
   wrap.append(section("Practice"));
@@ -72,7 +74,7 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   focus.append(el("h3", { class: "title", text: "What he is practising" }));
   focus.append(el("p", { class: "note", text:
     "Switch an operation off and it leaves his sessions entirely; everything learned in it is kept. Missing number asks 7 + ▢ = 15 style items. The cap is a ceiling for the very young." }));
-  focus.append(practiceTable(app));
+  focus.append(practiceTable(app, opts.rerender));
 
   // One shared mix percentage for whichever operations have it on. Still
   // typed production, so the first-digit clock stays honest at any setting.
@@ -147,7 +149,7 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
       if (given !== null && given.trim() !== "") {
         p.name = given.trim().slice(0, 14).toUpperCase();
         app.saveRegistry();
-        app.refresh();
+        opts.rerender();
       }
     });
     controls.append(rename);
@@ -162,7 +164,7 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
             app.registry.profiles = app.registry.profiles.filter((x) => x.id !== p.id);
             if (app.registry.active === p.id) app.registry.active = app.registry.profiles[0]!.id;
             app.saveRegistry();
-            if (isActive) location.reload(); else app.refresh();
+            if (isActive) location.reload(); else opts.rerender();
           });
         },
       }));
@@ -177,7 +179,7 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
     if (given === null || given.trim() === "") return;
     app.registry.profiles.push({ id: newProfileId(), name: given.trim().slice(0, 14).toUpperCase(), createdAt: Date.now() });
     app.saveRegistry();
-    app.refresh();
+    opts.rerender();
   });
   addRow.append(add);
   if (app.registry.profiles.length > 1) {

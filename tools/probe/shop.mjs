@@ -214,11 +214,18 @@ await step("a helmet is bought once and lands on the monster he puts it on", asy
   await page.click(".sheet .btn.ghost");
   await page.waitForTimeout(250);
   must(await page.evaluate(() => window.__app.meta().helmetsOwned.length) === 0, "Not-yet bought a helmet");
+  // Buying from the rack, far down the page, must leave him at the rack.
+  await page.evaluate(() => document.querySelector('[data-helm="cap-fire"]').scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(150);
+  const rackScroll = await page.evaluate(() => Math.max(window.scrollY, document.querySelector(".screen").scrollTop));
+  must(rackScroll > 100, `the shop did not scroll to the rack (${rackScroll})`);
   await page.click('[data-helm="cap-fire"]');
   await page.waitForSelector(".sheet .btn.go", { timeout: 4000 });
   await page.click(".sheet .btn.go");
   await page.waitForTimeout(350);
   must(await page.evaluate(() => window.__app.meta().helmetsOwned.includes("cap-fire")), "the helmet is not in the locker");
+  const afterBuy = await page.evaluate(() => Math.max(window.scrollY, document.querySelector(".screen").scrollTop));
+  must(Math.abs(afterBuy - rackScroll) < 8, `buying a helmet moved the scroll ${rackScroll} -> ${afterBuy}`);
   await page.click('[data-mon="cinderwyrm"]');
   await page.waitForSelector('[data-equip="cap-fire"]', { timeout: 4000 });
   await page.click('[data-equip="cap-fire"]');

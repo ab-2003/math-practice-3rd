@@ -301,11 +301,20 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 /* ---------- shapes ---------- */
 
 /* On a phone the trick strip was pushing the breather button off the right
-   edge. The strip yields; the way out never does. */
+   edge, then collapsing to nothing behind it. The bar WRAPS: below 700px the
+   strip takes a full row of its own, under the coins, the day's state and
+   the way out, so the five decks are always visible. */
+.session-bar { flex-wrap: wrap; row-gap: 6px; }
+@media (max-width: 700px) {
+  .session-bar .grow { flex-basis: 100%; order: 9; }
+}
+.extra-tag .short { display: none; }
 @media (max-width: 560px) {
   .topbar .btn.small { font-size: 13px; padding: 6px 10px; min-height: 44px; min-width: 44px; }
   .line-cell { max-width: 54px; }
   .trick-name { font-size: 13px; letter-spacing: -0.01em; }
+  .extra-tag .long { display: none; }
+  .extra-tag .short { display: inline; }
 }
 
 @media (min-width: 900px) and (orientation: landscape) {

@@ -172,8 +172,16 @@ await step("the elapsed levels are one segmented control, and picking one persis
   await openSettings(page);
   must((await page.$$(".seg [data-probe^='elapsed-level-']")).length === 3, "the levels are not a segmented control");
   must(await page.getAttribute('[data-probe="elapsed-level-1"]', "aria-checked") === "true", "level 1 is not marked");
+  // Scroll down to the control first: changing it must not throw the parent
+  // back to the top of the list (Andy, 2026-09-02).
+  await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-3"]').scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(150);
+  const scrollBefore = await page.evaluate(() => Math.max(window.scrollY, document.querySelector(".screen").scrollTop));
+  must(scrollBefore > 100, `the settings list did not scroll (${scrollBefore})`);
   await page.click('[data-probe="elapsed-level-3"]');
   await page.waitForTimeout(350);
+  const scrollAfter = await page.evaluate(() => Math.max(window.scrollY, document.querySelector(".screen").scrollTop));
+  must(Math.abs(scrollAfter - scrollBefore) < 8, `changing a setting moved the scroll ${scrollBefore} -> ${scrollAfter}`);
   must(((await page.textContent('[data-probe="elapsed-hint"]')) ?? "").includes("level 3"), "the hint did not follow the pick");
   must(await page.getAttribute('[data-probe="elapsed-level-1"]', "aria-checked") === "false", "two levels read as chosen");
   await page.reload({ waitUntil: "networkidle" });

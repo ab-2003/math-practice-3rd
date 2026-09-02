@@ -23,7 +23,7 @@ import { sheet } from "../sheet";
  * the switch was off becomes due today rather than overdue by a term, so a
  * whole strand cannot avalanche into one session.
  */
-const flipStrand = (app: App, kind: FactKind): void => {
+const flipStrand = (app: App, kind: FactKind, done: () => void): void => {
   const next = { ...app.meta.strands, [kind]: !app.meta.strands[kind] };
   if (!Object.values(next).some(Boolean)) {
     sheet({ title: "Keep at least one", body: "He needs something to practise, so at least one operation has to stay switched on.", confirm: "OK" });
@@ -32,7 +32,7 @@ const flipStrand = (app: App, kind: FactKind): void => {
   const turningOn = next[kind] && !app.meta.strands[kind];
   app.meta.strands = next;
   if (turningOn) app.states = reviveStrand(app.deck, app.states, kind, app.day);
-  void app.save().then(() => app.refresh());
+  void app.save().then(done);
 };
 
 /** THE MAGNITUDE CAP (Andy): a ceiling so a very young child can work the
@@ -85,7 +85,7 @@ const capSheet = (app: App, kind: FactKind, onDone: () => void): void => {
   sheet({ title: `${KIND_LABEL[kind]} cap`, body, confirm: "Done", onConfirm: onDone });
 };
 
-export const practiceTable = (app: App): HTMLElement => {
+export const practiceTable = (app: App, rerender: () => void): HTMLElement => {
   const table = el("div", { class: "ptable", role: "table" });
   const head = el("div", { class: "prow phead", role: "row" });
   for (const t of ["Operation", "On", "Missing #", "Cap"]) head.append(el("span", { text: t }));
@@ -108,7 +108,7 @@ export const practiceTable = (app: App): HTMLElement => {
       type: "button", class: `knob${live ? " on" : ""}`, "data-strand": kind,
       "aria-pressed": String(live), "aria-label": `${KIND_LABEL[kind]} ${live ? "on" : "off"}`,
     }, el("i", {}));
-    on(strandKnob, "click", () => flipStrand(app, kind));
+    on(strandKnob, "click", () => flipStrand(app, kind, rerender));
     row.append(strandKnob);
 
     const mOn = app.meta.missing[kind];
@@ -118,7 +118,7 @@ export const practiceTable = (app: App): HTMLElement => {
     }, el("i", {}));
     on(missKnob, "click", () => {
       app.meta.missing = { ...app.meta.missing, [kind]: !app.meta.missing[kind] };
-      void app.save().then(() => app.refresh());
+      void app.save().then(rerender);
     });
     row.append(missKnob);
 
@@ -127,7 +127,7 @@ export const practiceTable = (app: App): HTMLElement => {
       type: "button", class: `chip${cur === null ? " dim" : ""}`, "data-probe": `cap-${kind}`,
       "aria-label": `${CAP[kind].label} for ${KIND_LABEL[kind]}`,
     }, el("span", { text: cur === null ? "no limit" : String(cur) }));
-    on(capChip, "click", () => capSheet(app, kind, () => app.refresh()));
+    on(capChip, "click", () => capSheet(app, kind, rerender));
     row.append(capChip);
 
     table.append(row);

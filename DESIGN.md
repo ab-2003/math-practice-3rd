@@ -955,6 +955,19 @@ zero image requests.
   12px. `legible-check` measured it; both were raised.
 - **The breather button fell off a phone.** The trick strip pushed it past the
   right edge at 390px. The strip yields now; the way out never does.
+- **Changing a setting threw the parent back to the top.** Every settings
+  change called a full screen refresh, which rebuilt the screen at scroll 0
+  (and the shop did the same after a helmet). The settings pane now redraws
+  in place inside the same screen, and the generic refresh carries the
+  WINDOW scroll across: the window is the scroller on every page but the
+  session (`#app` grows with its content), which the first probe measured
+  wrongly by reading the screen element's scrollTop, always 0.
+- **The session bar collapsed the trick strip on a phone.** Coins, breather,
+  and the EXTRA PRACTICE pill were over the width, so the strip (the flex
+  grow slot) shrank to nothing and its label spilled over the button. The
+  bar wraps below 700px with the strip on its own row; the day's state is one
+  slot (the count before the dose, EXTRA after, EXTRA PRACTICE where there is
+  room). A phone-shape probe asserts five decks, the tag and the way out.
 - **The grown-ups screen faded to black on Andy's phone.** The rebuilt
   dashboard's wrapper was `class="dash"`, and `.dash` already belonged to
   BLADEBACK's speed streaks: opacity 0 with a 4.8 second flash. Every

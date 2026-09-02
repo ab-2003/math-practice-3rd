@@ -185,9 +185,11 @@ const renderDash = (app: App, host: HTMLElement): void => {
       return box;
     };
 
+    // A setting changed: redraw the pane INSIDE the same scrolling screen, so
+    // the parent stays where they were on a long settings list.
+    const rerender = (): void => { mount(pane, settingsTab(app, { onView, responses, sessions, rerender })); };
     const show = (): void => {
-      mount(pane, tab === "progress" ? progressPane() : settingsTab(app, { onView, responses, sessions }));
-      host.scrollTo?.(0, 0);
+      mount(pane, tab === "progress" ? progressPane() : settingsTab(app, { onView, responses, sessions, rerender }));
     };
     show();
     mount(host, wrap);

@@ -46,7 +46,10 @@ type Phase = "asking" | "bailed" | "retry";
 
 export const sessionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
-  const bar = el("div", { class: "topbar" });
+  // The session bar WRAPS: on a phone the trick strip takes its own row, so
+  // the five decks are always on the glass (Andy's phone, 2026-09-02: the
+  // strip had collapsed to nothing behind the breather button).
+  const bar = el("div", { class: "topbar session-bar" });
   // The coin chip: rewards must be VISIBLE while they happen, not a number
   // on the end sheet. It shows wallet plus this run, so it only counts up.
   const chip = el("div", { class: "coins session-coins", "data-probe": "session-coins" },
@@ -57,8 +60,12 @@ export const sessionScreen = (app: App): HTMLElement => {
   // DISTANCE TO DONE: a count of today's answers against the dose, in the
   // topbar where he can see the end coming. A count, never a clock.
   const doseChip = el("span", { class: "pill dose-chip", "data-probe": "dose-chip" });
-  bar.append(chip, doseChip, strip, quit);
-  if (isExtra) bar.append(el("span", { class: "pill extra-tag", "data-probe": "extra-tag", text: "EXTRA PRACTICE" }));
+  // The same slot after the dose: EXTRA PRACTICE where there is room, EXTRA
+  // on a phone. One slot for the day's state, never two pills fighting.
+  const extra = el("span", { class: "pill extra-tag", "data-probe": "extra-tag" },
+    el("span", { class: "long", text: "EXTRA PRACTICE" }), el("span", { class: "short", text: "EXTRA" }));
+  extra.hidden = !isExtra;
+  bar.append(chip, doseChip, extra, strip, quit);
   root.append(bar);
 
   const wrap = el("div", { class: "session" });
@@ -100,6 +107,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     const n = doseBase + itemsDone;
     doseChip.textContent = `${Math.min(n, app.meta.dailyGoal)} / ${app.meta.dailyGoal}`;
     doseChip.hidden = n >= app.meta.dailyGoal;
+    extra.hidden = n < app.meta.dailyGoal;
   };
   // Why the run ended early, for the stamina log. Set by whichever door he
   // left through; stays undefined on a run that reached its own end.
