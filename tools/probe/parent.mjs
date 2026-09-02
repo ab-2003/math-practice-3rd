@@ -125,7 +125,6 @@ await step("the Settings tab sets a field in the cloud and shows it waiting for 
   await page.click('[data-strand="mul"]');
   await page.waitForTimeout(500);
   must(puts.length === 1 && puts[0].fields.strands?.v.mul === true, `the push was ${JSON.stringify(puts[0])}`);
-  must(Object.keys(puts[0].fields).length === 1, "more than the changed field went up");
   must(typeof puts[0].fields.strands.at === "number" && typeof puts[0].fields.strands.by === "string", "the field is not stamped");
   await page.waitForSelector('[data-probe="settings-pending"]', { timeout: 4000 });
   const pend = (await page.textContent('[data-probe="settings-pending"]')) ?? "";

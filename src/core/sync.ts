@@ -50,13 +50,23 @@ export const isSyncKey = (k: string): k is SyncKey => (SYNCED_KEYS as readonly s
  *  the same whichever side asks. */
 export const newer = (a: Stamp, b: Stamp): boolean => a.at > b.at || (a.at === b.at && a.by > b.by);
 
+/**
+ * A TOTAL order over fields: stamp, then device, then the value itself. The
+ * property tests found that two writes from one device in one millisecond
+ * with different values had no order, so the merge depended on which
+ * arrived first. Rare in practice; not allowed in a merge that calls itself
+ * order-independent.
+ */
+export const newerField = (a: Field, b: Field): boolean =>
+  a.at !== b.at ? a.at > b.at : a.by !== b.by ? a.by > b.by : JSON.stringify(a.v) > JSON.stringify(b.v);
+
 export const mergeFields = (a: Fields, b: Fields): Fields => {
   const out: Fields = { ...a };
   for (const k of SYNCED_KEYS) {
     const fb = b[k];
     if (!fb) continue;
     const fa = out[k];
-    if (!fa || newer(fb, fa)) out[k] = fb;
+    if (!fa || newerField(fb, fa)) out[k] = fb;
   }
   return out;
 };

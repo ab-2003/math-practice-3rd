@@ -13,10 +13,10 @@
  * is offered its data back. That is the iOS eviction case.
  */
 
-import { describeField, fieldsToApply, type SyncKey } from "../core/sync";
+import { describeField, fieldsToApply, newer, type Fields, type SyncKey } from "../core/sync";
 import type { App } from "./appstate";
-import { cloudWhose, connectedCode, declineRestore, getSettings, getShare, loadBackup, restoreDeclined, sessionsText } from "./cloud";
-import { applySetting, currentSettings } from "./settings-apply";
+import { cloudWhose, connectedCode, declineRestore, getSettings, getShare, loadBackup, putSettings, restoreDeclined, sessionsText, setCloudRole } from "./cloud";
+import { applySetting, currentSettings, localFields } from "./settings-apply";
 import { sheet } from "./sheet";
 import { hasLocalData } from "./store";
 import { queueToast, toast } from "./toast";
@@ -35,8 +35,20 @@ export const pullSettings = async (app: App, force = false): Promise<SyncKey[]> 
   lastPull = Date.now();
   try {
     const res = await getSettings(code);
-    if (res.kind !== "ok") return [];
-    const apply = fieldsToApply(currentSettings(app), app.meta.settingsStamps, res.doc.fields);
+    if (res.kind === "offline" || res.kind === "bad") return [];
+    const remote: Fields = res.kind === "ok" ? res.doc.fields : {};
+    // SELF-HEALING, both ways. A change made here while offline was pushed
+    // once and lost; the cloud kept an older value and the door showed
+    // "waiting for the device" forever. So every pull also pushes any local
+    // field the cloud has not caught up on. Planning the loop tests found it.
+    const mine = localFields(app);
+    const behind = (Object.entries(mine) as Array<[SyncKey, NonNullable<Fields[SyncKey]>]>)
+      .some(([k, f]) => { const theirs = remote[k]; return !theirs || newer(f, theirs); });
+    if (behind) {
+      const pushed = await putSettings(code, mine);
+      if (pushed.kind === "ok") Object.assign(remote, pushed.doc.fields);
+    }
+    const apply = fieldsToApply(currentSettings(app), app.meta.settingsStamps, remote);
     const changed: SyncKey[] = [];
     for (const [k, f] of Object.entries(apply) as Array<[SyncKey, NonNullable<typeof apply[SyncKey]>]>) {
       if (applySetting(app, k, f.v as never, { remote: f })) changed.push(k);
@@ -74,13 +86,17 @@ export const offerRestore = async (app: App): Promise<boolean> => {
   const res = await getShare(code);
   if (res.kind !== "ok") return false;
   const n = res.meta.sessions ?? 0;
-  if (n === 0 && (res.backup.responses?.length ?? 0) === 0) return false;
+  const met = Object.values(res.backup.facts ?? {}).some((f) => f.introduced);
+  if (n === 0 && (res.backup.responses?.length ?? 0) === 0 && !met) return false;
   sheet({
     title: "Restore from the cloud?",
     body: `This device has no practice on it, but the cloud holds ${cloudWhose(res)}'s record: ${sessionsText(n)}. Bring it back here?`,
     cancel: "Start fresh", confirm: "Restore",
-    onCancel: () => declineRestore(code),
+    // Starting fresh beside a linked code makes this a VIEWER: its empty
+    // record must never overwrite the rider's.
+    onCancel: () => { declineRestore(code); setCloudRole("viewer"); },
     onConfirm: () => {
+      setCloudRole("owner");
       queueToast(`Restored ${cloudWhose(res)}'s record: ${sessionsText(n)}.`);
       void loadBackup(res.backup).then(() => location.reload());
     },

@@ -8,6 +8,7 @@
 import { csv } from "../../core/report";
 import type { Response, SessionRecord } from "../../core/types";
 import type { App } from "../appstate";
+import { forgetCode } from "../cloud";
 import { cloudCard, type CloudViewHandler } from "../cloud-ui";
 import { el, on } from "../dom";
 import { applySetting } from "../settings-apply";
@@ -150,9 +151,11 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   const reset = el("button", { type: "button", class: "btn small warm" }, el("span", { text: "Erase everything" }));
   on(reset, "click", () => sheet({
     title: "Erase all progress?",
-    body: "Every fact, every session, every monster. This cannot be undone, so take a backup first.",
+    body: "Every fact, every session, every monster, and this device's link to its share code. This cannot be undone, so take a backup first.",
     cancel: "Keep it", confirm: "Erase", danger: true,
-    onConfirm: () => { void eraseAll().then(() => location.reload()); },
+    // The link goes too: a fresh start must not be offered its old record
+    // back at the next launch.
+    onConfirm: () => { forgetCode(); void eraseAll().then(() => location.reload()); },
   }));
 
   row.append(csvBtn, jsonBtn, restore, inp, reset);

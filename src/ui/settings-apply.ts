@@ -62,15 +62,23 @@ export const applySetting = <K extends SyncKey>(
 
   const stamp = from.remote ? { at: from.remote.at, by: from.remote.by } : { at: Date.now(), by: deviceId() };
   app.meta.settingsStamps = { ...app.meta.settingsStamps, [key]: stamp };
-  if (!from.remote) pushField(key, value, stamp);
+  if (!from.remote) pushLocal(app);
   return true;
 };
 
-/** A local change goes up as one field, fire and forget, never blocking. */
-const pushField = (key: SyncKey, value: unknown, stamp: { at: number; by: string }): void => {
+/**
+ * A local change goes up as EVERYTHING this device knows, fire and forget,
+ * never blocking. Not just the changed field: KV reads can be stale for a
+ * moment after a write (the live smoke caught it), and a merge fed only the
+ * newest field over a stale document could drop the one before it. A full
+ * set is idempotent under the merge, so a stale read costs nothing.
+ */
+export const pushLocal = (app: App): void => {
   const code = connectedCode();
   if (code === null) return;
-  void putSettings(code, { [key]: { v: value, ...stamp } });
+  const fields = localFields(app);
+  if (Object.keys(fields).length === 0) return;
+  void putSettings(code, fields);
 };
 
 /** Every synced field this device holds, stamped, for a first full push. */

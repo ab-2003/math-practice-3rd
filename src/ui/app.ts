@@ -12,8 +12,10 @@ import { speedScreen } from "./speed-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
 import { flushToast } from "./toast";
-import { cloudAutoPush } from "./cloud";
+import { cloudAutoPush, cloudRole, connectedCode, setCloudRole } from "./cloud";
 import { offerRestore, startSync } from "./sync";
+import { applySetting } from "./settings-apply";
+import type { SyncedSettings, SyncKey } from "../core/sync";
 import {
   getFacts, getMeta, loadRegistry, putFacts, putMeta, freshMeta, saveRegistry, useProfile, type Meta,
 } from "./store";
@@ -106,6 +108,10 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   render();
   flushToast();
 
+  // Before the ownership rule, a linked device with practice was the writer
+  // by default. Keep that true for it, once, so Kallen's iPad keeps mirroring.
+  if (connectedCode() !== null && cloudRole() === null && [...states.values()].some((s) => s.introduced)) setCloudRole("owner");
+
   // The cloud may hold newer settings from the grown-ups' door, or, for a
   // device that lost its store, the record itself. Both non-blocking.
   void offerRestore(app).then((offered) => { if (!offered) startSync(app); });
@@ -136,5 +142,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     registry: () => app.registry,
     profile: () => app.profile,
     save: () => app.save(),
+    // A synced setting, through the one real path (revives, stamp, push).
+    set: <K extends SyncKey>(key: K, value: SyncedSettings[K]) => { const changed = applySetting(app, key, value); return app.save().then(() => changed); },
   };
 };

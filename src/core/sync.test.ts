@@ -80,3 +80,28 @@ describe("pending on the iPad", () => {
     expect(describeField("elapsedAnalog", true)).toBe("analog clock faces on");
   });
 });
+
+describe("merge, under fire", () => {
+  // Deterministic pseudo-random field sets: commutative, idempotent, and
+  // order-independent however the writes arrive.
+  let seed = 7;
+  const rnd = (): number => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const randomFields = (): Fields => {
+    const out: Fields = {};
+    const values: Record<string, unknown[]> = {
+      dailyGoal: [10, 30, 50, 80], speedLimit: [1, 5, 10, 30], elapsedLevel: [1, 2, 3], elapsedAnalog: [true, false],
+    };
+    for (const k of ["dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog"] as const) {
+      if (rnd() < 0.6) out[k] = { v: values[k]![Math.floor(rnd() * values[k]!.length)], at: Math.floor(rnd() * 10), by: rnd() < 0.5 ? "a" : "b" };
+    }
+    return out;
+  };
+  it("is commutative, associative and idempotent over a thousand random writes", () => {
+    for (let i = 0; i < 1000; i++) {
+      const a = randomFields(); const b = randomFields(); const c = randomFields();
+      expect(mergeFields(a, b)).toEqual(mergeFields(b, a));
+      expect(mergeFields(mergeFields(a, b), c)).toEqual(mergeFields(a, mergeFields(b, c)));
+      expect(mergeFields(mergeFields(a, b), b)).toEqual(mergeFields(a, b));
+    }
+  });
+});

@@ -195,9 +195,10 @@ const keyFor = (base: string): string => {
 };
 const KEY = "tl-cloud-code";
 const STATUS = "tl-cloud-status";
+const ROLE_KEY = "tl-cloud-role";
 export const connectedCode = (): string | null => { try { return localStorage.getItem(keyFor(KEY)); } catch { return null; } };
 export const rememberCode = (code: string): void => { try { localStorage.setItem(keyFor(KEY), code); } catch { /* private mode */ } };
-export const forgetCode = (): void => { try { localStorage.removeItem(keyFor(KEY)); } catch { /* */ } };
+export const forgetCode = (): void => { try { localStorage.removeItem(keyFor(KEY)); localStorage.removeItem(keyFor(ROLE_KEY)); } catch { /* */ } };
 
 export interface PushStatus { at: number; ok: boolean }
 export const lastPush = (): PushStatus | null => {
@@ -216,6 +217,7 @@ let trailing: number | null = null;
 export const cloudPushNow = async (): Promise<boolean> => {
   const code = connectedCode();
   if (code === null || inFlight) return false;
+  if (cloudRole() !== "owner") return false; // a viewer never writes the record
   inFlight = true;
   lastAttempt = Date.now();
   try {
@@ -238,6 +240,21 @@ export const cloudAutoPush = (): void => {
 };
 
 export const cloudPending = (): boolean => trailing !== null || inFlight;
+
+// ---- WHO WRITES THE RECORD ------------------------------------------------
+// Ownership was implicit and the loop instrument found the hole: a device
+// that linked a code but had nothing of its own pulled settings, saved, and
+// its EMPTY record overwrote the rider's in the cloud. Now a device mirrors
+// the record only if it is the OWNER: it created the code, loaded from the
+// cloud, or restored from it. A device that chose to view, or to start
+// fresh, is a VIEWER and never writes the record. Installs from before this
+// rule that hold practice data are made owners once at boot.
+export type CloudRole = "owner" | "viewer";
+export const cloudRole = (): CloudRole | null => {
+  try { const r = localStorage.getItem(keyFor(ROLE_KEY)); return r === "owner" || r === "viewer" ? r : null; } catch { return null; }
+};
+export const setCloudRole = (r: CloudRole): void => { try { localStorage.setItem(keyFor(ROLE_KEY), r); } catch { /* */ } };
+export const clearCloudRole = (): void => { try { localStorage.removeItem(keyFor(ROLE_KEY)); } catch { /* */ } };
 
 // ---- a device that chose to VIEW, or said "start fresh", is not asked again --
 const DECLINED_KEY = "tl-restore-declined";

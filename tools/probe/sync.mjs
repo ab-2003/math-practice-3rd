@@ -75,7 +75,9 @@ await step("a change made on this device goes up as one stamped field", async ()
   await page.waitForTimeout(500);
   const last = puts[puts.length - 1];
   must(last !== undefined && last.fields.speedLimit?.v === 11, `the push was ${JSON.stringify(last)}`);
-  must(Object.keys(last.fields).length === 1, "more than the changed field went up");
+  // Everything the device knows goes up, each field with ITS stamp: the
+  // remote-applied fields keep the phone's stamp, the local one carries ours.
+  must(last.fields.strands?.by === "phone", "the device re-stamped a field it only adopted");
   must(typeof last.fields.speedLimit.at === "number" && last.fields.speedLimit.by.startsWith("d"), "the field is not stamped by this device");
   const m = await page.evaluate(() => window.__app.meta());
   must(m.settingsStamps.speedLimit.by === last.fields.speedLimit.by, "the local stamp does not match the pushed one");

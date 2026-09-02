@@ -44,6 +44,26 @@ const r2 = await sput({ dailyGoal: { v: 80, at: 50, by: "ipad" }, speedLimit: { 
 const m2 = await r2.json();
 if (m2?.fields?.dailyGoal?.v !== 30) fail(`an older stamp overrode a newer field (${JSON.stringify(m2?.fields?.dailyGoal)})`);
 if (m2?.fields?.speedLimit?.v !== 3) fail("a new field did not join the merge");
+// Equal stamps break by device id; a future clock is clamped; case is normalised.
+// KV reads can be STALE for a moment after a write, so between two WRITERS
+// the smoke waits for the first write to be readable before the second lands;
+// racing them would test KV's propagation, not the merge. (Clients send their
+// whole field set on every write for the same reason.)
+const tie = await sput({ elapsedLevel: { v: 2, at: 70, by: "bbb" } });
+if ((await tie.json())?.fields?.elapsedLevel?.v !== 2) fail("the first tie write did not land");
+let seen = false;
+for (let i = 0; i < 12 && !seen; i++) {
+  const r = await fetch(`${BASE}/v1/share/${code}/settings`);
+  if (r.ok && (await r.json())?.fields?.elapsedLevel?.by === "bbb") seen = true; else await new Promise((res) => setTimeout(res, 3000));
+}
+if (!seen) fail("the first tie write never became readable");
+const tie2 = await sput({ elapsedLevel: { v: 3, at: 70, by: "aaa" } });
+if ((await tie2.json())?.fields?.elapsedLevel?.v !== 2) fail("an equal-stamp tie did not break by device id");
+const future = await sput({ elapsedAnalog: { v: true, at: Date.now() + 365 * 86_400_000, by: "wrong-clock" } });
+const fj = await future.json();
+if (!(fj?.fields?.elapsedAnalog?.at <= Date.now() + 6 * 60_000)) fail("a future stamp was not clamped by the live worker");
+const lower = await fetch(`${BASE}/v1/share/${code.toLowerCase()}/settings`);
+if (!lower.ok) fail(`a lowercase code was not normalised (${lower.status})`);
 const bad = await sput({ pin: { v: "1234", at: 999, by: "x" } });
 if (bad.status !== 400) fail(`a foreign settings field was accepted (${bad.status})`);
 const bad2 = await sput({ dailyGoal: { v: 999, at: 999, by: "x" } });

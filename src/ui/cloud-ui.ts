@@ -12,8 +12,8 @@ import qrcode from "qrcode-generator";
 import jsQR from "jsqr";
 import type { App } from "./appstate";
 import {
-  cloudPushNow, cloudWhose, connectedCode, declineRestore, deleteShare, fmtCode, forgetCode, genCode,
-  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, sessionsText, type CloudOk,
+  cloudPushNow, cloudRole, cloudWhose, connectedCode, declineRestore, deleteShare, fmtCode, forgetCode, genCode,
+  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, sessionsText, setCloudRole, type CloudOk,
 } from "./cloud";
 import { el, mount, on } from "./dom";
 import { exportAll } from "./store";
@@ -139,6 +139,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
         void exportAll().then((b) => putShare(fresh, b)).then((ok) => {
           if (!ok) { sheet({ title: "The cloud did not answer", body: "Nothing was created. Try again in a bit.", confirm: "OK" }); return; }
           rememberCode(fresh);
+          setCloudRole("owner");
           render();
           toast("Share code created. This device will keep it mirrored.");
         });
@@ -176,9 +177,22 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
 
     const status = el("p", { class: "note", "data-probe": "cloud-status" });
     const last = lastPush();
-    status.textContent = last === null ? "Nothing mirrored from this device yet."
+    const role = cloudRole();
+    status.textContent = role !== "owner"
+      ? "This device is VIEWING the record. Its own practice is not mirrored to this code."
+      : last === null ? "Nothing mirrored from this device yet."
       : `Last mirror from this device: ${new Date(last.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} ${last.ok ? "✓" : "(did not reach the cloud)"}`;
     box.append(status);
+    if (role !== "owner") {
+      const take = el("button", { type: "button", class: "btn small ghost", "data-probe": "cloud-take-over" }, el("span", { text: "Mirror from this device" }));
+      on(take, "click", () => sheet({
+        title: "Make this device the record's writer?",
+        body: "From now on THIS device's practice is what the code mirrors, replacing what is there. Do this only if this is the rider's new device. The old device should stop being used with this code.",
+        cancel: "Keep viewing", confirm: "Mirror from here", danger: true,
+        onConfirm: () => { setCloudRole("owner"); void cloudPushNow().then(() => render()); },
+      }));
+      box.append(take);
+    }
     const held = el("p", { class: "note", text: "Asking the cloud what it holds…" });
     box.append(held);
     void getShare(code).then((res) => {
@@ -223,6 +237,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
           body: `It holds ${sessionsText(res.meta.sessions ?? 0)}. Loading REPLACES everything on this device.`,
           cancel: "Keep this device's data", confirm: "Load", danger: true,
           onConfirm: () => {
+            setCloudRole("owner");
             queueToast(`Loaded ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}.`);
             void loadBackup(res.backup).then(() => location.reload());
           },
@@ -265,6 +280,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
             cancel: "Cancel", confirm: "Replace", danger: true,
             onConfirm: () => {
               rememberCode(norm);
+              setCloudRole("owner");
               queueToast(`Loaded ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}.`);
               void loadBackup(res.backup).then(() => location.reload());
             },
@@ -272,7 +288,8 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
         },
         onCancel: () => {
           rememberCode(norm);
-          declineRestore(norm); // viewing is not owning: never offer to restore over this device
+          setCloudRole("viewer"); // viewing is not owning: this device never writes the record
+          declineRestore(norm); // and is never offered a restore over itself
           if (opts.onView) opts.onView(norm, res);
           else { render(); toast(`Connected to ${whose}.`); }
         },
