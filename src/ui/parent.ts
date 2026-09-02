@@ -18,7 +18,7 @@ import { buildDeck } from "../core/facts";
 import { csv } from "../core/report";
 import {
   cloudFrom, cloudWhen, cloudWhose, describeRefresh, forgetParentCode, getShare, parentCode,
-  rememberParentCode, type CloudOk,
+  rememberParentCode, sessionsText, type CloudOk,
 } from "./cloud";
 import { connectForm } from "./cloud-ui";
 import { progressTab } from "./dash/progress";
@@ -66,7 +66,7 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
         rememberParentCode(code);
         source = { kind: "cloud", code, res };
         render();
-        toast(`Connected. Viewing ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
+        toast(`Connected. Viewing ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
       },
     }));
     screen.append(card);
@@ -82,7 +82,7 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
         const backup = checkBackup(JSON.parse(t));
         source = { kind: "file", name: file.name, backup };
         render();
-        toast(`Opened ${backup.name ?? "the rider"}'s backup: ${backup.sessions?.length ?? 0} sessions.`);
+        toast(`Opened ${backup.name ?? "the rider"}'s backup: ${sessionsText(backup.sessions?.length ?? 0)}.`);
       }).catch((e: unknown) => toast(`Could not open that file: ${String(e)}`));
     });
     const open = el("button", { type: "button", class: "btn small", "data-probe": "parent-open-file" }, el("span", { text: "Open a file" }));
@@ -164,7 +164,7 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
     if (res.kind === "ok") {
       source = { kind: "cloud", code: remembered, res };
       render();
-      toast(`Viewing ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
+      toast(`Viewing ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
     } else {
       render();
       toast(res.kind === "missing" ? "The cloud holds nothing under the remembered code. Connect again."

@@ -74,6 +74,8 @@ export const cloudWhen = (res: CloudOk): string => res.meta.savedAt !== undefine
   : "sometime";
 export const cloudFrom = (res: CloudOk): string => (res.meta.device !== undefined ? ` from ${res.meta.device}` : "");
 export const cloudWhose = (res: CloudOk): string => res.meta.name ?? "the rider";
+/** "1 session", "12 sessions": a count that reads like a person wrote it. */
+export const sessionsText = (n: number): string => `${n} ${n === 1 ? "session" : "sessions"}`;
 
 /**
  * What a refresh found, in one sentence. "Updated" means the PRACTICE

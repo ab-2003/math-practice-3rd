@@ -13,7 +13,7 @@ import jsQR from "jsqr";
 import type { App } from "./appstate";
 import {
   cloudPushNow, cloudWhose, connectedCode, deleteShare, fmtCode, forgetCode, genCode,
-  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, type CloudOk,
+  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, sessionsText, type CloudOk,
 } from "./cloud";
 import { el, mount, on } from "./dom";
 import { exportAll } from "./store";
@@ -184,7 +184,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
     void getShare(code).then((res) => {
       if (res.kind === "ok") {
         const when = res.meta.savedAt !== undefined ? new Date(res.meta.savedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "sometime";
-        held.textContent = `Cloud holds ${res.meta.sessions ?? 0} sessions · saved ${when}${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}.`;
+        held.textContent = `Cloud holds ${sessionsText(res.meta.sessions ?? 0)} · saved ${when}${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}.`;
       } else if (res.kind === "missing") held.textContent = "The cloud holds nothing under this code yet. Save now to fill it.";
       else if (res.kind === "bad") held.textContent = "The cloud copy needs a newer app than this device runs.";
       else held.textContent = "The cloud is not answering right now. The data on this device is untouched.";
@@ -220,10 +220,10 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
         if (res.kind !== "ok") { sheet({ title: "Nothing to load", body: "The cloud did not hand back a usable copy.", confirm: "OK" }); return; }
         sheet({
           title: "Load the cloud copy?",
-          body: `It holds ${res.meta.sessions ?? 0} sessions. Loading REPLACES everything on this device.`,
+          body: `It holds ${sessionsText(res.meta.sessions ?? 0)}. Loading REPLACES everything on this device.`,
           cancel: "Keep this device's data", confirm: "Load", danger: true,
           onConfirm: () => {
-            queueToast(`Loaded ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+            queueToast(`Loaded ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}.`);
             void loadBackup(res.backup).then(() => location.reload());
           },
         });
@@ -254,7 +254,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
       const whose = res.meta.name !== undefined ? `${res.meta.name}'s record` : "the record";
       sheet({
         title: "Code connected",
-        body: `The cloud holds ${whose}: ${res.meta.sessions ?? 0} sessions${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. ` +
+        body: `The cloud holds ${whose}: ${sessionsText(res.meta.sessions ?? 0)}${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. ` +
           `View it here without touching this device's own data, or load it onto this device?`,
         cancel: "Just view",
         confirm: "Load it here",
@@ -265,7 +265,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
             cancel: "Cancel", confirm: "Replace", danger: true,
             onConfirm: () => {
               rememberCode(norm);
-              queueToast(`Loaded ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+              queueToast(`Loaded ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}.`);
               void loadBackup(res.backup).then(() => location.reload());
             },
           });

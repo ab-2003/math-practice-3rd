@@ -26,7 +26,7 @@
 
 import type { Snapshot } from "../core/report";
 import type { App } from "./appstate";
-import { cloudFrom, cloudWhen, cloudWhose, connectedCode, describeRefresh, getShare, type CloudOk } from "./cloud";
+import { cloudFrom, cloudWhen, cloudWhose, connectedCode, describeRefresh, getShare, sessionsText, type CloudOk } from "./cloud";
 import { renderPin } from "./dash/pin";
 import { progressTab } from "./dash/progress";
 import { settingsTab } from "./dash/settings";
@@ -123,7 +123,7 @@ const renderDash = (app: App, host: HTMLElement): void => {
       viewing = { code: c, res, auto: false };
       tab = "progress";
       renderDash(app, host);
-      toast(`Connected. Viewing ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
+      toast(`Connected. Viewing ${cloudWhose(res)}'s copy: ${sessionsText(res.meta.sessions ?? 0)}, saved ${cloudWhen(res)}${cloudFrom(res)}.`);
     };
 
     const progressPane = (): HTMLElement => {
