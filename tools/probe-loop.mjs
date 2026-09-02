@@ -803,6 +803,49 @@ await step("cloud share: create, QR, save-now, and the throttled auto-push", asy
   await page.unroute("**/math-pra3-cloudshare**");
 });
 
+await step("a parent cap keeps every problem inside the ceiling", async () => {
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-probe="cap-add"]', { timeout: 6000 });
+  must(((await page.textContent('[data-probe="cap-add"]')) ?? "").includes("no limit"), "the cap does not default to no limit");
+  // none -> 10, then down to 6: Andy's own example.
+  for (let i = 0; i < 5; i++) { await page.click('[data-probe="cap-add-minus"]'); await page.waitForTimeout(220); }
+  must((await page.textContent('[data-probe="cap-add"]'))?.trim() === "6", `cap reads "${await page.textContent('[data-probe="cap-add"]')}", wanted 6`);
+  await page.reload({ waitUntil: "networkidle" });
+  must(await page.evaluate(() => window.__app.meta().caps.add) === 6, "the cap did not persist");
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.strands = { add: true, sub: false, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    m.animations = false;
+    m.doseDay = window.__app.day(); m.doseCount = 0;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  for (let i = 0; i < 10; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    if (await page.$(".sheet") !== null) break;
+    const id = await page.getAttribute('[data-probe="problem"]', "data-fact").catch(() => null);
+    if (!id) break;
+    must(id.startsWith("add:") && answerOf(id) <= 6, `${id} is outside the cap of 6`);
+    await typeAnswer(page, answerOf(id));
+    await page.waitForTimeout(120);
+  }
+  // Back to no limit, so the rest of the run is unaffected.
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.evaluate(() => { window.__app.meta().caps = { add: null, sub: null, mul: null, div: null }; });
+  await page.click('.topbar .btn.ghost:last-of-type');
+  await page.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await page.click(`.keypad .key[data-key="${d}"]`);
+  await page.waitForSelector('[data-probe="cap-add"]', { timeout: 6000 });
+  await page.click('[data-probe="cap-add-minus"]'); // -> 10
+  await page.waitForTimeout(220);
+  for (let i = 0; i < 11; i++) { await page.click('[data-probe="cap-add-plus"]'); await page.waitForTimeout(150); } // past 20 -> no limit
+  must(((await page.textContent('[data-probe="cap-add"]')) ?? "").includes("no limit"), "plus past the top did not return to no limit");
+});
+
 await step("speed run: one before the day's work, per-setup bests, then the budget", async () => {
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.evaluate(() => {

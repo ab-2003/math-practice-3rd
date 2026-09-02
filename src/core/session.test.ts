@@ -7,9 +7,9 @@ import { buildDeck, deckInIntroOrder } from "./facts";
 import { allStates, freshState, reviveStrand } from "./scheduler";
 import {
   closerIds, currentFactId, isStruggling, nextNewFacts, planQueue,
-  recordResponse, sessionIsOver, startSession,
+  recordResponse, sessionIsOver, startSession, withinCap,
 } from "./session";
-import type { FactState, Response, ResponseClass, SessionState, States, Strands } from "./types";
+import type { Caps, FactState, Response, ResponseClass, SessionState, States, Strands } from "./types";
 
 const deck = buildDeck();
 const ordered = deckInIntroOrder(deck);
@@ -331,5 +331,43 @@ describe("switching an operation back on", () => {
     const revived = reviveStrand(deck, states, "mul", 95);
     expect(revived.get(f.id)!.introduced).toBe(false);
     expect(revived.get(f.id)!.dueOn).toBe(0);
+  });
+});
+
+
+describe("magnitude caps, for the very young", () => {
+  const all: Strands = { add: true, sub: true, mul: true, div: true };
+  const caps: Caps = { add: 6, sub: 6, mul: 20, div: 20 };
+
+  it("caps the ANSWER for + and x, and the STARTING number for - and /", () => {
+    expect(withinCap(deck.get("add:2+4")!, caps)).toBe(true);
+    expect(withinCap(deck.get("add:3+4")!, caps)).toBe(false);
+    expect(withinCap(deck.get("mul:4x5")!, caps)).toBe(true);
+    expect(withinCap(deck.get("mul:5x5")!, caps)).toBe(false);
+    expect(withinCap(deck.get("sub:6-2")!, caps)).toBe(true);
+    expect(withinCap(deck.get("sub:7-2")!, caps)).toBe(false);
+    expect(withinCap(deck.get("div:20/4")!, caps)).toBe(true);
+    expect(withinCap(deck.get("div:25/5")!, caps)).toBe(false);
+  });
+
+  it("means no limit when null, which is the default", () => {
+    for (const f of deck.values()) expect(withinCap(f, { add: null, sub: null, mul: null, div: null })).toBe(true);
+  });
+
+  it("keeps every capped-out fact out of the due queue, the new draw, the top-up and the closer", () => {
+    const states = withDue(200, 0, 2);
+    const q = planQueue(deck, states, 0, all, caps);
+    expect(q.length).toBeGreaterThan(0);
+    for (const id of q) expect(withinCap(deck.get(id)!, caps), id).toBe(true);
+    const fresh = nextNewFacts(deck, allStates(deck), 30, all, caps);
+    expect(fresh.length).toBeGreaterThan(0);
+    for (const id of fresh) expect(withinCap(deck.get(id)!, caps), id).toBe(true);
+    const s = startSession(deck, states, 0, all, caps);
+    for (const id of closerIds(deck, states, s, all, caps)) expect(withinCap(deck.get(id)!, caps), id).toBe(true);
+  });
+
+  it("still has something to ask at the smallest sensible caps", () => {
+    const tiny: Caps = { add: 2, sub: 2, mul: 5, div: 5 };
+    expect(planQueue(deck, allStates(deck), 0, all, tiny).length).toBeGreaterThan(0);
   });
 });

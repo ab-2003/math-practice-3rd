@@ -332,6 +332,17 @@ Re-simulated on the slow-consolidator profile: 81 facts met by day 7 (was 28),
 all four strands moving, sessions in the 44 to 50 item band, and the struggle
 detector still ends bad days early.
 
+**MAGNITUDE CAPS (0.13.0, Andy: "so very young children can work out the
+early facts without frustration").** Each operation carries an optional
+ceiling, no limit by default: addition and multiplication cap the ANSWER,
+subtraction and division cap the STARTING number. A capped-out fact leaves
+sessions exactly the way a switched-off operation does (due queue, new draw,
+top-up, closer, and the speed-run pool), with progress kept; raising or
+clearing a cap revives the strand so weeks of overdue facts arrive due
+today, not as an avalanche. The stepper starts a sensible cap on the first
+press from "no limit" (10 for +/-, 20 for x and /) and returns to no limit
+past the top. The standards card says when a cap is narrowing the deck.
+
 ## 8. Session assembly
 
 Everything due, then new facts **only if the due queue is under the gate**
@@ -716,6 +727,11 @@ zero image requests.
       definition, and the two SOL standards.
 - [x] **M7 - sound.** WebAudio kit synthesised at runtime, persisted mute,
       first-gesture unlock.
+- [x] **0.13.0 - magnitude caps.** Per-operation ceilings in parent
+      settings (answer for + and x, starting number for - and /), no limit
+      by default, honoured by every lane of the scheduler and the speed-run
+      pool, revived without avalanche when raised, and named on the
+      standards card.
 - [x] **0.12.0 - speed run.** One minute, as many as you can: per-setup
       high scores, kid-reachable reset behind a confirm, attempts counted on
       screen, one run before the day's work and a parent-set daily budget

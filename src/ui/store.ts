@@ -13,7 +13,7 @@
 
 import { DEFAULT_STRANDS } from "../core/config";
 import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
-import type { FactState, Response, Strands } from "../core/types";
+import type { Caps, FactState, Response, Strands } from "../core/types";
 
 export const SCHEMA_VERSION = 1;
 const DB_NAME = "trickline";
@@ -74,6 +74,8 @@ export interface Meta {
   backupNudgedOn: number | null;
   /** Which operations are switched on. A grown-up setting, behind the PIN. */
   strands: Strands;
+  /** Magnitude caps per operation, null = no limit (the default). */
+  caps: Caps;
   /** Missing-number presentation: per-operation switches and the mix percent.
    *  All four OFF by default, per Andy 2026-09-01. */
   missing: MissingCfg;
@@ -94,6 +96,7 @@ export const freshMeta = (): Meta => ({
   levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
+  caps: { add: null, sub: null, mul: null, div: null },
   elapsedLevel: 1,
   elapsedAnalog: false,
 });

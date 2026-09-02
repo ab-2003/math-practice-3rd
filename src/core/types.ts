@@ -86,5 +86,14 @@ export interface SessionState {
  */
 export type Strands = Record<FactKind, boolean>;
 
+/**
+ * MAGNITUDE CAPS, a parent control (Andy 2026-09-01): "so very young
+ * children can work out the early facts without frustration." null = no
+ * limit, the default. Addition and multiplication cap the ANSWER; subtraction
+ * and division cap the STARTING number. A capped-out fact leaves sessions the
+ * way a switched-off operation does: progress kept, never reset.
+ */
+export type Caps = Record<FactKind, number | null>;
+
 export type Deck = ReadonlyMap<string, Fact>;
 export type States = ReadonlyMap<string, FactState>;

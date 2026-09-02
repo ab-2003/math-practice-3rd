@@ -5,7 +5,7 @@ import {
 } from "./config";
 import { deckInIntroOrder } from "./facts";
 import { applyResponse, canIntroduce, isDue } from "./scheduler";
-import type { Deck, Fact, FactState, Response, SessionState, States, Strands } from "./types";
+import type { Caps, Deck, Fact, FactState, Response, SessionState, States, Strands } from "./types";
 
 /**
  * SESSION ASSEMBLY.
@@ -15,17 +15,27 @@ import type { Deck, Fact, FactState, Response, SessionState, States, Strands } f
  * for anything new, so a bad day cannot compound into a worse one.
  */
 export const ALL_STRANDS: Strands = { add: true, sub: true, mul: true, div: true };
+export const NO_CAPS: Caps = { add: null, sub: null, mul: null, div: null };
 
-/** Is this fact's operation switched on right now? */
-export const inPlay = (f: Fact, strands: Strands): boolean => strands[f.kind];
+/** Does this fact sit inside the parent's magnitude cap for its operation? */
+export const withinCap = (f: Fact, caps: Caps): boolean => {
+  const cap = caps[f.kind];
+  if (cap === null) return true;
+  // + and x cap the answer; - and / cap the number he starts from.
+  return f.kind === "add" || f.kind === "mul" ? f.answer <= cap : f.a <= cap;
+};
+
+/** Is this fact's operation switched on, and the fact within reach? */
+export const inPlay = (f: Fact, strands: Strands, caps: Caps = NO_CAPS): boolean =>
+  strands[f.kind] && withinCap(f, caps);
 
 export const planQueue = (
-  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS,
+  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
 ): string[] => {
   const due = [...deck.values()]
     .filter((f) => {
       const s = states.get(f.id);
-      return s !== undefined && isDue(s, day) && inPlay(f, strands);
+      return s !== undefined && isDue(s, day) && inPlay(f, strands, caps);
     })
     // Most overdue first, then weakest box: the things he is shakiest on get
     // seen while he still has attention to spend on them.
@@ -44,7 +54,7 @@ export const planQueue = (
     // limiting: what he already owns flies to a distant box after one look,
     // and what he does not stacks up as due work that closes this gate.
     const room = Math.min(NEW_FILL_MAX, SESSION_TARGET_ITEMS - queue.length);
-    for (const id of nextNewFacts(deck, states, room, strands)) queue.push(id);
+    for (const id of nextNewFacts(deck, states, room, strands, caps)) queue.push(id);
   }
 
   // TOP UP to a workable session length.
@@ -60,7 +70,7 @@ export const planQueue = (
       .filter((f) => {
         const s = states.get(f.id);
         return s !== undefined && s.introduced && !inQueue.has(f.id)
-          && s.box <= TOPUP_MAX_BOX && inPlay(f, strands);
+          && s.box <= TOPUP_MAX_BOX && inPlay(f, strands, caps);
       })
       .sort((x, y) => states.get(x.id)!.box - states.get(y.id)!.box || states.get(x.id)!.dueOn - states.get(y.id)!.dueOn);
     for (const f of spare) {
@@ -83,13 +93,13 @@ export const planQueue = (
  * pedagogy lives.
  */
 export const nextNewFacts = (
-  deck: Deck, states: States, room: number, strands: Strands = ALL_STRANDS,
+  deck: Deck, states: States, room: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
 ): string[] => {
   const lanes = new Map<string, Fact[]>();
   for (const f of deckInIntroOrder(deck)) {
     const s = states.get(f.id);
     if (!s || s.introduced) continue;
-    if (!inPlay(f, strands)) continue;
+    if (!inPlay(f, strands, caps)) continue;
     if (!canIntroduce(f, states)) continue;
     const list = lanes.get(f.kind);
     if (list) list.push(f);
@@ -112,10 +122,10 @@ export const nextNewFacts = (
 };
 
 export const startSession = (
-  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS,
+  deck: Deck, states: States, day: number, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
 ): SessionState => ({
   day,
-  queue: planQueue(deck, states, day, strands),
+  queue: planQueue(deck, states, day, strands, caps),
   cursor: 0,
   responses: [],
   closerAdded: false,
@@ -140,13 +150,13 @@ export const currentFactId = (s: SessionState): string | null =>
  * branch is something he has already succeeded at, which is the actual point.
  */
 export const closerIds = (
-  deck: Deck, states: States, s: SessionState, strands: Strands = ALL_STRANDS,
+  deck: Deck, states: States, s: SessionState, strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
 ): string[] => {
   const asked = new Set(s.queue);
   const pick = (ids: string[]): string[] => ids.slice(0, CLOSER_ITEMS);
   const playable = (id: string): boolean => {
     const f = deck.get(id);
-    return f !== undefined && inPlay(f, strands);
+    return f !== undefined && inPlay(f, strands, caps);
   };
 
   const mastered = [...deck.keys()].filter((id) => states.get(id)?.mastered === true && playable(id));
@@ -217,7 +227,7 @@ export interface StepResult {
  */
 export const recordResponse = (
   deck: Deck, states: States, session: SessionState, r: Response,
-  strands: Strands = ALL_STRANDS,
+  strands: Strands = ALL_STRANDS, caps: Caps = NO_CAPS,
 ): StepResult => {
   const nextStates = new Map(states);
   const prev = nextStates.get(r.factId);
@@ -234,7 +244,7 @@ export const recordResponse = (
     // The re-entry closed the loop on a wrong answer. Advance, but the fact
     // was already requeued when the wrong answer landed.
     s.cursor += 1;
-    return finish(deck, nextStates, s, strands);
+    return finish(deck, nextStates, s, strands, caps);
   }
 
   if (r.correct && !s.succeeded.includes(r.factId)) s.succeeded.push(r.factId);
@@ -249,12 +259,12 @@ export const recordResponse = (
   // forced re-entry first, and that arrives as a separate isRetry response.
   if (r.correct) s.cursor += 1;
 
-  return finish(deck, nextStates, s, strands);
+  return finish(deck, nextStates, s, strands, caps);
 };
 
 /** Append the closer and settle the status once the main queue is spent. */
 const finish = (
-  deck: Deck, states: Map<string, FactState>, s: SessionState, strands: Strands,
+  deck: Deck, states: Map<string, FactState>, s: SessionState, strands: Strands, caps: Caps,
 ): StepResult => {
   if (s.closerAdded) {
     if (s.cursor >= s.queue.length && s.status === "active") s.status = "complete";
@@ -266,7 +276,7 @@ const finish = (
   const struggling = isStruggling(s);
 
   if (spent || capped || struggling) {
-    const closer = closerIds(deck, states, s, strands);
+    const closer = closerIds(deck, states, s, strands, caps);
     s.queue = [...s.queue.slice(0, s.cursor), ...closer];
     s.closerAdded = true;
     s.status = struggling && !spent ? "endedEarly" : "active";

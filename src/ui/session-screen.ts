@@ -66,7 +66,7 @@ export const sessionScreen = (app: App): HTMLElement => {
   root.append(wrap);
 
   // ---- session state -----------------------------------------------------
-  let session: SessionState = startSession(app.deck, app.states, app.day, app.meta.strands);
+  let session: SessionState = startSession(app.deck, app.states, app.day, app.meta.strands, app.meta.caps);
   const startedAt = Date.now();
   const collected: Response[] = [];
   let landed = 0;          // tricks in the CURRENT line
@@ -246,7 +246,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       }
       const r = mkResponse(f, given, submitMs, true, true);
       collected.push(r);
-      const step = recordResponse(app.deck, app.states, session, r, app.meta.strands);
+      const step = recordResponse(app.deck, app.states, session, r, app.meta.strands, app.meta.caps);
       session = step.session;
       app.states = step.states;
       sfx.recover();
@@ -258,7 +258,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     const cls = classify(correct, firstKeyMs);
     const r = mkResponse(f, given, submitMs, correct, false);
     collected.push(r);
-    const step = recordResponse(app.deck, app.states, session, r, app.meta.strands);
+    const step = recordResponse(app.deck, app.states, session, r, app.meta.strands, app.meta.caps);
     session = step.session;
     app.states = step.states;
     itemsDone += 1;

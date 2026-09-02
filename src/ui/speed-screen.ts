@@ -18,6 +18,7 @@
 import { presentFact, type Presented } from "../core/present";
 import type { Fact } from "../core/types";
 import { deckInIntroOrder } from "../core/facts";
+import { withinCap } from "../core/session";
 import { lineTricks } from "../core/tricks";
 import type { App } from "./appstate";
 import { el, mount, on } from "./dom";
@@ -84,12 +85,12 @@ export const speedScreen = (app: App): HTMLElement => {
   // profile borrows the front of the curriculum so the minute is never empty.
   const pool: Fact[] = [];
   for (const f of deckInIntroOrder(app.deck)) {
-    if (!app.meta.strands[f.kind]) continue;
+    if (!app.meta.strands[f.kind] || !withinCap(f, app.meta.caps)) continue;
     if (app.states.get(f.id)?.introduced === true) pool.push(f);
   }
   if (pool.length < 12) {
     for (const f of deckInIntroOrder(app.deck)) {
-      if (!app.meta.strands[f.kind] || pool.includes(f)) continue;
+      if (!app.meta.strands[f.kind] || !withinCap(f, app.meta.caps) || pool.includes(f)) continue;
       pool.push(f);
       if (pool.length >= 24) break;
     }

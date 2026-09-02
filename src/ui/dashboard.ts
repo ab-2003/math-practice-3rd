@@ -247,6 +247,11 @@ const renderDash = (app: App, host: HTMLElement): void => {
         std.append(el("p", { class: "note warn", text:
           `Partly switched off (${off.join(" and ")}), so this figure covers only what is being practised.` }));
       }
+      const capped = kinds.filter((k) => app.meta.caps[k] !== null);
+      if (capped.length > 0) {
+        std.append(el("p", { class: "note warn", text:
+          `Capped: ${capped.map((k) => `${k} up to ${app.meta.caps[k]}`).join(", ")}. Facts beyond the cap are not being practised yet.` }));
+      }
     }
     std.append(el("p", { class: "note", text:
       "2.CE.1 is a second grade standard being closed this year. 3.CE.2 is due by the end of third grade and is the direct prerequisite for fourth grade multi-digit multiplication and long division." }));
@@ -337,6 +342,37 @@ const renderDash = (app: App, host: HTMLElement): void => {
         void app.save().then(() => app.refresh());
       });
       rows.append(sub);
+
+      // THE MAGNITUDE CAP (Andy): a ceiling so a very young child can work
+      // the early facts without frustration. + and x cap the answer; - and /
+      // cap the starting number. "no limit" is the default; minus from there
+      // starts a sensible cap, plus past the top returns to no limit.
+      const CAP: Record<FactKind, { label: string; start: number; min: number; max: number; step: number }> = {
+        add: { label: "Biggest answer", start: 10, min: 2, max: 20, step: 1 },
+        sub: { label: "Biggest starting number", start: 10, min: 2, max: 20, step: 1 },
+        mul: { label: "Biggest answer", start: 20, min: 5, max: 100, step: 5 },
+        div: { label: "Biggest starting number", start: 20, min: 5, max: 100, step: 5 },
+      };
+      const spec = CAP[kind];
+      const cur = app.meta.caps[kind];
+      const capRow = el("div", { class: "stepper cap-row" });
+      const cMinus = el("button", { type: "button", class: "btn small", "data-probe": `cap-${kind}-minus` }, el("span", { text: "−" }));
+      const cVal = el("span", { class: "stepper-value", "data-probe": `cap-${kind}`, text: cur === null ? "no limit" : String(cur) });
+      const cPlus = el("button", { type: "button", class: "btn small", "data-probe": `cap-${kind}-plus` }, el("span", { text: "+" }));
+      const setCap = (next: number | null): void => {
+        const before = app.meta.caps[kind];
+        app.meta.caps = { ...app.meta.caps, [kind]: next };
+        // Raising or clearing a cap lets facts back in that may be overdue by
+        // weeks; revive them to today so they cannot avalanche.
+        if (next === null || (before !== null && next > before)) {
+          app.states = reviveStrand(app.deck, app.states, kind, app.day);
+        }
+        void app.save().then(() => app.refresh());
+      };
+      on(cMinus, "click", () => setCap(cur === null ? spec.start : Math.max(spec.min, cur - spec.step)));
+      on(cPlus, "click", () => setCap(cur === null ? null : (cur + spec.step > spec.max ? null : cur + spec.step)));
+      capRow.append(el("span", { class: "toggle-hint", text: spec.label }), cMinus, cVal, cPlus);
+      rows.append(capRow);
     }
     focus.append(rows);
 

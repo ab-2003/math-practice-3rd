@@ -962,3 +962,5 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .home-grid.three { grid-template-columns: 1fr 1fr; }
   .speed-cell { grid-column: span 2; }
 }
+.cap-row { margin: 4px 0 6px 34px; }
+.cap-row .stepper-value { min-width: 92px; font-size: 17px; }
