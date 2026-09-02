@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Trick Line · Grown-ups</title>
+    <meta name="description" content="The parent and teacher view of a Trick Line practice record. Read only." />
+    <meta name="theme-color" content="#0B0D10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TL Grown-ups" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- Its own manifest, so it installs beside the kid's app as a separate icon. -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../icons/icon-180.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png" />
+    <style>
+      html, body { margin: 0; padding: 0; background: #0B0D10; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <p style="color:#F2F5F8;font-family:system-ui;padding:24px">
+        This page needs JavaScript switched on. It only reads a practice record; nothing typed here is sent anywhere but to fetch that record.
+      </p>
+    </noscript>
+    <script type="module" src="../src/parent.ts"></script>
+  </body>
+</html>

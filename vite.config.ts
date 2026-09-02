@@ -65,5 +65,12 @@ export default defineConfig({
     target: "es2020",
     // Every asset stays a real file so the service worker can cache it.
     assetsInlineLimit: 0,
+    // TWO DOORS, one build: the kid's at / and the grown-ups' at /parent/.
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        parent: fileURLToPath(new URL("./parent/index.html", import.meta.url)),
+      },
+    },
   },
 });

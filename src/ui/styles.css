@@ -1084,6 +1084,9 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .profile-sub { font-size: 13px; color: var(--dim); font-weight: 700; }
 .name-chip { cursor: pointer; font-family: var(--display); color: var(--cyan); background: var(--panel-2); text-transform: uppercase; letter-spacing: 0.04em; }
 
+/* ---------- the grown-ups' door ---------- */
+.hero .sub.door { font-size: 16px; }
+
 /* ---------- the toast: feedback that needs no tap ---------- */
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%);

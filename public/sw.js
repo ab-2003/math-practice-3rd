@@ -51,16 +51,18 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // The document is network first so an online launch always sees the current
-  // build, and cache fallback so an offline launch still boots.
+  // build, and cache fallback so an offline launch still boots. Two doors:
+  // the kid's index at the root and the grown-ups' at /parent/.
   if (isDocument(request)) {
+    const doc = /\/parent\/?$/.test(url.pathname) ? "./parent/index.html" : "./index.html";
     event.respondWith((async () => {
       try {
         const fresh = await fetch(request);
         const cache = await caches.open(CACHE);
-        cache.put("./index.html", fresh.clone());
+        cache.put(doc, fresh.clone());
         return fresh;
       } catch {
-        return (await caches.match("./index.html", MATCH)) ?? Response.error();
+        return (await caches.match(doc, MATCH)) ?? Response.error();
       }
     })());
     return;

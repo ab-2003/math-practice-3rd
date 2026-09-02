@@ -163,6 +163,11 @@ for (const [name, viewport] of Object.entries(SHAPES)) {
   await page.waitForSelector('[data-probe="retype"]', { timeout: 5000 }).catch(() => undefined);
   await check("scaffold");
 
+  // The grown-ups' door at /parent/: its own page, same eye.
+  await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
+  await check("parent-door");
+
   if (errs.length > 0) fail(`${name}: uncaught page errors: ${errs.slice(0, 2).join(" | ")}`);
   await ctx.close();
 }

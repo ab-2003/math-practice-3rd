@@ -661,6 +661,35 @@ monsters share a mass; idle acts pause off stage; two seasonal spots (FROST
 PARK, Dec-Feb; THE BOARDWALK, Jun-Aug), open to everyone in season; the
 build stamp cleared by the screen's bottom padding.
 
+## 9d. The grown-ups' door (0.15.0)
+
+Andy, 2026-09-02, after a morning of walking his phone through the kid's
+home, a PIN he did not need, and Connect at the bottom of Settings: should
+there be a "parent or child?" question on first launch? Ruled against, with
+his agreement: a first-launch fork puts a choice in front of Kallen on day
+one, and a curious kid who taps the wrong side lands in a viewer with no game
+and no obvious way back. His spec for that fork is kept here in case it is
+ever wanted: icons on both buttons for a child who cannot read, the child's
+button bigger, and the parent side gated by a code spelled out in words
+("Type eight five three nine", random each time) so only a reader can enter
+it, one shot, with a reset in settings.
+
+What shipped instead is a separate PATH in the same build:
+`math-practice-3rd.pages.dev/parent/`. Its own HTML entry and manifest (it
+installs beside nothing as "TL Grown-ups"), the same shell (flight recorder,
+tap synthesiser, one service worker at the root covering both doors, with a
+per-door document fallback offline), and a small app: connect a share code
+(type, paste, scan) or open a backup file; the report, read only, with the
+banner, the refresh verdict, and CSV export of the copy being viewed; the
+code remembered so the next launch opens straight onto the record. No PIN,
+no game, no shop, nothing that writes a rider's data. The code is the
+secret. A path rather than a subdomain because it ships through the one
+gauntlet with no second deploy; the kid's cloud card names the door and the
+Share text carries it. The viewer inside the kid's app stays, for the case
+where a parent picks up Kallen's iPad. `probe-parent` walks the door;
+human-eye, tap-audit, legible-check, offline-check and live-smoke all learned
+the second page.
+
 # PART III - DESIGN SYSTEM
 
 Bold, chunky, high contrast. Skate-deck graphics and monster-sticker art:
@@ -810,6 +839,11 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.15.0 - the grown-ups' door.** `/parent/`, SS9d: a second entry
+      in the same build for parents and teachers, read only, no PIN, by
+      code, QR or file, remembered across launches. Plus 0.14.1's scroll
+      retention and wrapping session bar, and 0.14.2's toasts and refresh
+      verdicts, all from Andy's phone the same morning.
 - [x] **0.14.0 - the holistic review, built.** Everything in SS7d and
       SS9c: the seven-box ladder with top-up from any owned box (the
       simulation's cliff), band interleaving, the fatigue detector, the

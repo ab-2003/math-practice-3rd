@@ -3,32 +3,130 @@
  * WO4 flow Andy asked for: connect gives metadata, load restores, QR/copy/
  * share to hand the code across, disconnect and delete are separate acts,
  * and none of it ever blocks the app.
+ *
+ * THE CONNECT FORM is exported on its own: the grown-ups' door at /parent/
+ * is the same form with no PIN and no game around it.
  */
 
 import qrcode from "qrcode-generator";
 import jsQR from "jsqr";
 import type { App } from "./appstate";
 import {
-  cloudPushNow, connectedCode, deleteShare, fmtCode, forgetCode, genCode,
-  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, type CloudResult,
+  cloudPushNow, cloudWhose, connectedCode, deleteShare, fmtCode, forgetCode, genCode,
+  getShare, lastPush, loadBackup, normalizeCode, putShare, rememberCode, type CloudOk,
 } from "./cloud";
 import { el, mount, on } from "./dom";
 import { exportAll } from "./store";
 import { sheet } from "./sheet";
 import { queueToast, toast } from "./toast";
 
-export type CloudOk = Extract<CloudResult, { kind: "ok" }>;
+export type { CloudOk } from "./cloud";
 /** The dashboard's way into VIEWER MODE: show this copy, read-only. */
 export type CloudViewHandler = (code: string, res: CloudOk) => void;
 
+/** The grown-ups' door, spelled out where a parent can copy it. */
+export const PARENT_DOOR = `${location.origin}/parent/`;
+
+export interface ConnectFormOpts {
+  /** The cloud answered with a usable copy under this (normalised) code. */
+  onConnected: (code: string, res: CloudOk) => void;
+  /** Leave the form. Omitted: no Back button. */
+  onBack?: () => void;
+}
+
+/** Type, paste, or scan a code; ask the cloud; hand back what it holds. */
+export const connectForm = (opts: ConnectFormOpts): HTMLElement => {
+  const box = el("div", { "data-probe": "connect-form" });
+  let stopScan: (() => void) | null = null;
+  box.append(el("h3", { class: "title", text: "Connect a code" }));
+  box.append(el("p", { class: "note", text: "Type or paste the code from the rider's device, or scan its QR." }));
+  const input = el("input", {
+    class: "cloud-input", placeholder: "MATH-PRA3-XXXXX-XXXXX-XXXXX-XXXXX",
+    autocapitalize: "characters", spellcheck: "false", "aria-label": "Share code",
+  }) as HTMLInputElement;
+  box.append(input);
+  const err = el("p", { class: "note warn", "data-probe": "connect-note" });
+  box.append(err);
+  const scanWrap = el("div", {});
+  box.append(scanWrap);
+
+  const beginScan = async (): Promise<void> => {
+    err.textContent = "";
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const video = document.createElement("video");
+      video.playsInline = true; video.muted = true;
+      video.srcObject = stream;
+      video.style.cssText = "width:100%;max-width:340px;border-radius:12px;border:3px solid var(--line);";
+      mount(scanWrap, video);
+      await video.play();
+      const cnv = document.createElement("canvas");
+      const cg = cnv.getContext("2d", { willReadFrequently: true })!;
+      let live = true;
+      stopScan = () => { live = false; for (const tr of stream.getTracks()) tr.stop(); mount(scanWrap); stopScan = null; };
+      const tick = (): void => {
+        if (!live) return;
+        try {
+          if (video.videoWidth) {
+            cnv.width = video.videoWidth; cnv.height = video.videoHeight;
+            cg.drawImage(video, 0, 0);
+            const img = cg.getImageData(0, 0, cnv.width, cnv.height);
+            const hit = jsQR(img.data, img.width, img.height);
+            const norm = hit ? normalizeCode(hit.data) : null;
+            if (norm !== null) {
+              input.value = fmtCode(norm);
+              err.textContent = "Code scanned. Press Connect.";
+              stopScan?.();
+              return;
+            }
+          }
+        } catch { /* one bad frame is not a verdict */ }
+        window.setTimeout(tick, 250);
+      };
+      tick();
+    } catch { err.textContent = "The camera did not open. Type the code instead."; }
+  };
+
+  const row = el("div", { class: "stepper", style: "flex-wrap:wrap" });
+  if (typeof navigator.mediaDevices?.getUserMedia === "function") {
+    const scan = el("button", { type: "button", class: "btn small" }, el("span", { text: "Scan QR" }));
+    on(scan, "click", () => { if (stopScan) stopScan(); else void beginScan(); });
+    row.append(scan);
+  }
+  const go = el("button", { type: "button", class: "btn small alt", "data-probe": "cloud-connect" }, el("span", { text: "Connect" }));
+  on(go, "click", () => {
+    const norm = normalizeCode(input.value);
+    if (norm === null) { err.textContent = "That does not look like a MATH-PRA3 code."; return; }
+    err.textContent = "Asking the cloud…";
+    go.setAttribute("disabled", "true");
+    void getShare(norm).then((res) => {
+      go.removeAttribute("disabled");
+      if (res.kind === "missing") { err.textContent = "The cloud holds nothing under that code. Check it and try again."; return; }
+      if (res.kind === "offline") { err.textContent = "The cloud is not answering. Try again in a bit."; return; }
+      if (res.kind === "bad") { err.textContent = "That copy needs a newer app than this device runs."; return; }
+      stopScan?.();
+      // The cloud answered: the note must not sit there saying it is still asking.
+      err.textContent = "";
+      opts.onConnected(norm, res);
+    });
+  });
+  row.append(go);
+  if (opts.onBack) {
+    const cancel = el("button", { type: "button", class: "btn small ghost" }, el("span", { text: "Back" }));
+    on(cancel, "click", () => { stopScan?.(); opts.onBack?.(); });
+    row.append(cancel);
+  }
+  box.append(row);
+  return box;
+};
+
 export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): HTMLElement => {
   const card = el("div", { class: "card", "data-probe": "cloud-card" });
-  let stopScan: (() => void) | null = null;
-  const render = (): void => { stopScan?.(); mount(card, build()); };
+  const render = (): void => { mount(card, build()); };
 
   const build = (): HTMLElement => {
     const box = el("div", {});
-    box.append(el("h3", { text: "Cloud share" }));
+    box.append(el("h3", { class: "title", text: "Cloud share" }));
     const code = connectedCode();
 
     if (code === null) {
@@ -42,9 +140,10 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
           if (!ok) { sheet({ title: "The cloud did not answer", body: "Nothing was created. Try again in a bit.", confirm: "OK" }); return; }
           rememberCode(fresh);
           render();
+          toast("Share code created. This device will keep it mirrored.");
         });
       });
-      const connect = el("button", { type: "button", class: "btn small" }, el("span", { text: "Connect a code" }));
+      const connect = el("button", { type: "button", class: "btn small", "data-probe": "cloud-open-connect" }, el("span", { text: "Connect a code" }));
       on(connect, "click", () => { mount(card, buildConnect()); });
       row.append(create, connect);
       box.append(row);
@@ -71,6 +170,10 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
     }
     box.append(canvas);
 
+    // The grown-ups' own door: no PIN, no game, just the record.
+    box.append(el("p", { class: "note", "data-probe": "parent-door-note", text:
+      `On your own phone or a teacher's laptop, open ${PARENT_DOOR.replace(/^https?:\/\//, "")} and connect this code. It shows the record, read only, with no code to set.` }));
+
     const status = el("p", { class: "note", "data-probe": "cloud-status" });
     const last = lastPush();
     status.textContent = last === null ? "Nothing mirrored from this device yet."
@@ -93,11 +196,13 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
     rows.append(copy);
     if (typeof navigator.share === "function") {
       const share = el("button", { type: "button", class: "btn small" }, el("span", { text: "Share" }));
-      on(share, "click", () => { void navigator.share({ text: `Trick Line share code: ${fmtCode(code)}` }).catch(() => undefined); });
+      on(share, "click", () => {
+        void navigator.share({ text: `Trick Line share code: ${fmtCode(code)}\nOpen ${PARENT_DOOR} and connect it to see the record.` }).catch(() => undefined);
+      });
       rows.append(share);
     }
     const now = el("button", { type: "button", class: "btn small alt", "data-probe": "cloud-save-now" }, el("span", { text: "Save now" }));
-    on(now, "click", () => { void cloudPushNow().then(() => render()); });
+    on(now, "click", () => { void cloudPushNow().then((ok) => { render(); toast(ok ? "Mirrored to the cloud." : "The cloud did not answer. The data here is untouched."); }); });
     rows.append(now);
     // VIEW without loading: the parent's phone and the teacher's laptop want
     // to LOOK at the record, not replace their own data with it.
@@ -118,7 +223,7 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
           body: `It holds ${res.meta.sessions ?? 0} sessions. Loading REPLACES everything on this device.`,
           cancel: "Keep this device's data", confirm: "Load", danger: true,
           onConfirm: () => {
-            queueToast(`Loaded ${res.meta.name ?? "the rider"}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+            queueToast(`Loaded ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions.`);
             void loadBackup(res.backup).then(() => location.reload());
           },
         });
@@ -143,108 +248,36 @@ export const cloudCard = (_app: App, opts: { onView?: CloudViewHandler } = {}): 
   };
 
   // ---- the connect flow: type, paste, or scan ------------------------------
-  const buildConnect = (): HTMLElement => {
-    const box = el("div", {});
-    box.append(el("h3", { text: "Connect a code" }));
-    box.append(el("p", { class: "note", text: "Type or paste the code from the other device, or scan its QR." }));
-    const input = el("input", {
-      class: "cloud-input", placeholder: "MATH-PRA3-XXXXX-XXXXX-XXXXX-XXXXX",
-      autocapitalize: "characters", spellcheck: "false",
-    }) as HTMLInputElement;
-    box.append(input);
-    const err = el("p", { class: "note warn" });
-    box.append(err);
-    const scanWrap = el("div", {});
-    box.append(scanWrap);
-
-    const beginScan = async (): Promise<void> => {
-      err.textContent = "";
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        const video = document.createElement("video");
-        video.playsInline = true; video.muted = true;
-        video.srcObject = stream;
-        video.style.cssText = "width:100%;max-width:340px;border-radius:12px;border:3px solid var(--line);";
-        mount(scanWrap, video);
-        await video.play();
-        const cnv = document.createElement("canvas");
-        const cg = cnv.getContext("2d", { willReadFrequently: true })!;
-        let live = true;
-        stopScan = () => { live = false; for (const tr of stream.getTracks()) tr.stop(); mount(scanWrap); stopScan = null; };
-        const tick = (): void => {
-          if (!live) return;
-          try {
-            if (video.videoWidth) {
-              cnv.width = video.videoWidth; cnv.height = video.videoHeight;
-              cg.drawImage(video, 0, 0);
-              const img = cg.getImageData(0, 0, cnv.width, cnv.height);
-              const hit = jsQR(img.data, img.width, img.height);
-              const norm = hit ? normalizeCode(hit.data) : null;
-              if (norm !== null) {
-                input.value = fmtCode(norm);
-                err.textContent = "Code scanned. Press Connect.";
-                stopScan?.();
-                return;
-              }
-            }
-          } catch { /* one bad frame is not a verdict */ }
-          window.setTimeout(tick, 250);
-        };
-        tick();
-      } catch { err.textContent = "The camera did not open. Type the code instead."; }
-    };
-
-    const row = el("div", { class: "stepper", style: "flex-wrap:wrap" });
-    if (typeof navigator.mediaDevices?.getUserMedia === "function") {
-      const scan = el("button", { type: "button", class: "btn small" }, el("span", { text: "Scan QR" }));
-      on(scan, "click", () => { if (stopScan) stopScan(); else void beginScan(); });
-      row.append(scan);
-    }
-    const go = el("button", { type: "button", class: "btn small alt", "data-probe": "cloud-connect" }, el("span", { text: "Connect" }));
-    on(go, "click", () => {
-      const norm = normalizeCode(input.value);
-      if (norm === null) { err.textContent = "That does not look like a MATH-PRA3 code."; return; }
-      err.textContent = "Asking the cloud…";
-      void getShare(norm).then((res) => {
-        if (res.kind === "missing") { err.textContent = "The cloud holds nothing under that code. Check it and try again."; return; }
-        if (res.kind === "offline") { err.textContent = "The cloud is not answering. Try again in a bit."; return; }
-        if (res.kind === "bad") { err.textContent = "That copy needs a newer app than this device runs."; return; }
-        stopScan?.();
-        // The cloud answered: the note must not sit there saying it is still asking.
-        err.textContent = "";
-        const whose = res.meta.name !== undefined ? `${res.meta.name}'s record` : "the record";
-        sheet({
-          title: "Code connected",
-          body: `The cloud holds ${whose}: ${res.meta.sessions ?? 0} sessions${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. ` +
-            `View it here without touching this device's own data, or load it onto this device?`,
-          cancel: "Just view",
-          confirm: "Load it here",
-          onConfirm: () => {
-            sheet({
-              title: "Replace this device's data?",
-              body: "Loading the cloud copy replaces everything currently on this device for this rider.",
-              cancel: "Cancel", confirm: "Replace", danger: true,
-              onConfirm: () => {
-                rememberCode(norm);
-                queueToast(`Loaded ${res.meta.name ?? "the rider"}'s copy: ${res.meta.sessions ?? 0} sessions.`);
-                void loadBackup(res.backup).then(() => location.reload());
-              },
-            });
-          },
-          onCancel: () => {
-            rememberCode(norm);
-            if (opts.onView) opts.onView(norm, res);
-            else { render(); toast(`Connected to ${whose}.`); }
-          },
-        });
+  const buildConnect = (): HTMLElement => connectForm({
+    onBack: () => render(),
+    onConnected: (norm, res) => {
+      const whose = res.meta.name !== undefined ? `${res.meta.name}'s record` : "the record";
+      sheet({
+        title: "Code connected",
+        body: `The cloud holds ${whose}: ${res.meta.sessions ?? 0} sessions${res.meta.device !== undefined ? ` from ${res.meta.device}` : ""}. ` +
+          `View it here without touching this device's own data, or load it onto this device?`,
+        cancel: "Just view",
+        confirm: "Load it here",
+        onConfirm: () => {
+          sheet({
+            title: "Replace this device's data?",
+            body: "Loading the cloud copy replaces everything currently on this device for this rider.",
+            cancel: "Cancel", confirm: "Replace", danger: true,
+            onConfirm: () => {
+              rememberCode(norm);
+              queueToast(`Loaded ${cloudWhose(res)}'s copy: ${res.meta.sessions ?? 0} sessions.`);
+              void loadBackup(res.backup).then(() => location.reload());
+            },
+          });
+        },
+        onCancel: () => {
+          rememberCode(norm);
+          if (opts.onView) opts.onView(norm, res);
+          else { render(); toast(`Connected to ${whose}.`); }
+        },
       });
-    });
-    const cancel = el("button", { type: "button", class: "btn small ghost" }, el("span", { text: "Back" }));
-    on(cancel, "click", () => render());
-    row.append(go, cancel);
-    box.append(row);
-    return box;
-  };
+    },
+  });
 
   render();
   return card;

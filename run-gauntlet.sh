@@ -8,8 +8,8 @@
 #
 # Usage: ./run-gauntlet.sh [--quick [sense...]] [--no-deploy] [--branch <name>]
 #
-# Senses: probe-core probe-settings probe-juice probe-shop probe-cloud
-#         probe-speed answer-eye human-eye tap-audit legible-check offline-check
+# Senses: probe-core probe-settings probe-juice probe-shop probe-cloud probe-speed
+#         probe-parent answer-eye human-eye tap-audit legible-check offline-check
 #         (probe-loop selects all six probe suites)
 #
 # CHANNELS. Production is the main branch at math-practice-3rd.pages.dev.
@@ -80,7 +80,7 @@ launch() {
 }
 stage "stage 4/5: the senses, in parallel"
 B="BASE=http://localhost:$PREVIEW_PORT"
-for s in core settings juice shop cloud speed; do
+for s in core settings juice shop cloud speed parent; do
   wants probe-$s && launch probe-$s "$B node tools/probe/$s.mjs"
 done
 wants answer-eye    && launch answer-eye    "$B node tools/answer-eye.mjs"
@@ -112,11 +112,15 @@ npx wrangler pages deploy dist --project-name=$PROJECT --branch=$BRANCH --commit
 
 # CONVERGE: Cloudflare's edge is eventually consistent, so a single matching
 # response is a lie. Poll until the served bundle hash matches eight times.
-want=$(grep -oE 'assets/index-[^"]+\.js' dist/index.html | head -1)
+# The kid's entry is named main since the grown-ups' door became a second
+# entry. An empty grep here would "converge" against an empty grep there,
+# so the match is checked before it is trusted.
+want=$(grep -oE 'assets/(index|main)-[^"]+\.js' dist/index.html | head -1)
+[[ -z "$want" ]] && { echo "GATE: RED (could not find the built bundle name in dist/index.html)"; exit 1; }
 echo "  built bundle: $want"
 n=0
 for i in $(seq 1 60); do
-  got=$(curl -s "$LIVE/?cb=$RANDOM" | grep -oE 'assets/index-[^"]+\.js' | head -1)
+  got=$(curl -s "$LIVE/?cb=$RANDOM" | grep -oE 'assets/(index|main)-[^"]+\.js' | head -1)
   if [ "$got" = "$want" ]; then n=$((n+1)); else n=0; fi
   [ $n -ge 8 ] && break
   sleep 4

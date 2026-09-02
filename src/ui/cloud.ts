@@ -67,6 +67,33 @@ export type CloudResult =
   | { kind: "missing" }
   | { kind: "offline" }
   | { kind: "bad" };
+export type CloudOk = Extract<CloudResult, { kind: "ok" }>;
+
+export const cloudWhen = (res: CloudOk): string => res.meta.savedAt !== undefined
+  ? new Date(res.meta.savedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+  : "sometime";
+export const cloudFrom = (res: CloudOk): string => (res.meta.device !== undefined ? ` from ${res.meta.device}` : "");
+export const cloudWhose = (res: CloudOk): string => res.meta.name ?? "the rider";
+
+/**
+ * What a refresh found, in one sentence. "Updated" means the PRACTICE
+ * changed (answers or sessions): the mirror re-saves after any change at all,
+ * a mute toggle included, so the save time alone would call an identical
+ * report new. Pure, so the kid's dashboard and the grown-ups' door agree.
+ */
+export const describeRefresh = (before: CloudOk, fresh: CloudOk): { same: boolean; text: string } => {
+  const answersBefore = before.backup.responses?.length ?? 0;
+  const answersNow = fresh.backup.responses?.length ?? 0;
+  const sessionsBefore = before.meta.sessions ?? 0;
+  const sessionsNow = fresh.meta.sessions ?? 0;
+  const same = answersNow === answersBefore && sessionsNow === sessionsBefore;
+  if (same) return { same, text: `Refreshed. Already the latest (mirror saved ${cloudWhen(fresh)}${cloudFrom(fresh)}).` };
+  const more = sessionsNow - sessionsBefore;
+  const answers = answersNow - answersBefore;
+  const what = more > 0 ? `${more} new ${more === 1 ? "session" : "sessions"}`
+    : answers > 0 ? `${answers} new ${answers === 1 ? "answer" : "answers"}` : "new data";
+  return { same, text: `Refreshed. Updated: ${what}, saved ${cloudWhen(fresh)}${cloudFrom(fresh)}.` };
+};
 
 const timedFetch = (url: string, init: RequestInit = {}, ms = 8000): Promise<Response> => {
   const ctrl = new AbortController();
@@ -162,6 +189,12 @@ export const cloudAutoPush = (): void => {
 };
 
 export const cloudPending = (): boolean => trailing !== null || inFlight;
+
+// ---- the grown-ups' door remembers ITS code, apart from any rider's --------
+const PARENT_KEY = "tl-parent-code";
+export const parentCode = (): string | null => { try { return localStorage.getItem(PARENT_KEY); } catch { return null; } };
+export const rememberParentCode = (code: string): void => { try { localStorage.setItem(PARENT_KEY, code); } catch { /* private mode */ } };
+export const forgetParentCode = (): void => { try { localStorage.removeItem(PARENT_KEY); } catch { /* */ } };
 
 // The probe's window into the machinery, and a manual "save now".
 (window as unknown as Record<string, unknown>).__cloud = {

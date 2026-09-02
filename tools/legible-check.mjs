@@ -65,6 +65,10 @@ for (const [name, viewport] of Object.entries(SHAPES)) {
     ["home", () => page.evaluate(() => window.__app.go("home"))],
     ["session", async () => { await page.evaluate(() => window.__app.go("home")); await page.click('[data-probe="start"]'); await page.waitForSelector('[data-probe="problem"]'); }],
     ["collection", () => page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = ["grindjaw", "voltmaw"]; window.__app.go("collection"); })],
+    ["parent-door", async () => {
+      await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "networkidle" });
+      await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
+    }],
   ];
   for (const [screen, go] of screens) {
     await go();

@@ -31,6 +31,11 @@ await typeAnswer(page, answerOf(id));
 await page.waitForTimeout(800);
 await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; window.__app.go("collection"); });
 await page.waitForTimeout(300);
+// The grown-ups' door, so its files are requested and must be covered too.
+await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "networkidle" });
+await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
+await page.goto(BASE, { waitUntil: "networkidle" });
+await page.waitForSelector('[data-probe="start"]');
 
 const controlled = await page.evaluate(async () => {
   const reg = await navigator.serviceWorker.ready;
@@ -52,7 +57,7 @@ ok(`${precache.length} files precached`);
 // Every same-origin thing the app asked for must be in the cache.
 const missing = [...requested].filter((p) => {
   if (p.endsWith("/sw.js")) return false;
-  const norm = p === "/" ? "/index.html" : p;
+  const norm = p.endsWith("/") ? `${p}index.html` : p;
   return !precache.some((c) => c === norm || c === p || (norm === "/index.html" && c.endsWith("/index.html")));
 });
 if (missing.length > 0) fail(`requested but not precached: ${missing.slice(0, 5).join(", ")}`);
@@ -82,6 +87,12 @@ else {
   const drawn = await page.evaluate(() => document.querySelectorAll(".creature path").length);
   if (drawn < 10) fail(`the creatures did not draw offline (${drawn} paths)`);
   else ok(`the creatures draw offline (${drawn} paths, zero image requests)`);
+  // The grown-ups' door boots offline as well (a remembered code would then
+  // say the cloud is not answering, which is the honest offline answer).
+  await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "domcontentloaded" }).catch(() => undefined);
+  const door = await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 }).catch(() => null);
+  if (!door) fail("the grown-ups' door did not boot offline");
+  else ok("the grown-ups' door boots with the network cut");
 }
 
 await ctx.setOffline(false);

@@ -31,6 +31,10 @@ for (const [name, viewport] of Object.entries(SHAPES)) {
     ["collection", async () => {
       await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = ["grindjaw", "voltmaw"]; window.__app.go("collection"); });
     }],
+    ["parent-door", async () => {
+      await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "networkidle" });
+      await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
+    }],
   ];
 
   for (const [screen, go] of screens) {
@@ -71,6 +75,8 @@ for (const [name, viewport] of Object.entries(SHAPES)) {
 
   // The keypad is the interface. Prove a real synthesised touch on a digit
   // actually enters that digit, on every shape.
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-probe="start"]');
   await page.evaluate(() => window.__app.go("home"));
   await page.click('[data-probe="start"]');
   await page.waitForSelector('[data-probe="problem"]');

@@ -36,6 +36,16 @@ for (const p of ["icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png
 }
 if (!process.exitCode) ok("all icons and the manifest are really there (checked by content type)");
 
+// The grown-ups' door serves as its own page, not the root index in disguise.
+await page.goto(`${URL_.replace(/\/$/, "")}/parent/`, { waitUntil: "networkidle", timeout: 45000 });
+const door = await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 20000 }).catch(() => null);
+if (!door) fail("the grown-ups' door at /parent/ did not come up live");
+else ok("the grown-ups' door is live at /parent/");
+{
+  const res = await page.request.get(`${URL_.replace(/\/$/, "")}/parent/manifest.webmanifest`);
+  const ct = res.headers()["content-type"] ?? "";
+  if (!ct.includes("json")) fail(`parent/manifest.webmanifest served as "${ct}"`);
+}
 await page.screenshot({ path: new URL("../.shots/live-smoke.png", import.meta.url).pathname });
 if (errors.length > 0) fail(`uncaught page errors live: ${errors.slice(0, 2).join(" | ")}`);
 await browser.close();
