@@ -127,6 +127,22 @@ await step("a tap ollies through the real pointer path, and a swipe lands a kick
   must(st.tricksLanded === 1, "the trick was not counted as landed");
 });
 
+await step("a tap in the dead space under the stage counts; a tap on Back does not", async () => {
+  const b = await stageBox();
+  const vh = await page.evaluate(() => innerHeight);
+  await page.mouse.move(b.x + b.width / 2, Math.min(vh - 20, b.y + b.height + 60)); await page.mouse.down(); await page.mouse.up();
+  let st = await park();
+  must(st.rider.mode === "air", `a tap under the stage left the rider ${st.rider.mode}`);
+  await tick(0.9);
+  // The Back button is a button: it opens its sheet, it does not ollie.
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector(".sheet", { timeout: 4000 });
+  st = await park();
+  must(st.rider.mode === "ground", `a tap on Back ollied (${st.rider.mode})`);
+  await page.click(".sheet .btn.ghost");
+  await page.waitForTimeout(200);
+});
+
 await step("a late backflip bails, loses the chain, and resets the speed", async () => {
   await tap();
   await tick(0.3);
@@ -136,6 +152,7 @@ await step("a late backflip bails, loses the chain, and resets the speed", async
   await tick(0.6);
   st = await park();
   must(st.rider.mode === "bail", `the late backflip ended ${st.rider.mode}`);
+  must((await page.textContent('[data-probe="park-speed"]')) === "1.0×", "the speed readout did not drop to base on the bail");
   must(st.score === 100 && st.bails === 1, `after the bail score=${st.score} bails=${st.bails}`);
   must(await page.$('[data-probe="park-rider"].bailed') !== null, "the rider does not show the bail");
   await tick(1.2);

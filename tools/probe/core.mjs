@@ -305,4 +305,32 @@ await step("the stamina log names how a run ended", async () => {
   must(text.includes("took a breather"), "the breather run is not named as such");
 });
 
+await step("on a phone the home screen fits without a scroll, in every state, stamp clear of the words", async () => {
+  // Andy's phone (2026-09-02): the shop button was a screen and a half down.
+  const ctxP = await page.context().browser().newContext({ viewport: { width: 390, height: 664 } });
+  const pp = await ctxP.newPage();
+  await pp.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+  await pp.waitForSelector('[data-probe="start"]');
+  const states = {
+    "fresh, done": () => { const m = window.__app.meta(); m.coins = 83; m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; },
+    "owned, to do": () => { const m = window.__app.meta(); m.coins = 20; m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; m.boardsOwned = ["ember"]; m.boardOf = { grindjaw: "ember" }; m.doseDay = window.__app.day(); m.doseCount = 12; },
+    "owned, done, park lit": () => { const m = window.__app.meta(); m.coins = 20; m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; m.tokens = 2; m.parkUnlocked = true; m.streak = 8; m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; },
+  };
+  for (const [name, fn] of Object.entries(states)) {
+    await pp.evaluate(fn);
+    await pp.evaluate(() => window.__app.go("home"));
+    await pp.waitForSelector('[data-probe="collection"]');
+    const r = await pp.evaluate(() => {
+      const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
+      const hit = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const badge = rect('[data-probe="daily-badge"]');
+      return { shop: rect('[data-probe="collection"]').bottom, vh: innerHeight,
+        badgeOnWords: hit(badge, rect(".hero .sub")) || hit(badge, rect(".hero .mon-name")) || hit(badge, rect(".hero h1")) };
+    });
+    must(r.shop <= r.vh, `${name}: the shop button ends at ${Math.round(r.shop)} on a ${r.vh}px phone`);
+    must(!r.badgeOnWords, `${name}: the DONE stamp sits on the hero's words`);
+  }
+  await ctxP.close();
+});
+
 await done();

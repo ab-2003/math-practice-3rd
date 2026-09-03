@@ -222,6 +222,43 @@ describe("the line", () => {
     expect(kinds(over)).toContain("land");
   });
 
+  it("climbs a set of rising rails with one ollie each, chaining three grinds", () => {
+    const s = flat();
+    plant(s, "rail", 60, 170, 34);
+    plant(s, "rail", 290, 170, 62);
+    plant(s, "rail", 520, 190, 90);
+    tap(s);
+    runUntil(s, (e) => e.some((x) => x.kind === "grind"));
+    expect(s.rider.mode).toBe("grind");
+    // Ride a little, hop, and land the next one up; twice.
+    for (let hop = 0; hop < 2; hop++) {
+      for (let t = 0; t < 0.25; t += STEP) update(s, STEP);
+      tap(s);
+      const ev = runUntil(s, (e) => e.some((x) => x.kind === "grind" || x.kind === "bail" || x.kind === "land"), 3);
+      expect(kinds(ev), `hop ${hop + 1}`).toContain("grind");
+      expect(kinds(ev), `hop ${hop + 1}`).not.toContain("bail");
+    }
+    expect(s.rider.grindOn?.h).toBe(90);
+    expect(s.chain.filter((c) => c.name === "GRIND").length).toBe(2);
+    // Off the top and down to the ground: three grinds bank at x3.
+    const rest = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 5);
+    const banked = rest.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.mult).toBe(3);
+  });
+
+  it("speeds up the longer the ride goes, and a bail sends it back to base", () => {
+    const s = flat();
+    for (let t = 0; t < 10; t += STEP) update(s, STEP);
+    expect(s.speed).toBeGreaterThan(BASE_SPEED + 60);
+    for (let t = 0; t < 40; t += STEP) update(s, STEP);
+    expect(s.speed).toBe(MAX_SPEED);
+    tap(s);
+    for (let t = 0; t < 0.3; t += STEP) update(s, STEP);
+    release(s, "left", []);
+    runUntil(s, (e) => e.some((x) => x.kind === "bail"));
+    expect(s.speed).toBe(BASE_SPEED);
+  });
+
   it("a kicker launches without a tap, and high enough for a backflip", () => {
     const s = flat();
     plant(s, "kicker", 30, 84, 44);

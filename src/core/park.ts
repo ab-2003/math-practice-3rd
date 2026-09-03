@@ -36,8 +36,10 @@ export const OLLIE_VY = 520;
 export const OLLIE_VY_MAX = 760;
 export const KICK_VY = 840;
 export const BASE_SPEED = 250;
-export const MAX_SPEED = 440;
-export const ACCEL = 5.5;
+export const MAX_SPEED = 480;
+/** Units per second per second: base to top in about half a minute of
+ *  clean riding, and a bail drops it straight back to base (Andy). */
+export const ACCEL = 8;
 export const BAIL_MS = 900;
 /** How much of a trick must be done at touchdown to count as landed. */
 export const LAND_TOL = 0.85;
@@ -173,6 +175,10 @@ const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Pie
   { min: 0.4, make: (r) => [{ kind: "rail", dx: 0, w: 200 + r * 80, h: 34 }, { kind: "gap", dx: 230 + r * 80, w: 90, h: 0 }] },
   { min: 0.5, make: () => [{ kind: "kicker", dx: 0, w: 84, h: 44 }, { kind: "gap", dx: 150, w: 130, h: 0 }] },
   { min: 0.6, make: () => [{ kind: "box", dx: 0, w: 46, h: 40 }, { kind: "rail", dx: 130, w: 220, h: 34 }] },
+  // THE STAIRS (Andy): rails that climb, spaced so an ollie off one lands
+  // on the next. Three hops in a row is the satisfaction he asked for.
+  { min: 0.1, make: () => [{ kind: "rail", dx: 0, w: 170, h: 34 }, { kind: "rail", dx: 230, w: 170, h: 62 }, { kind: "rail", dx: 460, w: 190, h: 90 }] },
+  { min: 0.45, make: () => [{ kind: "rail", dx: 0, w: 150, h: 34 }, { kind: "rail", dx: 210, w: 150, h: 64 }, { kind: "rail", dx: 420, w: 150, h: 94 }, { kind: "rail", dx: 630, w: 200, h: 124 }] },
 ];
 
 const spawn = (s: ParkState): void => {

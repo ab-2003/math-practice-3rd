@@ -208,7 +208,7 @@ export const homeScreen = (app: App): HTMLElement => {
     "data-probe": "park-open",
   }, tokenIcon("btn-ico token-btn"), el("span", { text: parkOpen
     ? `Skate Park · ${app.meta.tokens} ${app.meta.tokens === 1 ? "token" : "tokens"}`
-    : "Skate Park · earn a Daily Token" }));
+    : "Skate Park" }));
   if (parkOpen) {
     on(park, "click", () => app.go("park"));
     const plays = app.meta.parkTokensPerDay - spentToday(app.meta, app.day);
@@ -216,6 +216,9 @@ export const homeScreen = (app: App): HTMLElement => {
       ? `${plays} ${plays === 1 ? "play" : "plays"} left today`
       : gate.why === "dayFull" ? "closed until tomorrow" : "finish today's tricks for a token" }));
   } else {
+    // One line for the name, one small line for how to light it: a two
+    // line slab was the tallest thing on Andy's phone.
+    park.append(el("small", { class: "park-sub", "data-probe": "park-sub", text: "earn a Daily Token" }));
     on(park, "click", () => sheet({ title: "The Skate Park", body: "Finish today's tricks and a Daily Token drops. A token opens the park: your monster, its board, its helmet, tricks down a line.", confirm: "OK" }));
   }
   root.append(park);
@@ -226,11 +229,13 @@ export const homeScreen = (app: App): HTMLElement => {
   if (target) {
     const prog = el("div", { class: "card unlock-progress", "data-probe": "unlock-progress" });
     const pct = Math.min(100, Math.round((app.meta.coins / target.cost) * 100));
-    prog.append(el("div", { class: "mon-sub", text: app.meta.coins >= target.cost
-      ? "A new monster is in reach! Pick anyone you can afford."
+    prog.append(el("div", { class: "mon-sub grow", text: app.meta.coins >= target.cost
+      ? "A new monster is in reach!"
       : `Nearest monster: ${target.name}` }));
-    prog.append(progressBar(pct, "#FFE14D"));
     prog.append(el("div", { class: "mon-sub", text: `◆ ${app.meta.coins} / ${target.cost}` }));
+    const bar = progressBar(pct, "#FFE14D");
+    bar.classList.add("unlock-bar");
+    prog.append(bar);
     root.append(prog);
   }
 

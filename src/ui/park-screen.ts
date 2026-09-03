@@ -128,7 +128,8 @@ export const parkScreen = (app: App): HTMLElement => {
   const scoreEl = el("div", { class: "park-score", "data-probe": "park-score", text: "0" });
   const clockEl = el("div", { class: "park-clock", "data-probe": "park-clock", text: fmtTime(app.meta.parkMinutes * 60_000) });
   const chainEl = el("div", { class: "park-chain", "data-probe": "park-chain" });
-  hud.append(scoreEl, chainEl, clockEl);
+  const speedEl = el("div", { class: "park-speed", "data-probe": "park-speed", text: "1.0×" });
+  hud.append(scoreEl, chainEl, speedEl, clockEl);
 
   const stage = el("div", { class: "park-stage", "data-probe": "park-stage" });
   // The backdrop: a far skyline that drifts, a ground band whose ticks
@@ -252,7 +253,10 @@ export const parkScreen = (app: App): HTMLElement => {
     fill.style.width = `${(st.timeLeftMs / (app.meta.parkMinutes * 60_000)) * 100}%`;
     chainEl.textContent = st.chain.length > 0 ? `${chainLabel(st.chain)} ×${Math.min(5, st.chain.length)}` : "";
     chainEl.classList.toggle("on", st.chain.length > 0);
-    stage.style.setProperty("--park-speed", `${(st.speed / BASE_SPEED).toFixed(2)}`);
+    const sp = st.speed / BASE_SPEED;
+    speedEl.textContent = `${sp.toFixed(1)}×`;
+    speedEl.classList.toggle("hot", sp >= 1.6);
+    stage.style.setProperty("--park-speed", `${sp.toFixed(2)}`);
   };
 
   const pop = (text: string, cls = ""): void => {
@@ -301,11 +305,14 @@ export const parkScreen = (app: App): HTMLElement => {
   };
 
   // ---- input --------------------------------------------------------------------
+  // The whole screen is the controller (Andy: "tap anywhere ... not just
+  // inside the rendering area"), the buttons excepted.
   let pointer: { id: number; x: number; y: number } | null = null;
-  on(stage, "pointerdown", (e) => {
+  on(root, "pointerdown", (e) => {
     if (s === null || !s.running || paused > 0 || pointer !== null) return;
+    if (e.target instanceof Element && e.target.closest("button") !== null) return;
     pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
-    stage.setPointerCapture?.(e.pointerId);
+    root.setPointerCapture?.(e.pointerId);
     press(s);
     e.preventDefault();
   });
@@ -318,9 +325,9 @@ export const parkScreen = (app: App): HTMLElement => {
     react(ev);
     e.preventDefault();
   };
-  on(stage, "pointerup", up);
-  on(stage, "pointercancel", up);
-  on(stage, "contextmenu", (e) => e.preventDefault());
+  on(root, "pointerup", up);
+  on(root, "pointercancel", up);
+  on(root, "contextmenu", (e) => { if (!(e.target instanceof Element && e.target.closest("button"))) e.preventDefault(); });
 
   // ---- the run --------------------------------------------------------------------
   const begin = (): void => {

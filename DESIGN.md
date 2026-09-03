@@ -959,8 +959,12 @@ trick and grind before the board next touches flat ground is one CHAIN,
 banked as its points TIMES its length (to x5). Rails, boxes, gaps and
 kickers arrive in patterns whose rest is TIME, not distance (1.5s easing
 to 0.9s over two minutes), so a faster line never becomes a denser one.
-The speed climbs from 250 to 440 units a second. Easy to start, hard to
-master: reading the air you have against the trick you want.
+THE STAIRS (Andy's first play): sets of three and four rails that climb,
+spaced so one ollie off each lands on the next, three hops in a row. The
+speed climbs from 250 to 480 units a second in about half a minute of
+clean riding, read out in the HUD, and a bail drops it straight back to
+base. Easy to start, hard to master: reading the air you have against
+the trick you want.
 
 **On screen.** The stage is PARK_W by PARK_H design units scaled to what
 fits (width, or height on an iPad on its side). The rider is the real
@@ -978,8 +982,10 @@ kicker, a two-note horn for time, and the token's own chime. No music.
 swipes; land or bail; rails and chains), the first time in, and again
 from the ? in the park's top bar. Skip works.
 
-**Input is pointer events on the stage**, nothing else, with the clock
-paused under any sheet and while the tab is hidden. The probe drives the
+**Input is pointer events on the whole park screen** (Andy's first play:
+"tap anywhere ... not just inside of the rendering area"), the buttons
+excepted, with the clock paused under any sheet and while the tab is
+hidden. The probe drives the
 same handlers with real mouse events and the clock by hand through the
 screen's own step, and walks the whole loop: dim door, grant, lit door,
 gate, tutorial, ollie, trick, bank, bail, help, leave, time up, results,
@@ -1079,6 +1085,11 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [ ] **0.19.0-alpha.2 - Andy's first play.** Input from anywhere on the
+      park screen but the buttons; the stairs; a faster, visible ramp. And
+      the home screen fits a phone without a scroll: the DONE stamp beside
+      the hero at every width, three stats across, one-line doors, the
+      progress card's label and count on one row.
 - [ ] **0.19.0 - The Skate Park.** SS9i: a Daily Token for the day's
       work, spent on a pure touch skateboarding game with the rider's
       monster, board and helmet; parent dials for minutes per token and

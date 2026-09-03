@@ -527,7 +527,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   letter-spacing: 0.08em; color: var(--ink); background: var(--acid);
   border: 3px solid var(--ink); border-radius: 999px; padding: 2px 10px;
 }
-.unlock-progress { text-align: center; display: grid; gap: 5px; padding: 10px 14px; }
+.unlock-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px 14px; text-align: left; }
+.unlock-progress .unlock-bar { flex-basis: 100%; }
 .done-pill { color: var(--acid); border-color: var(--acid); font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -828,8 +829,11 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   60% { transform: rotate(-4deg) scale(0.94); opacity: 1; }
   100% { transform: rotate(-8deg) scale(1); }
 }
+/* The DONE stamp rides beside the hero at every width: in the flow it was
+   a whole extra row on Andy's phone. */
+.daily-badge { position: absolute; right: 0; top: 6px; width: 88px; pointer-events: none; }
 @media (min-width: 700px) {
-  .daily-badge { position: absolute; right: max(0px, calc(50% - 340px)); top: 40%; }
+  .daily-badge { right: max(0px, calc(50% - 340px)); top: 40%; width: min(24vw, 138px); }
 }
 .dose-line { display: grid; gap: 4px; margin: 6px 0 8px; text-align: center; }
 .daily-banner {
@@ -1221,8 +1225,12 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .speed-cell b { color: var(--cyan); font-size: 19px; }
 .speed-cell:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 @media (max-width: 700px) {
-  .home-grid.three { grid-template-columns: 1fr 1fr; }
-  .speed-cell { grid-column: span 2; }
+  /* Three across on a phone too, smaller: the wrapped speed cell was a row
+     the home screen could not spare. */
+  .home-grid.three { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .stat b { font-size: 20px; }
+  .speed-cell b { font-size: 15px; }
+  .stat span { letter-spacing: 0.04em; }
 }
 .cap-row { margin: 4px 0 6px 34px; }
 .cap-row .stepper-value { min-width: 92px; font-size: 17px; }
@@ -1405,6 +1413,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .park-btn { position: relative; flex-wrap: wrap; row-gap: 0; }
 .park-btn .park-sub { flex-basis: 100%; font-size: 13px; letter-spacing: 0.04em; color: var(--ink); opacity: 0.72; text-transform: uppercase; margin-top: -4px; }
 .park-btn.dim { opacity: 0.55; }
+.park-btn.dim .park-sub { color: var(--dim); opacity: 1; }
 .park-btn.dim .token-btn { filter: grayscale(1) brightness(0.8); }
 /* The first token ever: the door lights and pulses until it is opened once. */
 .park-btn.park-new { animation: park-glow 1.6s ease-in-out infinite; border-color: var(--cyan); }
@@ -1416,7 +1425,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .token-drop-ico { width: 30px; height: 30px; }
 .token-line { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--cyan); }
 
-.park-screen { display: flex; flex-direction: column; }
+.park-screen { display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+.park-screen .park-stage { cursor: pointer; }
+.park-speed { font-size: 14px; font-weight: 900; color: var(--dim); font-variant-numeric: tabular-nums; }
+.park-speed.hot { color: var(--orange); }
 .park-timer { margin-bottom: 6px; }
 .park-hud { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; min-height: 40px; }
 .park-score { font-size: clamp(30px, 6vw, 44px); font-weight: 900; color: var(--warm); text-shadow: 0 4px 0 var(--ink); line-height: 1; min-width: 3ch; }
@@ -1492,4 +1504,16 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes tut-rail { 0%, 10% { transform: translate(0, 0); } 30% { transform: translate(70px, -42px); } 70% { transform: translate(130px, -42px); } 90%, 100% { transform: translate(170px, 0); } }
 @media (prefers-reduced-motion: reduce) {
   .park-btn.park-new, .tut-finger, .tut-ring, .tut-board, .park-rider .board-trail { animation: none !important; }
+}
+
+/* ---------- the home screen on a phone: no scroll to reach the shop ---------- */
+@media (max-width: 560px) {
+  .btn.big { min-height: 56px; font-size: clamp(19px, 5.2vw, 23px); padding: 10px 18px; }
+  .topbar { margin-bottom: 6px; }
+  .hero { gap: 3px; padding: 2px 0; }
+  .hero .sub { font-size: 14px; }
+  .home-grid { margin-bottom: 6px; }
+  .dose-line { margin: 4px 0 4px; }
+  .park-btn .park-sub { margin-top: -6px; }
+  .unlock-progress { padding: 6px 12px; }
 }
