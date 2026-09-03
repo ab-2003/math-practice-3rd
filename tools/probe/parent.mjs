@@ -117,9 +117,24 @@ await step("the Trends tab measures improvement from the copy", async () => {
   must(await page.$('[data-probe="trend-table"]') !== null, "no week-by-week table");
 });
 
+await step("the Facts tab is the whole map: every fact of every operation, the mastered ones marked", async () => {
+  await page.click('[data-probe="tab-facts"]');
+  await page.waitForSelector('[data-probe="facts-tab"]', { timeout: 6000 });
+  must((await page.$$('[data-probe="facts-tab"] .heat')).length === 4, "the facts tab does not show four grids");
+  must((await page.$$('[data-probe="facts-add"] .heat-cell')).length === 66, "the addition grid is not every addition fact");
+  must((await page.$$('[data-probe="facts-add"] .heat-cell.mastered')).length === 6, "the six mastered facts are not marked");
+  must(((await page.textContent('[data-probe="facts-count-add"]')) ?? "").startsWith("6 from memory"), "the addition count does not say six from memory");
+});
+
 await step("the Settings tab sets a field in the cloud and shows it waiting for the device", async () => {
   await page.click('[data-probe="tab-settings"]');
   await page.waitForSelector('[data-probe="settings-tab"]', { timeout: 6000 });
+  // A record from before a dial existed shows the dial's DEFAULT, never "undefined"
+  // (Andy's phone, 2026-09-03), and the bonus switch reads on, not off.
+  const stab = (await page.textContent('[data-probe="settings-tab"]')) ?? "";
+  must(!stab.includes("undefined"), "the settings tab shows undefined for a missing field");
+  must((await page.textContent('[data-probe="park-minutes"]')) === "7" && (await page.textContent('[data-probe="park-tokens"]')) === "3", "the park dials do not show their defaults");
+  must(await page.$('[data-probe="elapsed-on"][aria-pressed="true"]') !== null, "the bonus switch reads off for a record that never set it");
   must(await page.$('[data-probe="settings-applied"]') !== null, "with no document, nothing should be pending");
   must(await page.$('[data-strand="mul"]') !== null, "no practice table on the door");
   await page.click('[data-strand="mul"]');

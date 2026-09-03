@@ -1092,7 +1092,15 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.19.3 - The rider performs at home.** Andy: "have your skater
+- [ ] **0.19.4 - "undefined" on the door, and a Facts tab.** Andy's phone
+      showed "undefined" for the park dials on the parent door (a record
+      mirrored before the dials existed carried no value, and the bonus
+      switch read as off for the same reason): the door now hydrates the
+      record's dials with the defaults, as the device does, and the parent
+      probe asserts no "undefined" and the defaults. And a FACTS tab on
+      both doors: every fact of every operation, one cell each, always
+      open, with a legend; the Progress tab keeps its summary rows.
+- [x] **0.19.3 - The rider performs at home.** Andy: "have your skater
       perform its shop animation on a slow loop, like every 15 seconds."
       The home hero is drawn on the idle clock, plays one cycle on
       arrival, parks every animation at its rest pose, and plays again
