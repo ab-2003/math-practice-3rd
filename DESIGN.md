@@ -1130,6 +1130,22 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.7 - No more 16-7, 16-8, 16-9.** Andy's phone: "I get a lot of
+      ascending or descending problems like 16-7 then 16-8 then 16-9. I
+      don't think we should intentionally do that?" We did not mean to.
+      Which facts come next is the tier order (the pedagogy), and within
+      a tier that order runs minuend then subtrahend (or sum then addend,
+      product, dividend); the new block was appended to the session
+      verbatim while the due and top-up items were stirred within their
+      bands. Now the new block is shuffled by the day, and a spread pass
+      over the whole queue keeps one FAMILY (same sum, minuend, product
+      or dividend) from landing back to back: a clashing item swaps with
+      the nearest later item of another family, or slides back to the
+      nearest earlier slot between two others when the tail is all one
+      family. The head of the queue never moves. Deterministic, so a
+      probe can predict a session. Unit tests pin the family, a zero
+      count of adjacent neighbours on a fill day and on nine neighbours
+      due together, and the all-one-family case left alone.
 - [x] **0.20.6 - GRIMSWORD.** Andy: "Grim shield needs blocky armor. Rename
       him to grim sword. And the sword should be more styled with a pointy
       tip and a cooler hilt. A true dark sword." The id stays grimshield

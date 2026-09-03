@@ -65,7 +65,13 @@ export const planQueue = (
     // limiting: what he already owns flies to a distant box after one look,
     // and what he does not stacks up as due work that closes this gate.
     const room = Math.min(NEW_FILL_MAX, SESSION_TARGET_ITEMS - queue.length);
-    for (const id of nextNewFacts(deck, states, room, strands, caps)) if (!exclude.has(id)) queue.push(id);
+    // WHICH facts come next is the tier order (the pedagogy). The ORDER he
+    // meets them in is not: intro order within a tier runs 16-7, 16-8, 16-9
+    // (minuend, then subtrahend), and handing those over verbatim reads as
+    // a pattern he can ride instead of facts he retrieves (Andy's phone,
+    // 2026-09-03). Seeded by the day so a probe can predict it.
+    const fresh = nextNewFacts(deck, states, room, strands, caps).filter((id) => !exclude.has(id));
+    queue.push(...shuffleStable(fresh, day * 7 + 3));
   }
 
   // TOP UP to a workable session length.
@@ -90,7 +96,53 @@ export const planQueue = (
     }
   }
 
-  return queue;
+  return spreadFamilies(queue, deck);
+};
+
+/**
+ * The FAMILY a fact belongs to, for spacing: the sum for addition, the
+ * minuend for subtraction, the product for multiplication, the dividend for
+ * division. 7+9, 8+8 and 9+7 are one family; so are 16-7, 16-8 and 16-9.
+ */
+export const familyOf = (f: Fact): string =>
+  f.kind === "add" ? `add:${f.a + f.b}` : f.kind === "mul" ? `mul:${f.a * f.b}` : `${f.kind}:${f.a}`;
+
+/**
+ * Keep one family from landing back to back. Walks the queue; where an item
+ * repeats the family before it, the nearest later item of another family is
+ * swapped in, provided it does not open a new clash where it lands. Best
+ * effort and deterministic: a queue that is all one family is left alone,
+ * and the head of the queue (the most overdue fact) never moves.
+ */
+export const spreadFamilies = (ids: readonly string[], deck: Deck): string[] => {
+  const out = [...ids];
+  const fam = (i: number): string => familyOf(deck.get(out[i]!)!);
+  for (let i = 1; i < out.length; i++) {
+    const mine = fam(i);
+    if (mine !== fam(i - 1)) continue;
+    // Forward: swap in the nearest later item of another family.
+    let fixed = false;
+    for (let j = i + 1; j < out.length && !fixed; j++) {
+      if (fam(j) === mine) continue;
+      const leftOk = j - 1 === i || fam(j - 1) !== mine;
+      const rightOk = j + 1 >= out.length || fam(j + 1) !== mine;
+      if (!leftOk || !rightOk) continue;
+      const a = out[i]!;
+      out[i] = out[j]!;
+      out[j] = a;
+      fixed = true;
+    }
+    if (fixed) continue;
+    // Backward: nothing later fits (the tail is one family), so this item
+    // slides back to the nearest earlier slot between two other families.
+    for (let k = i - 1; k >= 1; k--) {
+      if (fam(k - 1) === mine || fam(k) === mine) continue;
+      const [item] = out.splice(i, 1);
+      out.splice(k, 0, item!);
+      break;
+    }
+  }
+  return out;
 };
 
 /**

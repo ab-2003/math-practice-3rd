@@ -8,8 +8,8 @@ import { buildDeck, deckInIntroOrder } from "./facts";
 import { forecast } from "./forecast";
 import { allStates, freshState, reviveStrand } from "./scheduler";
 import {
-  bandShuffle, closerIds, coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued,
-  isStruggling, nextNewFacts, planQueue, recordResponse, sessionIsOver, startSession, withinCap,
+  bandShuffle, closerIds, coldCheckDue, coldCheckIds, currentFactId, familyOf, isColdItem, isFatigued,
+  isStruggling, nextNewFacts, planQueue, recordResponse, sessionIsOver, spreadFamilies, startSession, withinCap,
 } from "./session";
 import type { Caps, FactState, Response, ResponseClass, SessionState, States, Strands } from "./types";
 
@@ -71,7 +71,9 @@ describe("session assembly", () => {
     // than like 3+2." A reviewer has to be allowed to move.
     const q = planQueue(deck, allStates(deck), 0);
     expect(q.length).toBe(NEW_FILL_MAX);
-    expect(q[0]).toBe(ordered[0]!.id);
+    // The same facts the tier order would pick, met in a stirred order.
+    expect(new Set(q)).toEqual(new Set(nextNewFacts(deck, allStates(deck), NEW_FILL_MAX)));
+    expect(q).toContain(ordered[0]!.id);
   });
 
   it("introduces NOTHING new once the due queue is at the gate", () => {
@@ -210,6 +212,48 @@ describe("the fatigue detector", () => {
   it("ignores the forced re-entries and wrong answers when judging fatigue", () => {
     const slowRetries = session([...opening, ...Array.from({ length: FATIGUE_WINDOW }, () => 4000)], { isRetry: true });
     expect(isFatigued(slowRetries)).toBe(false);
+  });
+});
+
+describe("spacing out one family", () => {
+  // Andy's phone (2026-09-03): "I get a lot of ascending or descending
+  // problems like 16-7 then 16-8 then 16-9. I don't think we should
+  // intentionally do that?" We did not mean to: intro order within a tier
+  // runs minuend then subtrahend, and the new block was handed over as is.
+  const adjacentSameFamily = (q: readonly string[]): number => {
+    let n = 0;
+    for (let i = 1; i < q.length; i++) if (familyOf(deck.get(q[i]!)!) === familyOf(deck.get(q[i - 1]!)!)) n += 1;
+    return n;
+  };
+
+  it("names the family: the sum, the minuend, the product, the dividend", () => {
+    expect(familyOf(deck.get("sub:16-7")!)).toBe(familyOf(deck.get("sub:16-9")!));
+    expect(familyOf(deck.get("add:7+9")!)).toBe(familyOf(deck.get("add:8+8")!));
+    expect(familyOf(deck.get("mul:3x4")!)).toBe(familyOf(deck.get("mul:2x6")!));
+    expect(familyOf(deck.get("sub:16-7")!)).not.toBe(familyOf(deck.get("sub:15-7")!));
+  });
+
+  it("never hands him 16-7, 16-8, 16-9 in a row when there is anything else to hand him", () => {
+    const ids = ["sub:16-7", "sub:16-8", "sub:16-9", "sub:15-6", "sub:15-7", "sub:15-8", "sub:14-5", "sub:14-6", "sub:14-7"];
+    const spread = spreadFamilies(ids, deck);
+    expect(adjacentSameFamily(spread)).toBe(0);
+    expect(new Set(spread)).toEqual(new Set(ids));
+    expect(spread[0]).toBe("sub:16-7"); // the head never moves
+    // All one family: nothing to do, and nothing breaks.
+    expect(spreadFamilies(["sub:16-7", "sub:16-8", "sub:16-9"], deck)).toEqual(["sub:16-7", "sub:16-8", "sub:16-9"]);
+  });
+
+  it("spaces the new block and the due queue alike, and stays predictable", () => {
+    const fill = planQueue(deck, allStates(deck), 5);
+    expect(adjacentSameFamily(fill)).toBe(0);
+    expect(planQueue(deck, allStates(deck), 5)).toEqual(fill);
+    // Nine neighbours introduced together, all due: still spaced.
+    const states = allStates(deck);
+    for (const id of ["sub:16-7", "sub:16-8", "sub:16-9", "sub:15-6", "sub:15-7", "sub:15-8", "sub:14-5", "sub:14-6", "sub:14-7"]) {
+      states.set(id, { ...freshState(), introduced: true, box: 2, dueOn: 0 });
+    }
+    const q = planQueue(deck, states, 2, { add: false, sub: true, mul: false, div: false });
+    expect(adjacentSameFamily(q.slice(0, 9))).toBe(0);
   });
 });
 
