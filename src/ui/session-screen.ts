@@ -419,7 +419,9 @@ export const sessionScreen = (app: App): HTMLElement => {
       // struggle detector cut short does not: he has had enough for today.
       const real = collected.filter((r) => !r.isRetry);
       const wentWell = real.length > 0 && real.filter((r) => r.correct).length / real.length >= 0.6;
-      if (!bonusOffered && session.status === "complete" && wentWell) {
+      // And a grown-up can switch the round off altogether for a younger
+      // rider who is not reading clocks yet (Andy, 2026-09-03).
+      if (!bonusOffered && app.meta.elapsedOn && session.status === "complete" && wentWell) {
         bonusOffered = true;
         offerBonus();
         return;

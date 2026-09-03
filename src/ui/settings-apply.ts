@@ -54,6 +54,8 @@ export const applySetting = <K extends SyncKey>(
     app.meta.dailyGoal = value as number;
   } else if (key === "speedLimit") {
     app.meta.speedLimit = value as number;
+  } else if (key === "elapsedOn") {
+    app.meta.elapsedOn = value as boolean;
   } else if (key === "elapsedLevel") {
     app.meta.elapsedLevel = value as 1 | 2 | 3;
   } else if (key === "elapsedAnalog") {

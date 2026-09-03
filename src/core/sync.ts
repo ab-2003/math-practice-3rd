@@ -19,7 +19,7 @@ import type { Caps, Strands } from "./types";
 
 /** The dials a grown-up may set from anywhere. Never the PIN (device-level),
  *  never the kid's own controls (mute, animations), never progress. */
-export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay"] as const;
+export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedOn", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay"] as const;
 export type SyncKey = typeof SYNCED_KEYS[number];
 
 export interface MissingLike { add: boolean; sub: boolean; mul: boolean; div: boolean; pct: number }
@@ -30,6 +30,8 @@ export interface SyncedSettings {
   missing: MissingLike;
   dailyGoal: number;
   speedLimit: number;
+  /** The bonus round at all (Andy, 2026-09-03: off for the younger kids). */
+  elapsedOn: boolean;
   elapsedLevel: 1 | 2 | 3;
   elapsedAnalog: boolean;
   /** THE SKATE PARK: minutes one Daily Token buys, and tokens a day. */
@@ -109,6 +111,7 @@ export const validValue = (k: SyncKey, v: unknown): boolean => {
     case "missing": return isBoolRecord(v, ops) && typeof (v as MissingLike).pct === "number" && (v as MissingLike).pct >= 5 && (v as MissingLike).pct <= 80;
     case "dailyGoal": return typeof v === "number" && v >= 10 && v <= 80;
     case "speedLimit": return typeof v === "number" && v >= 1 && v <= 30;
+    case "elapsedOn": return typeof v === "boolean";
     case "elapsedLevel": return v === 1 || v === 2 || v === 3;
     case "elapsedAnalog": return typeof v === "boolean";
     case "parkMinutes": return typeof v === "number" && Number.isInteger(v) && v >= 2 && v <= 20;
@@ -139,7 +142,7 @@ export const fieldsToApply = (
 /** The dials the record says the device is actually running, from its meta. */
 export const settingsOf = (meta: SyncedSettings): SyncedSettings => ({
   strands: meta.strands, caps: meta.caps, missing: meta.missing, dailyGoal: meta.dailyGoal,
-  speedLimit: meta.speedLimit, elapsedLevel: meta.elapsedLevel, elapsedAnalog: meta.elapsedAnalog,
+  speedLimit: meta.speedLimit, elapsedOn: meta.elapsedOn, elapsedLevel: meta.elapsedLevel, elapsedAnalog: meta.elapsedAnalog,
   parkMinutes: meta.parkMinutes, parkTokensPerDay: meta.parkTokensPerDay,
 });
 
@@ -169,6 +172,7 @@ export const describeField = (k: SyncKey, v: unknown): string => {
     }
     case "dailyGoal": return `${v as number} problems a day`;
     case "speedLimit": return `${v as number} speed runs a day`;
+    case "elapsedOn": return (v as boolean) ? "bonus round on" : "bonus round off";
     case "elapsedLevel": return `elapsed time up to level ${v as number}`;
     case "elapsedAnalog": return (v as boolean) ? "analog clock faces on" : "analog clock faces off";
     case "parkMinutes": return `${v as number} park minutes per token`;

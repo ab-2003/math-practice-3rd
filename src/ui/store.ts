@@ -197,6 +197,9 @@ export interface Meta {
   /** Missing-number presentation: per-operation switches and the mix percent.
    *  All four OFF by default, per Andy 2026-09-01. */
   missing: MissingCfg;
+  /** The bonus round at all. Default on; a grown-up can switch it off for a
+   *  younger rider who is not reading clocks yet (Andy, 2026-09-03). */
+  elapsedOn: boolean;
   /** Highest elapsed-time level allowed: 1 same-hour, 2 crosses the hour
    *  within 60 minutes, 3 up to two hours. Problems mix everything at or
    *  below it. Default 1: the bonus round must never bite. */
@@ -234,6 +237,7 @@ export const freshMeta = (): Meta => ({
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
   caps: { add: null, sub: null, mul: null, div: null },
+  elapsedOn: true,
   elapsedLevel: 1,
   elapsedAnalog: false,
   tokens: 0, tokenDay: null, parkDay: null, parkSpent: 0,
@@ -266,6 +270,7 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   speedBest: raw.speedBest ?? {},
   // A save from the brief elapsedHard era maps onto the ladder it became.
   elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
+  elapsedOn: raw.elapsedOn ?? true,
   elapsedAnalog: raw.elapsedAnalog ?? false,
   lastColdDay: raw.lastColdDay ?? null,
   shopPeekSpent: raw.shopPeekSpent ?? false,

@@ -1092,7 +1092,12 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.19.1 - The home screen fits, and the monster is big.** Andy's
+- [ ] **0.19.2 - The bonus round has an off switch.** Andy: "for the
+      younger kids." A synced dial `elapsedOn` (default on, at level 1) on
+      the bonus card of both doors; off, a finished run ends without the
+      round and the level and clock controls step aside. The settings
+      probe runs a whole session each way through the real keypad.
+- [x] **0.19.1 - The home screen fits, and the monster is big.** Andy's
       iPad on its side (2026-09-03): a scroll and a tiny monster. The home
       is two blocks, hero and panel: stacked on a phone and a portrait
       tablet (bigger monster there too), side by side on a tablet on its

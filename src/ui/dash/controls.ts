@@ -217,9 +217,15 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
       () => model.set("parkTokensPerDay", Math.min(8, perDay + 1)))));
   cards.push(park);
 
-  const bonus = el("div", { class: "card" });
+  const bonus = el("div", { class: "card", "data-probe": "bonus-card" });
   bonus.append(el("h3", { class: "title", text: "Bonus round: elapsed time" }));
   bonus.append(el("p", { class: "note", text: "A reward, not drill. Problems mix everything up to the level you pick; every time sits on a five minute mark." }));
+  // The round can be OFF altogether for a younger rider who is not reading
+  // clocks yet (Andy, 2026-09-03). Default on, at level 1.
+  const onNow = model.get("elapsedOn");
+  bonus.append(setRow("Bonus round", onNow ? "offered after a run that went well" : "off: runs end without it",
+    knob(onNow, "elapsed-on", "Bonus round", () => model.set("elapsedOn", !onNow))));
+  if (!onNow) { cards.push(bonus); return cards; }
   const level = model.get("elapsedLevel");
   const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Highest elapsed-time level" });
   for (const lvl of LEVELS) {

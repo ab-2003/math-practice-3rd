@@ -2,7 +2,7 @@
  * PROBE: SETTINGS. The practice table, the caps, missing number, the elapsed
  * ladder, and every parent switch surviving a reload.
  */
-import { answerOf, calmMeta, closeSheets, goHome, openSettings, pinIn, suite, typeAnswer } from "./_shared.mjs";
+import { answerN, answerOf, calmMeta, closeSheets, goHome, openSettings, pinIn, suite, typeAnswer } from "./_shared.mjs";
 import { missingExpected } from "../lib/drive.mjs";
 
 const { page, step, must, done } = await suite("settings");
@@ -165,6 +165,58 @@ await step("the bonus round defaults to level 1, digital", async () => {
   const m = await page.evaluate(() => window.__app.meta());
   must(m.elapsedLevel === 1, `default level is ${m.elapsedLevel}`);
   must(m.elapsedAnalog === false, "analog is on by default");
+});
+
+await step("the bonus round can be switched off altogether; a finished run then ends without it, and with it on, offers it", async () => {
+  // Andy, 2026-09-03: "a toggle to turn off the bonus round altogether ... for the younger kids."
+  await goHome(page);
+  await openSettings(page);
+  must(await page.$('[data-probe="elapsed-on"][aria-pressed="true"]') !== null, "the bonus round is not on by default");
+  await page.click('[data-probe="elapsed-on"]');
+  await page.waitForTimeout(300);
+  must(await page.evaluate(() => window.__app.meta().elapsedOn) === false, "the switch did not persist");
+  must(await page.$('[data-probe="elapsed-level-1"]') === null, "the level control is still shown with the round off");
+  must(((await page.textContent('[data-probe="bonus-card"]')) ?? "").includes("off"), "the card does not say the round is off");
+  // A whole run, every answer right, through the real keypad: no bonus at the end.
+  const runThrough = async () => {
+    await calmMeta(page);
+    await page.evaluate(() => window.__app.save());
+    await goHome(page);
+    await page.click('[data-probe="start"]');
+    await page.waitForSelector('[data-probe="problem"]');
+    let n = 0;
+    while (n < 90) {
+      // Wait for whichever comes first: the bonus, the end of the run, or
+      // the next problem's keypad; the rides and banners between take time.
+      await page.waitForFunction(() =>
+        document.querySelector('[data-probe="bonus-callout"], [data-probe="bonus"]') !== null
+        || document.querySelector(".sheet") !== null || window.__probe.over()
+        || document.querySelector(".keypad:not(.asleep)") !== null, null, { timeout: 15000 });
+      if (await page.$('[data-probe="bonus-callout"], [data-probe="bonus"]') !== null) return { bonus: true, n };
+      if (await page.evaluate(() => window.__probe.over())) return { bonus: false, n };
+      if ((await page.$(".sheet")) !== null) {
+        // The line-break offer: keep rolling. Anything else is the end.
+        if (((await page.textContent(".sheet")) ?? "").includes("Keep rolling")) { await page.click(".sheet .row .btn.go"); await page.waitForTimeout(250); continue; }
+        return { bonus: false, n };
+      }
+      await answerN(page, 1);
+      n += 1;
+    }
+    return { bonus: false, n: -1 };
+  };
+  const off = await runThrough();
+  must(off.n !== -1, "the run never ended");
+  must(off.bonus === false, "the bonus round ran with the switch off");
+  await closeSheets(page);
+  // Back on, the same kind of run offers it.
+  must(await page.evaluate(() => window.__app.set("elapsedOn", true)) === true, "the switch did not go back on");
+  const on = await runThrough();
+  must(on.bonus === true, `with the round on, a finished run did not offer it (${on.n} answers)`);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => window.__app.go("home"));
+  await page.waitForSelector('[data-probe="start"]');
+  await openSettings(page);
+  await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-1"]')?.scrollIntoView({ block: "center" }));
 });
 
 await step("the elapsed levels are one segmented control, and picking one persists", async () => {
