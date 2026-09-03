@@ -138,7 +138,9 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       out.push(svg("path", { d: "M22 12 Q30 17 22 22", fill: "none", stroke: glow, "stroke-width": 1.6, opacity: 0.8 }));
       out.push(svg("path", { d: "M96 11 L100 11 M96 23 L100 23", stroke: glow, "stroke-width": 1.2, opacity: 0.6 }));
       out.push(svg("path", { class: "plate", d: "M96 12 L108 12 L108 22 L96 22 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
-      out.push(svg("text", { x: 102, y: 20.5, "text-anchor": "middle", "font-size": 9, "font-weight": 900, fill: INK }, "1"));
+      // The "1" is a drawn stroke, not text: a 9-unit glyph would trip the
+      // 13px legibility floor, and it is a sticker, not something to read.
+      out.push(svg("path", { d: "M100.5 14.5 L102.5 13 L102.5 21", fill: "none", stroke: INK, "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round" }));
       break;
     case "tag":
       // The tag: TL in fat pink over a yellow outline, drips, a crown,
