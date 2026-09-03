@@ -22,6 +22,8 @@ import {
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { canAffordAny, riderVoice } from "../core/creatures";
+import { awardDailyToken } from "../core/park";
+import { tokenIcon } from "./icons";
 import { presentFact, type Presented } from "../core/present";
 import {
   coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued, recordResponse, sessionIsOver, startSession,
@@ -114,12 +116,21 @@ export const sessionScreen = (app: App): HTMLElement => {
   // left through; stays undefined on a run that reached its own end.
   let reason: EndReason | undefined;
   let tiredOffered = false;
+  let tokenDropped = false;
 
   const showDailyDone = (): Promise<void> =>
     new Promise((resolve) => {
       const b = el("div", { class: "daily-banner", "data-probe": "daily-banner" },
         el("div", { class: "db-big", text: "TODAY'S WORK DONE!" }),
         el("div", { class: "db-sub", text: "everything from here is extra credit" }));
+      // THE DAILY TOKEN (0.19.0): one per day, the moment the dose is met.
+      // The first one ever lights the Skate Park button on the home screen.
+      if (awardDailyToken(app.meta, app.day)) {
+        tokenDropped = true;
+        void app.save();
+        window.setTimeout(() => sfx.token(), 650);
+        b.append(el("div", { class: "db-token", "data-probe": "token-drop" }, tokenIcon("token-drop-ico"), el("span", { text: "+1 DAILY TOKEN" })));
+      }
       left.append(b);
       let fin = false;
       const done = (): void => { if (fin) return; fin = true; b.remove(); resolve(); };
@@ -490,6 +501,10 @@ export const sessionScreen = (app: App): HTMLElement => {
     story.push(`${tricksThisRun} tricks landed` + (linesThisRun > 0 ? ` · ${linesThisRun} full ${linesThisRun === 1 ? "line" : "lines"}` : ""));
     if (bestChain >= 3) story.push(`Longest chain: ${bestChain} in a row`);
     body.append(el("p", { class: "note", text: story.join("  ·  ") }));
+    if (tokenDropped) {
+      const tk = el("p", { class: "note token-line", "data-probe": "token-line" }, tokenIcon(), el("span", { text: " Daily Token earned! Spend it at the Skate Park." }));
+      body.append(tk);
+    }
     if (doseBase + itemsDone >= app.meta.dailyGoal) {
       body.append(el("p", { class: "best-line", text: "TODAY'S WORK: DONE ✓" }));
     } else {

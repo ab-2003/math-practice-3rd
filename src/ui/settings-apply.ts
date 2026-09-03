@@ -58,6 +58,10 @@ export const applySetting = <K extends SyncKey>(
     app.meta.elapsedLevel = value as 1 | 2 | 3;
   } else if (key === "elapsedAnalog") {
     app.meta.elapsedAnalog = value as boolean;
+  } else if (key === "parkMinutes") {
+    app.meta.parkMinutes = value as number;
+  } else if (key === "parkTokensPerDay") {
+    app.meta.parkTokensPerDay = value as number;
   }
 
   const stamp = from.remote ? { at: from.remote.at, by: from.remote.by } : { at: Date.now(), by: deviceId() };

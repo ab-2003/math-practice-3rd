@@ -87,7 +87,7 @@ const hooks = (page: Page) => ({
   pushNow: () => page.evaluate(() => (window as unknown as Hooks).__cloud.pushNow()),
   running: () => page.evaluate(() => {
     const m = (window as unknown as Hooks).__app.meta();
-    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"] } as Record<SyncKey, unknown>;
+    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"], parkMinutes: m["parkMinutes"], parkTokensPerDay: m["parkTokensPerDay"] } as Record<SyncKey, unknown>;
   }),
   deviceId: () => page.evaluate(() => localStorage.getItem("tl-device-id")),
 });
@@ -159,6 +159,8 @@ const doorSet = async (d: Device, key: SyncKey): Promise<void> => {
     case "speedLimit": await p.click('[data-probe="speed-limit-minus"]'); break;
     case "elapsedLevel": await p.click('[data-probe="elapsed-level-2"]'); break;
     case "elapsedAnalog": await p.click('[data-probe="elapsed-analog"]'); break;
+    case "parkMinutes": await p.click('[data-probe="park-minutes-plus"]'); break;
+    case "parkTokensPerDay": await p.click('[data-probe="park-tokens-minus"]'); break;
   }
   await p.waitForTimeout(400);
 };
@@ -167,14 +169,14 @@ const doorExpect: Record<SyncKey, unknown> = {
   strands: { add: true, sub: true, mul: true, div: false },
   missing: { add: true, sub: false, mul: false, div: false, pct: 20 },
   caps: { add: 10, sub: null, mul: null, div: null },
-  dailyGoal: 35, speedLimit: 9, elapsedLevel: 2, elapsedAnalog: true,
+  dailyGoal: 35, speedLimit: 9, elapsedLevel: 2, elapsedAnalog: true, parkMinutes: 8, parkTokensPerDay: 2,
 };
 /** A second, different value per field, for the rider's own changes. */
 const riderValues: Record<SyncKey, unknown> = {
   strands: { add: true, sub: false, mul: true, div: false },
   missing: { add: true, sub: true, mul: false, div: false, pct: 30 },
   caps: { add: 12, sub: 10, mul: null, div: null },
-  dailyGoal: 55, speedLimit: 4, elapsedLevel: 3, elapsedAnalog: false,
+  dailyGoal: 55, speedLimit: 4, elapsedLevel: 3, elapsedAnalog: false, parkMinutes: 12, parkTokensPerDay: 5,
 };
 
 // =============================================================================

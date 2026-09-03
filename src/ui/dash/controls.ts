@@ -199,6 +199,24 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
       () => model.set("speedLimit", Math.min(30, limit + 1)))));
   cards.push(dayCard);
 
+  // THE SKATE PARK (0.19.0): a token a day for the day's work; the dials
+  // say how long a token lasts and how many a day may be spent.
+  const park = el("div", { class: "card", "data-probe": "park-card" });
+  park.append(el("h3", { class: "title", text: "The Skate Park" }));
+  park.append(el("p", { class: "note", text:
+    "Finishing the day's dose drops one Daily Token. A token buys park time in a pure skateboarding game; the cap keeps a saved-up pocket of tokens from becoming an afternoon." }));
+  const minutes = model.get("parkMinutes");
+  park.append(setRow("Minutes per token", "how long one token keeps the park open",
+    stepper(String(minutes), "park-minutes",
+      () => model.set("parkMinutes", Math.max(2, minutes - 1)),
+      () => model.set("parkMinutes", Math.min(20, minutes + 1)))));
+  const perDay = model.get("parkTokensPerDay");
+  park.append(setRow("Tokens per day", "the most that can be spent before midnight",
+    stepper(String(perDay), "park-tokens",
+      () => model.set("parkTokensPerDay", Math.max(1, perDay - 1)),
+      () => model.set("parkTokensPerDay", Math.min(8, perDay + 1)))));
+  cards.push(park);
+
   const bonus = el("div", { class: "card" });
   bonus.append(el("h3", { class: "title", text: "Bonus round: elapsed time" }));
   bonus.append(el("p", { class: "note", text: "A reward, not drill. Problems mix everything up to the level you pick; every time sits on a five minute mark." }));

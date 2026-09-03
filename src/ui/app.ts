@@ -9,6 +9,7 @@ import { profilesScreen } from "./profiles";
 import { collectionScreen, homeScreen } from "./screens";
 import { sessionScreen } from "./session-screen";
 import { speedScreen } from "./speed-screen";
+import { parkScreen } from "./park-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
 import { flushToast } from "./toast";
@@ -96,6 +97,7 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     const screen =
       route === "session" ? sessionScreen(app)
       : route === "speed" ? speedScreen(app)
+      : route === "park" ? parkScreen(app)
       : route === "collection" ? collectionScreen(app)
       : route === "dashboard" ? dashboardScreen(app)
       : route === "profiles" ? profilesScreen(app)

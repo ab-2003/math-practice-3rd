@@ -81,7 +81,7 @@ launch() {
 }
 stage "stage 4/5: the senses, in parallel"
 B="BASE=http://localhost:$PREVIEW_PORT"
-for s in core settings juice shop cloud speed parent sync; do
+for s in core settings juice shop cloud speed parent sync park; do
   wants probe-$s && launch probe-$s "$B node tools/probe/$s.mjs"
 done
 wants loop-eye      && launch loop-eye      "$B npx vite-node tools/loop-eye.ts"

@@ -1,7 +1,7 @@
 import type { Deck, FactState } from "../core/types";
 import type { Meta, Profile, Registry } from "./store";
 
-export type Route = "home" | "session" | "speed" | "collection" | "dashboard" | "profiles";
+export type Route = "home" | "session" | "speed" | "park" | "collection" | "dashboard" | "profiles";
 
 export interface App {
   deck: Deck;

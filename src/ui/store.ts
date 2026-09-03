@@ -19,6 +19,7 @@
  */
 
 import { DEFAULT_STRANDS } from "../core/config";
+import { PARK_DEFAULTS } from "../core/park";
 import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
 import type { Stamp, SyncKey } from "../core/sync";
 import type { Caps, FactState, Response, SessionRecord, Strands } from "../core/types";
@@ -203,6 +204,20 @@ export interface Meta {
   /** Show the bonus times as analog clock faces instead of digits. Opt-in:
    *  it doubles as analog-reading practice on five minute marks. */
   elapsedAnalog: boolean;
+  /** THE SKATE PARK (0.19.0). Daily Tokens in the pocket, the day the last
+   *  one dropped, today's spend, the parent dials, and whether the park
+   *  has ever lit (the first token) and its tutorial been seen. Bests are
+   *  the park's own scoreboard; it earns no coins. */
+  tokens: number;
+  tokenDay: number | null;
+  parkDay: number | null;
+  parkSpent: number;
+  parkMinutes: number;
+  parkTokensPerDay: number;
+  parkUnlocked: boolean;
+  parkSeen: boolean;
+  parkBest: number;
+  parkBestChain: number;
   /** The day of the last weekly cold check. See core/config COLD_CHECK. */
   lastColdDay: number | null;
   /** When and by which device each synced setting was last set, so the
@@ -221,6 +236,9 @@ export const freshMeta = (): Meta => ({
   caps: { add: null, sub: null, mul: null, div: null },
   elapsedLevel: 1,
   elapsedAnalog: false,
+  tokens: 0, tokenDay: null, parkDay: null, parkSpent: 0,
+  parkMinutes: PARK_DEFAULTS.minutes, parkTokensPerDay: PARK_DEFAULTS.tokensPerDay,
+  parkUnlocked: false, parkSeen: false, parkBest: 0, parkBestChain: 0,
   lastColdDay: null,
   settingsStamps: {},
 });
@@ -254,6 +272,9 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   settingsStamps: raw.settingsStamps ?? {},
   boardsOwned: raw.boardsOwned ?? [],
   boardOf: raw.boardOf ?? {},
+  tokens: Math.max(0, raw.tokens ?? 0),
+  parkMinutes: Math.max(2, Math.min(20, raw.parkMinutes ?? PARK_DEFAULTS.minutes)),
+  parkTokensPerDay: Math.max(1, Math.min(8, raw.parkTokensPerDay ?? PARK_DEFAULTS.tokensPerDay)),
 });
 
 export const getMeta = async (): Promise<Meta> => {

@@ -52,6 +52,13 @@ export const goHome = async (page) => {
   await page.waitForSelector('[data-probe="start"]');
 };
 
+/** Escape closes the top sheet; keep going until the scrim is gone. For
+ *  screens whose sheets carry their own buttons (a monster card's Level up),
+ *  which closeSheets would tap. */
+export const escapeAll = async (page) => {
+  for (let i = 0; i < 6 && (await page.$(".scrim")) !== null; i++) { await page.keyboard.press("Escape"); await page.waitForTimeout(220); }
+};
+
 export const closeSheets = async (page) => {
   for (let i = 0; i < 8 && (await page.$(".scrim")) !== null; i++) {
     await page.click(".sheet .btn.ghost, .sheet .btn.go").catch(() => undefined);

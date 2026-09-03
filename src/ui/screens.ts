@@ -8,6 +8,8 @@ import { progressBar } from "./charts";
 import { creatureSvg, helmetIcon } from "./creature-svg";
 import { el, on, svg } from "./dom";
 import { doseDone, speedAttemptsToday, speedKey } from "./day";
+import { tokenIcon } from "./icons";
+import { parkGate, spentToday } from "../core/park";
 export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
@@ -196,6 +198,27 @@ export const homeScreen = (app: App): HTMLElement => {
   on(speed, "click", () => app.go("speed"));
   grid.append(speed);
   root.append(grid);
+
+  // THE SKATE PARK (0.19.0): the daily reward's door. Dim until the first
+  // Daily Token drops, lit from then on, with the pocket and today's plays.
+  const parkOpen = app.meta.parkUnlocked;
+  const gate = parkGate(app.meta, app.day);
+  const park = el("button", {
+    type: "button", class: `btn big park-btn${parkOpen ? " alt" : " ghost dim"}${parkOpen && gate.ok && !app.meta.parkSeen ? " park-new" : ""}`,
+    "data-probe": "park-open",
+  }, tokenIcon("btn-ico token-btn"), el("span", { text: parkOpen
+    ? `Skate Park · ${app.meta.tokens} ${app.meta.tokens === 1 ? "token" : "tokens"}`
+    : "Skate Park · earn a Daily Token" }));
+  if (parkOpen) {
+    on(park, "click", () => app.go("park"));
+    const plays = app.meta.parkTokensPerDay - spentToday(app.meta, app.day);
+    park.append(el("small", { class: "park-sub", "data-probe": "park-sub", text: gate.ok
+      ? `${plays} ${plays === 1 ? "play" : "plays"} left today`
+      : gate.why === "dayFull" ? "closed until tomorrow" : "finish today's tricks for a token" }));
+  } else {
+    on(park, "click", () => sheet({ title: "The Skate Park", body: "Finish today's tricks and a Daily Token drops. A token opens the park: your monster, its board, its helmet, tricks down a line.", confirm: "OK" }));
+  }
+  root.append(park);
 
   // Progress toward the next monster, always visible: the classic lever,
   // and it was simply missing.

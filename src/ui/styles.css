@@ -1396,3 +1396,100 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .trick-rider .board-trail, .lap-rider .board-trail, .reveal .board-trail { opacity: 1; animation: trail-flicker 260ms ease-in-out infinite alternate; }
 @keyframes trail-flicker { from { opacity: 0.55; transform: translateX(0); } to { opacity: 1; transform: translateX(-3px); } }
 @media (prefers-reduced-motion: reduce) { .board-trail { animation: none !important; opacity: 0 !important; } }
+
+/* ---------- THE SKATE PARK (0.19.0) ---------- */
+.tokens { display: inline-flex; align-items: center; gap: 6px; color: var(--cyan); font-weight: 900; font-size: 17px; }
+.token-ico { width: 24px; height: 24px; flex: none; }
+.token-big { width: min(30vw, 120px); height: auto; display: block; margin: 4px auto 8px; }
+.token-btn { height: 30px; width: 30px; }
+.park-btn { position: relative; flex-wrap: wrap; row-gap: 0; }
+.park-btn .park-sub { flex-basis: 100%; font-size: 13px; letter-spacing: 0.04em; color: var(--ink); opacity: 0.72; text-transform: uppercase; margin-top: -4px; }
+.park-btn.dim { opacity: 0.55; }
+.park-btn.dim .token-btn { filter: grayscale(1) brightness(0.8); }
+/* The first token ever: the door lights and pulses until it is opened once. */
+.park-btn.park-new { animation: park-glow 1.6s ease-in-out infinite; border-color: var(--cyan); }
+@keyframes park-glow {
+  0%, 100% { box-shadow: 0 5px 0 var(--ink); }
+  50% { box-shadow: 0 5px 0 var(--ink), 0 0 0 6px rgba(53, 230, 255, 0.28), 0 0 26px rgba(53, 230, 255, 0.45); }
+}
+.db-token { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--cyan); color: var(--ink); font-weight: 900; font-size: clamp(15px, 3vw, 22px); letter-spacing: 0.05em; animation: pop 600ms ease-out 700ms both; }
+.token-drop-ico { width: 30px; height: 30px; }
+.token-line { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--cyan); }
+
+.park-screen { display: flex; flex-direction: column; }
+.park-timer { margin-bottom: 6px; }
+.park-hud { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; min-height: 40px; }
+.park-score { font-size: clamp(30px, 6vw, 44px); font-weight: 900; color: var(--warm); text-shadow: 0 4px 0 var(--ink); line-height: 1; min-width: 3ch; }
+.park-score.bump { animation: chip-bump 350ms ease-out; display: inline-block; }
+.park-chain { flex: 1; font-size: 14px; font-weight: 900; color: var(--acid); letter-spacing: 0.04em; opacity: 0; transition: opacity 120ms; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.park-chain.on { opacity: 1; }
+.park-clock { font-size: 18px; font-weight: 900; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.park-stage {
+  position: relative; width: 100%; margin: 0 auto; overflow: hidden; border: 5px solid var(--ink); border-radius: 18px;
+  background: linear-gradient(#0F1620, #161B22 70%, #1E242C 70%, #1E242C);
+  box-shadow: 0 6px 0 var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer;
+}
+.park-ground {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 10%; border-top: 4px solid var(--line);
+  background-color: #1B2029;
+  background-image: repeating-linear-gradient(90deg, transparent 0 64px, rgba(255, 255, 255, 0.07) 64px 80px);
+}
+.park-far { position: absolute; left: 0; bottom: 10%; height: 62%; width: calc(var(--strip, 800px) * 2); display: flex; will-change: transform; pointer-events: none; }
+.park-skyline { width: var(--strip, 800px); height: 100%; display: flex; align-items: flex-end; gap: 2%; padding: 0 1%; box-sizing: border-box; flex: none; }
+.park-skyline i { display: block; flex: 1; background: #1A2130; border-top: 3px solid #232C3B; opacity: 0.9; }
+.park-moon { position: absolute; right: 6%; top: 8%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: #2A3442; box-shadow: 0 0 0 8px rgba(158, 199, 255, 0.05); }
+.park-world { position: absolute; inset: 0; }
+.park-ob { position: absolute; bottom: 10%; will-change: transform; }
+.park-rail .rail-bar { position: absolute; left: 0; right: 0; top: 0; height: 24%; min-height: 6px; background: var(--dim); border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 2px 0 var(--ink); }
+.park-rail .rail-leg { position: absolute; bottom: 0; width: 8%; min-width: 5px; top: 22%; background: var(--ink); }
+.park-rail .rail-leg.l { left: 6%; } .park-rail .rail-leg.r { right: 6%; }
+.park-box { background: var(--orange); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
+.park-box .box-stripe { position: absolute; inset: 40% 0 auto 0; height: 22%; background: var(--ink); opacity: 0.55; }
+.park-kicker .kicker-face { position: absolute; inset: 0; background: var(--cyan); clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+.park-kicker::after { content: ""; position: absolute; right: -3px; top: 0; bottom: 0; width: 4px; background: var(--ink); }
+.park-gap { bottom: calc(10% - 4px); background: repeating-linear-gradient(135deg, #0B0D10 0 6px, #161B22 6px 12px); border-left: 3px solid var(--ink); border-right: 3px solid var(--ink); transform-origin: top; }
+.park-rider { position: absolute; bottom: 10%; width: 150px; transform: translateX(-50%); will-change: bottom, transform; pointer-events: none; z-index: 3; }
+.park-flip { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 82%; will-change: transform; }
+.park-creature { width: 100%; height: auto; }
+.park-deck { width: 64%; margin-top: -12%; transform-origin: 50% 50%; will-change: transform; }
+.park-rider .board-trail { opacity: 1; animation: trail-flicker 260ms ease-in-out infinite alternate; }
+.park-sparks { position: absolute; left: 22%; right: 22%; bottom: -2px; height: 10px; opacity: 0; background: radial-gradient(circle at 20% 60%, var(--warm) 0 2px, transparent 3px), radial-gradient(circle at 55% 30%, var(--acid) 0 2px, transparent 3px), radial-gradient(circle at 85% 70%, var(--warm) 0 2px, transparent 3px); }
+.park-rider.grinding .park-sparks { opacity: 1; animation: park-spark 120ms steps(2) infinite; }
+@keyframes park-spark { from { transform: translateX(0) scaleX(1); } to { transform: translateX(-8px) scaleX(0.7); } }
+.park-rider.bailed .park-creature { filter: saturate(0.7); }
+.park-puff { position: absolute; left: 50%; bottom: 0; width: 60px; height: 30px; margin-left: -30px; border-radius: 50%; background: #8A97A6; opacity: 0; pointer-events: none; }
+.park-puff.go { animation: park-puff 700ms ease-out; }
+@keyframes park-puff { 0% { opacity: 0.9; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2) translateY(-14px); } }
+.park-pops { position: absolute; inset: 0; pointer-events: none; text-align: center; z-index: 4; }
+.park-pop { position: absolute; left: 50%; top: 6%; transform: translateX(-50%); font-size: clamp(18px, 4vw, 30px); font-weight: 900; color: var(--acid); text-shadow: 0 3px 0 var(--ink); letter-spacing: 0.05em; animation: park-pop 1000ms ease-out forwards; white-space: nowrap; }
+.park-pop.hot { color: var(--hot); }
+.park-pop.warm { color: var(--warm); }
+.park-pop.bank { color: var(--warm); font-size: clamp(24px, 6vw, 44px); }
+.park-pop.bank.m3, .park-pop.bank.m4, .park-pop.bank.m5 { color: var(--cyan); }
+@keyframes park-pop { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.7); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.1); } 70% { opacity: 1; transform: translate(-50%, -10px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -30px) scale(0.95); } }
+.park-call { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; z-index: 5; animation: banner-in 1300ms ease-out forwards; }
+.park-final { font-size: clamp(44px, 10vw, 72px); color: var(--warm); text-shadow: 0 6px 0 var(--ink); margin: 0; }
+@media (max-width: 480px) { .park-bar h2 { font-size: 19px; } .park-bar .tokens { font-size: 15px; padding: 4px 10px; } }
+/* The tutorial's pictograms. */
+.tut-pic { height: 110px; position: relative; margin: 4px auto 8px; width: 220px; }
+.tut-g { position: absolute; inset: 0; }
+.tut-finger { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--text); border: 4px solid var(--ink); z-index: 2; animation: tut-tap 1.4s ease-in-out infinite; }
+.tut-ring { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 4px solid var(--cyan); animation: tut-ring 1.4s ease-out infinite; }
+@keyframes tut-tap { 0%, 100% { transform: scale(1); } 20% { transform: scale(0.8); } 40% { transform: scale(1); } }
+@keyframes tut-ring { 0%, 15% { opacity: 0; transform: scale(0.8); } 30% { opacity: 1; } 80%, 100% { opacity: 0; transform: scale(3); } }
+.tut-swipe .tut-finger { animation: tut-swipe 2.4s ease-in-out infinite; }
+@keyframes tut-swipe { 0%, 10% { transform: translate(0, 0); } 30% { transform: translate(0, -34px); } 45% { transform: translate(0, 0); } 65% { transform: translate(40px, 0); } 80%, 100% { transform: translate(0, 0); } }
+.tut-arrow { position: absolute; font-size: 26px; font-weight: 900; color: var(--cyan); }
+.tut-arrow.up { left: 50%; top: 0; transform: translateX(-50%); } .tut-arrow.down { left: 50%; bottom: 0; transform: translateX(-50%); }
+.tut-arrow.left { left: 30px; top: 50%; transform: translateY(-50%); } .tut-arrow.right { right: 30px; top: 50%; transform: translateY(-50%); }
+.tut-ground, .tut-railbar { position: absolute; left: 10px; right: 10px; height: 4px; background: var(--line); bottom: 12px; }
+.tut-railbar { bottom: 50px; left: 90px; right: 30px; background: var(--panel-2); border: 3px solid var(--ink); height: 6px; border-radius: 3px; }
+.tut-arc { position: absolute; left: 30px; right: 30px; bottom: 16px; height: 70px; border: 3px dashed var(--acid); border-bottom: none; border-radius: 80px 80px 0 0; }
+.tut-board { position: absolute; left: 30px; bottom: 16px; width: 44px; height: 8px; background: var(--acid); border: 3px solid var(--ink); border-radius: 4px; animation: tut-land 2s ease-in-out infinite; }
+@keyframes tut-land { 0%, 10% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(75px, -60px) rotate(-360deg); } 90%, 100% { transform: translate(150px, 0) rotate(-360deg); } }
+.tut-board.on-rail { animation: tut-rail 2.4s ease-in-out infinite; }
+@keyframes tut-rail { 0%, 10% { transform: translate(0, 0); } 30% { transform: translate(70px, -42px); } 70% { transform: translate(130px, -42px); } 90%, 100% { transform: translate(170px, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .park-btn.park-new, .tut-finger, .tut-ring, .tut-board, .park-rider .board-trail { animation: none !important; }
+}

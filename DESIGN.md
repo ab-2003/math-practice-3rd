@@ -920,6 +920,76 @@ lowers `.coins`; the shop probe walks the gate for a level (badge, sheet,
 Not-yet spends nothing, confirm spends exactly the cost, the broke sheet
 offers only a way back).
 
+## 9i. The Skate Park: the daily reward (0.19.0)
+
+Andy, 2026-09-02: "add the concept of completing the daily and getting a
+Daily Token ... you spend these to enter a pure skateboarding game (with
+your monster, his equipped board, and his equipped headwear) ... fun and
+interesting ... simple enough to play ... sound effects [no music] ...
+perhaps hard to master ... all for the touch screen. A real daily reward,
+and a real cool use of the monsters."
+
+**The token.** Finishing the day's dose drops ONE Daily Token, once a day,
+at the moment the dose is met: the DONE banner grows a "+1 DAILY TOKEN"
+line with its own chime, and the run's story says where to spend it. The
+token is a cyan HEXAGON with a board across it, never a coin (coins are
+warm diamonds). The first token ever lights the Skate Park door on the
+home screen, which pulses until the park is opened once; before that the
+door sits dim and says how to light it. Tokens keep; the CAP does not.
+
+**The gate.** A token buys `parkMinutes` in the park (a parent dial, 2 to
+20, default 7). At most `parkTokensPerDay` may be spent before midnight
+(1 to 8, default 3), so a pocket of saved tokens cannot become an
+afternoon. Both dials sync like every other (SS9e), and the door and the
+kid's settings tab carry them. Spending is confirmed on a sheet that says
+the minutes, the pocket and today's plays; the token goes the moment the
+run starts and is never refunded, and leaving mid-run says so first.
+Tokens and park bests live in the rider's meta and mirror with the record.
+
+**The game.** Pure, in core/park.ts, unit-tested, deterministic per seed:
+the world scrolls; TAP ollies, HOLD then release ollies bigger (up to
+HOLD_MS), a KICKER launches on its own. In the air a SWIPE is a trick
+(up KICKFLIP 300ms/100, down NOSE GRAB 380/150, right 360 SPIN 480/200,
+left BACKFLIP 660/300); a swipe on the ground or a rail ollies AND starts
+the trick, one gesture. A trick still turning at touchdown (under
+LAND_TOL of its length) is a BAIL: a tumble, the chain lost, the speed
+back to base. Ollie ONTO a rail to grind (points by the second), tap to
+hop off; run into a rail or box, or roll into a gap, and you bail. Every
+trick and grind before the board next touches flat ground is one CHAIN,
+banked as its points TIMES its length (to x5). Rails, boxes, gaps and
+kickers arrive in patterns whose rest is TIME, not distance (1.5s easing
+to 0.9s over two minutes), so a faster line never becomes a denser one.
+The speed climbs from 250 to 440 units a second. Easy to start, hard to
+master: reading the air you have against the trick you want.
+
+**On screen.** The stage is PARK_W by PARK_H design units scaled to what
+fits (width, or height on an iPad on its side). The rider is the real
+one: his monster at its level, its board with its trail lit, its helmet,
+drawn by the same renderers as everywhere else. A far skyline drifts at a
+quarter speed and the ground's ticks stream at full, so speed is seen
+between obstacles. Pops name each trick by the rider and each bank in the
+middle, stacked so they never print over each other. Sounds: a wooden pop
+for the ollie (bigger for a charge), a whoosh per trick pitched by its
+length, a thud on landing, a buzz on the beat while grinding, a crunch
+for a bail, a rising run for a bank (one note per link), a sweep for a
+kicker, a two-note horn for time, and the token's own chime. No music.
+
+**The tutorial.** Four cards with moving pictograms (tap; the four
+swipes; land or bail; rails and chains), the first time in, and again
+from the ? in the park's top bar. Skip works.
+
+**Input is pointer events on the stage**, nothing else, with the clock
+paused under any sheet and while the tab is hidden. The probe drives the
+same handlers with real mouse events and the clock by hand through the
+screen's own step, and walks the whole loop: dim door, grant, lit door,
+gate, tutorial, ollie, trick, bank, bail, help, leave, time up, results,
+the day's cap, the dials, a landscape fit, and the token dropping with a
+real dose exactly once.
+
+**Alpha only:** an "Alpha testing" card on the kid's settings tab grants
+a token and resets the park day and tutorial, so Andy can test without a
+day's practice per play. Slated for removal before production.
+
 ## Unit test law
 
 Every behaviour change lands with its test in the same commit, beside the code
@@ -1009,6 +1079,10 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [ ] **0.19.0 - The Skate Park.** SS9i: a Daily Token for the day's
+      work, spent on a pure touch skateboarding game with the rider's
+      monster, board and helmet; parent dials for minutes per token and
+      tokens per day. On the alpha channel first.
 - [x] **0.18.7 - The ghost click.** Andy: hold a button a beat instead of
       tapping it and "it automatically presses whatever is underneath".
       iOS follows a held touch with a native click of its own; our

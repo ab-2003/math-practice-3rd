@@ -19,7 +19,7 @@ import type { Caps, Strands } from "./types";
 
 /** The dials a grown-up may set from anywhere. Never the PIN (device-level),
  *  never the kid's own controls (mute, animations), never progress. */
-export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog"] as const;
+export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay"] as const;
 export type SyncKey = typeof SYNCED_KEYS[number];
 
 export interface MissingLike { add: boolean; sub: boolean; mul: boolean; div: boolean; pct: number }
@@ -32,6 +32,9 @@ export interface SyncedSettings {
   speedLimit: number;
   elapsedLevel: 1 | 2 | 3;
   elapsedAnalog: boolean;
+  /** THE SKATE PARK: minutes one Daily Token buys, and tokens a day. */
+  parkMinutes: number;
+  parkTokensPerDay: number;
 }
 
 export interface Stamp { at: number; by: string }
@@ -108,6 +111,8 @@ export const validValue = (k: SyncKey, v: unknown): boolean => {
     case "speedLimit": return typeof v === "number" && v >= 1 && v <= 30;
     case "elapsedLevel": return v === 1 || v === 2 || v === 3;
     case "elapsedAnalog": return typeof v === "boolean";
+    case "parkMinutes": return typeof v === "number" && Number.isInteger(v) && v >= 2 && v <= 20;
+    case "parkTokensPerDay": return typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 8;
   }
 };
 
@@ -135,6 +140,7 @@ export const fieldsToApply = (
 export const settingsOf = (meta: SyncedSettings): SyncedSettings => ({
   strands: meta.strands, caps: meta.caps, missing: meta.missing, dailyGoal: meta.dailyGoal,
   speedLimit: meta.speedLimit, elapsedLevel: meta.elapsedLevel, elapsedAnalog: meta.elapsedAnalog,
+  parkMinutes: meta.parkMinutes, parkTokensPerDay: meta.parkTokensPerDay,
 });
 
 /** Fields the grown-ups' door has set that the rider's device is not yet
@@ -165,5 +171,7 @@ export const describeField = (k: SyncKey, v: unknown): string => {
     case "speedLimit": return `${v as number} speed runs a day`;
     case "elapsedLevel": return `elapsed time up to level ${v as number}`;
     case "elapsedAnalog": return (v as boolean) ? "analog clock faces on" : "analog clock faces off";
+    case "parkMinutes": return `${v as number} park minutes per token`;
+    case "parkTokensPerDay": return `${v as number} park ${(v as number) === 1 ? "token" : "tokens"} a day`;
   }
 };

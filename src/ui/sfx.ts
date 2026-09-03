@@ -128,4 +128,38 @@ export const sfx = {
     noise(0, 0.5, 0.09, 700);
   },
   coin: (): void => env("square", 880, 0, 0.07, 0.08, 1320),
+
+  // ---- THE SKATE PARK (0.19.0): its own kit, no music ----------------------
+  /** The pop of an ollie: a wooden click, bigger for a bigger charge. */
+  pop: (charge = 0): void => {
+    env("square", 220 + charge * 120, 0, 0.05, 0.09 + charge * 0.05, 140);
+    noise(0, 0.05 + charge * 0.04, 0.12, 1800);
+  },
+  /** A trick starting: a short whoosh, pitched by how long the trick is. */
+  whoosh: (ms = 300): void => {
+    noise(0, Math.min(0.45, ms / 1000), 0.09, 900 + (700 - ms));
+    env("sine", 520, 0, Math.min(0.4, ms / 1000), 0.05, 380);
+  },
+  /** Wheels back on the ground. */
+  thud: (): void => { env("triangle", 150, 0, 0.09, 0.14, 90); noise(0, 0.08, 0.1, 1200); },
+  /** The rail under the trucks, one buzz per call; the screen calls it on a beat. */
+  grindTick: (): void => { noise(0, 0.12, 0.08, 3400); env("sawtooth", 180, 0, 0.1, 0.035, 170); },
+  /** A bail in the park: a crunch, low and short. Bailing is normal in skating. */
+  crash: (): void => { noise(0, 0.22, 0.16, 500); env("sine", 120, 0, 0.25, 0.1, 70); },
+  /** A chain banking: a rising run, one note per link, brighter for bigger. */
+  bank: (mult = 1): void => {
+    const n = Math.max(1, Math.min(5, mult));
+    for (let i = 0; i < n; i++) env("triangle", 523 * Math.pow(2, (i * 4) / 12), i * 0.07, 0.16, 0.12);
+    if (n >= 3) noise(n * 0.07, 0.25, 0.06, 2800);
+  },
+  /** A kicker launch: a rising sweep. */
+  launch: (): void => { env("sine", 200, 0, 0.3, 0.1, 620); noise(0, 0.2, 0.06, 1400); },
+  /** Time's up in the park: a two-note horn, warm, not a buzzer. */
+  horn: (): void => { env("triangle", 392, 0, 0.35, 0.14); env("triangle", 523, 0.3, 0.55, 0.15); },
+  /** A DAILY TOKEN dropping: three bright ticks and a shimmer. */
+  token: (): void => {
+    [988, 1319, 1976].forEach((f, i) => env("square", f, i * 0.08, 0.14, 0.07));
+    env("sine", 2637, 0.26, 0.5, 0.06);
+    noise(0.24, 0.3, 0.04, 5000);
+  },
 };

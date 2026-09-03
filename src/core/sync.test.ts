@@ -8,7 +8,7 @@ const base: SyncedSettings = {
   strands: { add: true, sub: true, mul: false, div: false },
   caps: { add: null, sub: null, mul: null, div: null },
   missing: { add: false, sub: false, mul: false, div: false, pct: 20 },
-  dailyGoal: 40, speedLimit: 10, elapsedLevel: 1, elapsedAnalog: false,
+  dailyGoal: 40, speedLimit: 10, elapsedLevel: 1, elapsedAnalog: false, parkMinutes: 7, parkTokensPerDay: 3,
 };
 
 describe("later writer wins, per field", () => {
@@ -90,8 +90,9 @@ describe("merge, under fire", () => {
     const out: Fields = {};
     const values: Record<string, unknown[]> = {
       dailyGoal: [10, 30, 50, 80], speedLimit: [1, 5, 10, 30], elapsedLevel: [1, 2, 3], elapsedAnalog: [true, false],
+      parkMinutes: [2, 7, 20], parkTokensPerDay: [1, 3, 8],
     };
-    for (const k of ["dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog"] as const) {
+    for (const k of ["dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay"] as const) {
       if (rnd() < 0.6) out[k] = { v: values[k]![Math.floor(rnd() * values[k]!.length)], at: Math.floor(rnd() * 10), by: rnd() < 0.5 ? "a" : "b" };
     }
     return out;
