@@ -996,6 +996,10 @@ zero image requests.
 - **iOS double-tap**: preventDefault every touchend and synthesise the click,
   with `input`, `textarea` and `select` exempted first.
 - **Never redirect a build to `/dev/null`.**
+- **A native click inside 700ms of a synthesised one is a ghost.** iOS
+  follows a HELD touch with a click of its own, after our touchend handler
+  has already acted; it lands on whatever is under the finger by then.
+  The shell eats it (0.18.7).
 - **No em-dashes in user-facing copy.**
 - **Any spend of coins requires confirmation** (Andy, 2026-09-02). The one
   place the wallet goes down is the confirm gate in `ui/spend.ts`;
@@ -1005,6 +1009,14 @@ zero image requests.
 
 # PART VI - THE LADDER
 
+- [x] **0.18.7 - The ghost click.** Andy: hold a button a beat instead of
+      tapping it and "it automatically presses whatever is underneath".
+      iOS follows a held touch with a native click of its own; our
+      synthesised click had already closed the card, so the ghost landed on
+      the tile beneath. The shell now eats any trusted click inside 700ms
+      of a synthesised one. The shop probe models it (touch tap on Close,
+      then a real mouse click at the same point) and went red on the old
+      build, green on the fix; a tap a moment later still works.
 - [x] **0.18.6 - KOMODUSTER.** A Komodo dragon at 125, third in line after
       GRINDJAW and SKATHORN: low and long on splayed legs, scales on the
       flank, a lunge with a forked tongue that flicks twice and dust at

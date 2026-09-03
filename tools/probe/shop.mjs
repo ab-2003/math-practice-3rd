@@ -156,6 +156,42 @@ await step("a TOUCH on the monster art opens its card (the phone scar)", async (
   await page.waitForTimeout(250);
 });
 
+await step("a HELD tap on Close does not open the monster underneath (the ghost click)", async () => {
+  // Andy, 2026-09-02: hold a button instead of tapping it and iOS follows
+  // the touch with a native click, which by then lands on the tile under
+  // where the Close button was. Model it: a touch tap (our synthesised
+  // click) followed at once by a real mouse click at the same point.
+  const tile = await page.locator('[data-mon="skathorn"]').boundingBox();
+  await page.touchscreen.tap(tile.x + tile.width / 2, tile.y + tile.height * 0.42);
+  await page.waitForSelector(".sheet .btn.ghost", { timeout: 4000 });
+  const close = await page.locator(".sheet .row .btn.ghost").boundingBox();
+  // A point on Close that has a monster tile beneath it, so the ghost has
+  // something to hit.
+  let pt = null;
+  for (const fx of [0.2, 0.5, 0.8]) {
+    const x = close.x + close.width * fx, y = close.y + close.height / 2;
+    const under = await page.evaluate(([x, y]) => {
+      const scrim = document.querySelector(".scrim"); scrim.style.visibility = "hidden";
+      const el = document.elementFromPoint(x, y)?.closest(".mon")?.getAttribute("data-mon") ?? null;
+      scrim.style.visibility = ""; return el;
+    }, [x, y]);
+    if (under !== null) { pt = { x, y, under }; break; }
+  }
+  must(pt !== null, "no tile lies under the Close button to test against");
+  await page.touchscreen.tap(pt.x, pt.y);
+  await page.mouse.click(pt.x, pt.y); // the ghost, trusted, at once
+  await page.waitForTimeout(500);
+  const ghosted = await page.$(".sheet") !== null;
+  await escapeAll(page); // leave nothing behind for the next step either way
+  must(!ghosted, `the ghost click opened ${pt.under}'s card under the closed one`);
+  // And a real tap a moment later still works: the shield is a window, not a wall.
+  await page.waitForTimeout(400);
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForSelector(".sheet", { timeout: 4000 });
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+});
+
 await step("with no monsters yet, the racks are on display but shut", async () => {
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "the fresh profile owns something");
   must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");

@@ -49,6 +49,18 @@ export const installShell = (): void => {
   const TAPPABLE = "button, a, .mon, .key";
   const starts = new Map<number, { x: number; y: number; el: Element | null }>();
 
+  // GHOST CLICKS (Andy, 2026-09-02): hold a button a beat instead of tapping
+  // it and iOS follows the touch with a native click of its own, which lands
+  // on whatever is under the finger BY THEN. The synthesised click had
+  // already closed the monster card, so the ghost opened the tile beneath.
+  // A native click inside a short window after a synthesised one can only
+  // be that ghost, and it is eaten before anything sees it.
+  const GHOST_MS = 700;
+  let ghostUntil = 0;
+  document.addEventListener("click", (e) => {
+    if (e.isTrusted && performance.now() < ghostUntil) { e.stopPropagation(); e.preventDefault(); }
+  }, { capture: true });
+
   document.addEventListener("touchstart", (e) => {
     unlock(); // iOS gives audio only on a gesture. Retry on every one.
     for (const t of Array.from(e.changedTouches)) {
@@ -79,6 +91,7 @@ export const installShell = (): void => {
     const startTarget = start?.el instanceof Element ? start.el.closest(TAPPABLE) : null;
     // A button born mid gesture never eats the same tap.
     if (target instanceof HTMLElement && target === startTarget && !target.hasAttribute("disabled")) {
+      ghostUntil = performance.now() + GHOST_MS;
       target.click();
     }
   }, { passive: false, capture: true });
