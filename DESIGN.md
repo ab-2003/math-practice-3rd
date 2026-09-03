@@ -992,9 +992,10 @@ gate, tutorial, ollie, trick, bank, bail, help, leave, time up, results,
 the day's cap, the dials, a landscape fit, and the token dropping with a
 real dose exactly once.
 
-**Alpha only:** an "Alpha testing" card on the kid's settings tab grants
-a token and resets the park day and tutorial, so Andy can test without a
-day's practice per play. Slated for removal before production.
+**The alpha channel** carried an "Alpha testing" card on the kid's
+settings tab (grant a token, reset the park day and tutorial) so Andy
+could test without a day's practice per play. Removed at 0.19.0, as
+planned; the probe awards its token the way the day's work does.
 
 ## Unit test law
 
@@ -1085,15 +1086,15 @@ zero image requests.
 
 # PART VI - THE LADDER
 
-- [ ] **0.19.0-alpha.2 - Andy's first play.** Input from anywhere on the
+- [x] **0.19.0-alpha.2 - Andy's first play.** Input from anywhere on the
       park screen but the buttons; the stairs; a faster, visible ramp. And
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.19.0 - The Skate Park.** SS9i: a Daily Token for the day's
+- [x] **0.19.0 - The Skate Park.** SS9i: a Daily Token for the day's
       work, spent on a pure touch skateboarding game with the rider's
       monster, board and helmet; parent dials for minutes per token and
-      tokens per day. On the alpha channel first.
+      tokens per day. Two rounds on the alpha channel, then promoted.
 - [x] **0.18.7 - The ghost click.** Andy: hold a button a beat instead of
       tapping it and "it automatically presses whatever is underneath".
       iOS follows a held touch with a native click of its own; our

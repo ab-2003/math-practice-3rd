@@ -46,7 +46,7 @@ await step("before any token the park door is on the home screen, dim, and expla
   await closeSheets(page);
 });
 
-await step("the parent dials default to 7 minutes and 3 tokens a day, and the alpha card grants a token", async () => {
+await step("the parent dials default to 7 minutes and 3 tokens a day; a token is granted by hand for the rest", async () => {
   await openSettings(page);
   must(await page.$('[data-probe="park-card"]') !== null, "no Skate Park card in settings");
   must((await page.textContent('[data-probe="park-minutes"]')) === "7", "minutes per token is not 7");
@@ -57,11 +57,13 @@ await step("the parent dials default to 7 minutes and 3 tokens a day, and the al
   must((await meta()).parkMinutes === 8, "the minutes did not reach meta");
   await page.click('[data-probe="park-minutes-minus"]');
   await page.waitForTimeout(300);
-  await page.click('[data-probe="grant-token"]');
-  await page.waitForTimeout(300);
+  // The alpha channel had a grant button here; production does not, so the
+  // probe awards the token the way the day's work does.
+  await page.evaluate(() => { const m = window.__app.meta(); m.tokens = 1; m.parkUnlocked = true; });
+  await page.evaluate(() => window.__app.save());
+  must(await page.$('[data-probe="grant-token"]') === null, "the alpha grant button is still on the settings tab");
   const m = await meta();
   must(m.tokens === 1 && m.parkUnlocked === true, `granting gave tokens=${m.tokens} unlocked=${m.parkUnlocked}`);
-  must(((await page.textContent('[data-probe="alpha-tokens"]')) ?? "").includes("1 Daily Token"), "the alpha card does not count the token");
 });
 
 await step("the first token lights the door, which pulses until the park is opened once", async () => {

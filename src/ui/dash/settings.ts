@@ -65,23 +65,6 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   wrap.append(section("The day"));
   wrap.append(dayCard!, park!, bonus!);
 
-  // ---- alpha testing -------------------------------------------------------------
-  // Andy asked for a way to grant Daily Tokens on the alpha channel so the
-  // park can be tested without a day's practice each time. Behind the PIN,
-  // on this device only. Slated for removal before production.
-  wrap.append(section("Alpha testing"));
-  const test = el("div", { class: "card", "data-probe": "alpha-card" });
-  test.append(el("h3", { class: "title", text: "Skate Park testing" }));
-  test.append(el("p", { class: "note", "data-probe": "alpha-tokens", text:
-    `${app.profile.name} has ${app.meta.tokens} Daily ${app.meta.tokens === 1 ? "Token" : "Tokens"}; ${app.meta.parkDay === app.day ? app.meta.parkSpent : 0} spent today. Granting one here is for testing only.` }));
-  const trow = el("div", { class: "stepper", style: "flex-wrap:wrap" });
-  const grant = el("button", { type: "button", class: "btn small alt", "data-probe": "grant-token" }, el("span", { text: "Grant a Daily Token" }));
-  on(grant, "click", () => { app.meta.tokens += 1; app.meta.parkUnlocked = true; void app.save().then(opts.rerender); });
-  const resetPark = el("button", { type: "button", class: "btn small ghost", "data-probe": "reset-park" }, el("span", { text: "Reset park day + tutorial" }));
-  on(resetPark, "click", () => { app.meta.parkDay = null; app.meta.parkSpent = 0; app.meta.parkSeen = false; void app.save().then(opts.rerender); });
-  trow.append(grant, resetPark);
-  test.append(trow);
-  wrap.append(test);
 
   // ---- riders ------------------------------------------------------------------
   wrap.append(section("Riders"));
