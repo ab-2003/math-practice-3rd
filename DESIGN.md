@@ -1130,6 +1130,21 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.11 - The daily streak, earned by finishing and paid at home.**
+      Andy: "completing the day's work is how you earn the next day in the
+      streak", worth 20 coins for any streak over one day, with a ceremony
+      that "appears only when you return to the main title page ... not
+      while you were in the middle of doing math problems, or if you jump
+      straight into the shop", a jingle, and a sparkle on the counter
+      showing +20. So the streak counts finished days, not days practised:
+      finishing credits the day and OWES the purse, and the home screen is
+      the only place that claims it, waiting for a clear screen so the run
+      ends sheet never covers it. A rider who finished today under an older
+      build gets the ceremony when the app next opens; missed days never
+      backfill. The pill rides above the ceremony dim, the wallet bumps to
+      its new total, and the probe proves nothing is paid mid-session or in
+      the shop, that home pays 20 once, and that coming home again pays
+      nothing.
 - [x] **0.20.10 - The day is done at forty LANDINGS, and the sound survives
       a sleeping iPad.** Andy's son was told the day's work was done at 22
       of 40: the dose counted every ATTEMPT, so a miss moved it exactly

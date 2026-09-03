@@ -188,7 +188,14 @@ export interface Meta {
   levels: Record<string, number>;
   names: Record<string, string>;
   lastSessionDay: number | null;
+  /** Consecutive days whose WORK WAS FINISHED (not merely practised). */
   streak: number;
+  /** The last day counted into that streak, so a day counts once. */
+  streakDay: number | null;
+  /** A finished streak day waiting for its ceremony at home. 0 = nothing
+   *  owed. It waits because the ceremony belongs on the home screen, never
+   *  mid-problem and never in the shop (Andy, 2026-09-03). */
+  streakOwed: number;
   backupNudgedOn: number | null;
   /** Which operations are switched on. A grown-up setting, behind the PIN. */
   strands: Strands;
@@ -243,7 +250,7 @@ export const freshMeta = (): Meta => ({
   rider: null, dailyGoal: 40, doseDay: null, doseCount: 0,
   speedBest: {}, speedDay: null, speedCount: 0, speedLimit: 10,
   shopPeekDay: null, shopPeekAt: null, shopPeekSpent: false, helmetsOwned: [], gear: {}, boardsOwned: [], boardOf: {}, linesLanded: 0, bestTricksRun: 0, bestLinesRun: 0, coins: 0, owned: [],
-  levels: {}, names: {}, lastSessionDay: null, streak: 0, backupNudgedOn: null,
+  levels: {}, names: {}, lastSessionDay: null, streak: 0, streakDay: null, streakOwed: 0, backupNudgedOn: null,
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
   caps: { add: null, sub: null, mul: null, div: null },
@@ -294,6 +301,8 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   boardsOwned: raw.boardsOwned ?? [],
   boardOf: raw.boardOf ?? {},
   tokens: Math.max(0, raw.tokens ?? 0),
+  streakDay: raw.streakDay ?? null,
+  streakOwed: Math.max(0, raw.streakOwed ?? 0),
   parkMinutes: Math.max(2, Math.min(20, raw.parkMinutes ?? PARK_DEFAULTS.minutes)),
   parkTokensPerDay: Math.max(1, Math.min(8, raw.parkTokensPerDay ?? PARK_DEFAULTS.tokensPerDay)),
 });

@@ -12,6 +12,7 @@ import { speedScreen } from "./speed-screen";
 import { parkScreen } from "./park-screen";
 import { setMuted } from "./sfx";
 import { sheet } from "./sheet";
+import { catchUpStreak } from "./streak";
 import { flushToast } from "./toast";
 import { cloudAutoPush, cloudRole, connectedCode, setCloudRole } from "./cloud";
 import { offerRestore, startSync } from "./sync";
@@ -60,6 +61,10 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   for (const [id, s] of stored) if (states.has(id)) states.set(id, s as FactState);
   // A fact added by a later version of the deck simply starts fresh.
   for (const id of deck.keys()) if (!states.has(id)) states.set(id, freshState());
+
+  // The streak, brought up to date before anything is drawn: an old save
+  // keeps its number, and a day already finished still gets its ceremony.
+  catchUpStreak(meta, today());
 
   setMuted(meta.muted);
 

@@ -15,6 +15,7 @@ export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
 import { confirmSpend } from "./spend";
+import { claimStreak } from "./streak";
 
 /** Who rides: his explicit pick, else the newest owned, else the target. */
 export const resolveRider = (app: App): Creature => {
@@ -65,7 +66,7 @@ const iconMonster = (): SVGElement => {
 };
 
 const coinChip = (n: number): HTMLElement =>
-  el("div", { class: "coins" }, el("span", { text: "◆" }), el("span", { text: String(n) }));
+  el("div", { class: "coins" }, el("span", { text: "◆" }), el("span", { class: "chip-n", text: String(n) }));
 
 /** The corner icons, drawn in the same ink as everything else: emoji looked
  *  like a different app sitting on top of this one. */
@@ -117,7 +118,8 @@ export const homeScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
 
   const bar = el("div", { class: "topbar" });
-  bar.append(coinChip(app.meta.coins));
+  const wallet = coinChip(app.meta.coins);
+  bar.append(wallet);
   // More than one rider on this iPad: whose coins these are, and the way to
   // the picker. With one rider the bar stays clean.
   if (app.registry.profiles.length > 1) {
@@ -126,7 +128,11 @@ export const homeScreen = (app: App): HTMLElement => {
     bar.append(who);
   }
   bar.append(el("div", { class: "grow" }));
-  if (app.meta.streak > 1) bar.append(el("span", { class: `pill${app.meta.streak >= 7 ? " streak-hot" : ""}`, "data-probe": "streak-pill", text: `${app.meta.streak} day streak` }));
+  let streakPill: HTMLElement | null = null;
+  if (app.meta.streak > 1) {
+    streakPill = el("span", { class: `pill${app.meta.streak >= 7 ? " streak-hot" : ""}`, "data-probe": "streak-pill", text: `${app.meta.streak} day streak` });
+    bar.append(streakPill);
+  }
   // Two kid controls, side by side: sound, and the trick animations.
   bar.append(iconBtn(app.meta.animations ? icoBoard() : icoMoon(),
     app.meta.animations ? "Turn trick animations off" : "Turn trick animations on", () => {
@@ -171,6 +177,7 @@ export const homeScreen = (app: App): HTMLElement => {
     const act = (): void => { for (const a of anims()) { a.currentTime = 0; a.play(); } window.setTimeout(rest, HOME_ACT_MS); };
     window.setTimeout(act, 60);
     const beat = window.setInterval(() => { if (!root.isConnected) { window.clearInterval(beat); return; } act(); }, HOME_ACT_EVERY_MS);
+    void beat;
     // The rider stands on its board: a bought deck is visible before any run.
     const deck = boardFor(app.meta.boardOf, star.id, app.meta.boardsOwned);
     if (deck.id !== PLAIN_BOARD) hero.append(boardSvg(deck, { cls: "home-board" }));
@@ -272,6 +279,39 @@ export const homeScreen = (app: App): HTMLElement => {
     iconMonster(), el("span", { text: `Monster Shop ${app.meta.owned.length}/${ROSTER.length}` }));
   on(coll, "click", () => app.go("collection"));
   panel.append(coll);
+
+  // THE STREAK CEREMONY (Andy, 2026-09-03) happens HERE and nowhere else.
+  // Finishing the day's work happens mid-problem, so the purse is owed there
+  // and paid here: not on top of a problem, not in the shop, and not behind
+  // the sheet the run's end puts up. It waits for a clear home screen,
+  // however long that takes, and if he leaves first it simply waits again.
+  if (app.meta.streakOwed >= 2) {
+    const ceremony = (): void => {
+      if (!root.isConnected) return;                  // gone again; the purse keeps
+      if (document.querySelector(".scrim") !== null) { window.setTimeout(ceremony, 250); return; }
+      const won = claimStreak(app.meta);
+      if (!won) return;
+      void app.save();
+      const n = wallet.querySelector(".chip-n");
+      if (n) n.textContent = String(app.meta.coins);
+      wallet.classList.add("bump");
+      sfx.streakJingle();
+      const b = el("div", { class: "streak-banner", "data-probe": "streak-ceremony" },
+        el("div", { class: "sb-big", text: `${won.days} DAY STREAK!` }),
+        el("div", { class: "sb-sub", "data-probe": "streak-purse", text: `+${won.coins} coins` }));
+      for (const [x, y, d] of [[12, 24, 0], [82, 18, 140], [26, 74, 260], [70, 80, 380], [48, 8, 500]] as const) {
+        b.append(el("span", { class: "sb-spark", style: `left:${x}%;top:${y}%;animation-delay:${d}ms` }));
+      }
+      root.append(b);
+      window.setTimeout(() => { b.remove(); wallet.classList.remove("bump"); }, 2600);
+      if (streakPill) {
+        streakPill.classList.add("streak-won");
+        streakPill.append(el("span", { class: "streak-plus", "data-probe": "streak-plus", text: `+${won.coins}` }));
+        window.setTimeout(() => { streakPill?.classList.remove("streak-won"); streakPill?.querySelector(".streak-plus")?.remove(); }, 3200);
+      }
+    };
+    window.setTimeout(ceremony, 160);
+  }
 
   return root;
 };

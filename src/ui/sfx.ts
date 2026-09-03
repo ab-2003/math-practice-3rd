@@ -137,6 +137,16 @@ export const sfx = {
     env("sine", 262, 0.44, 0.6, 0.09, 330);
     noise(0.5, 0.35, 0.06, 3200);
   },
+  /** THE STREAK'S FANFARE (Andy, 2026-09-03): the ceremony gets its own
+   *  jingle, taller and rising, so it never reads as the day's own fanfare
+   *  played twice. */
+  streakJingle: (): void => {
+    [523, 659, 784, 1047].forEach((f, i) => env("triangle", f, i * 0.09, 0.26, 0.13));
+    env("triangle", 1319, 0.38, 0.5, 0.15);
+    env("sine", 330, 0.38, 0.55, 0.08, 523);
+    [0.5, 0.62].forEach((t, i) => env("square", i === 0 ? 1568 : 2093, t, 0.16, 0.06));
+    noise(0.46, 0.3, 0.05, 3600);
+  },
   /** The speed run's own finale: quick, bright, and NOT the daily fanfare,
    *  which stays reserved for the day's work. */
   speedFanfare: (): void => {

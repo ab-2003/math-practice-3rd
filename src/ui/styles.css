@@ -459,7 +459,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 /* ---------- the juice: visible coins, the line banner, new tricks ---------- */
 
 .session-coins { flex: none; position: relative; font-size: 19px; }
-.session-coins.bump .chip-n { animation: chip-bump 350ms ease-out; display: inline-block; }
+.session-coins.bump .chip-n, .coins.bump .chip-n { animation: chip-bump 350ms ease-out; display: inline-block; }
 @keyframes chip-bump { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
 .coin-float {
   position: absolute; left: 50%; top: -4px; transform: translateX(-50%);
@@ -869,6 +869,60 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .db-sub { font-size: clamp(15px, 3vw, 21px); font-weight: 900; color: var(--acid); text-shadow: 0 3px 0 var(--ink); }
 .extra-tag { flex: none; color: var(--hot); border-color: var(--hot); font-size: 13px; }
+
+/* ---------- the daily streak's ceremony, at home and only at home ---------- */
+/* The home screen is a busy place, so the ceremony DIMS it and owns the
+   moment, then gets out of the way. Taps pass straight through it. */
+.streak-banner {
+  position: absolute; inset: 0; z-index: 12; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: radial-gradient(ellipse at center, rgba(5, 7, 10, 0.88) 0%, rgba(5, 7, 10, 0.82) 55%, rgba(5, 7, 10, 0.7) 100%);
+  animation: streak-scrim 2600ms ease-out forwards;
+}
+@keyframes streak-scrim { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+.streak-banner .sb-big, .streak-banner .sb-sub { animation: banner-in 2600ms ease-out forwards; }
+.sb-big {
+  font-size: clamp(28px, 6.4vw, 54px); font-weight: 900; letter-spacing: 0.05em;
+  color: var(--acid); text-shadow: 0 6px 0 var(--ink); transform: rotate(-2.5deg);
+}
+.sb-sub { font-size: clamp(16px, 3.2vw, 24px); font-weight: 900; color: var(--warm); text-shadow: 0 3px 0 var(--ink); }
+/* The sparkles: four-pointed stars that pop and fade around the words. */
+.sb-spark {
+  position: absolute; width: 22px; height: 22px; opacity: 0;
+  background: var(--acid);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  animation: sb-spark 1100ms ease-out forwards;
+}
+@keyframes sb-spark {
+  0% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  35% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+  100% { opacity: 0; transform: scale(0.7) rotate(90deg); }
+}
+/* The counter itself lights up and says what it just paid. */
+/* The counter rides ABOVE the ceremony's dim, so the thing being celebrated
+   is the brightest thing on the screen. */
+.pill.streak-won {
+  position: relative; z-index: 14; color: var(--ink); background: var(--acid); border-color: var(--ink);
+  animation: streak-won 900ms ease-out 3;
+}
+@keyframes streak-won {
+  0%, 100% { transform: none; box-shadow: 0 0 0 rgba(182, 255, 60, 0); }
+  40% { transform: scale(1.12) rotate(-2deg); box-shadow: 0 0 18px rgba(182, 255, 60, 0.55); }
+}
+.streak-plus {
+  position: absolute; left: 50%; top: -6px; transform: translateX(-50%);
+  font-size: 15px; font-weight: 900; color: var(--warm); text-shadow: 0 2px 0 var(--ink);
+  animation: streak-plus 2600ms ease-out forwards; pointer-events: none; white-space: nowrap;
+}
+@keyframes streak-plus {
+  0% { opacity: 0; transform: translate(-50%, 6px); }
+  18% { opacity: 1; transform: translate(-50%, -14px); }
+  76% { opacity: 1; transform: translate(-50%, -20px); }
+  100% { opacity: 0; transform: translate(-50%, -30px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-banner, .streak-banner .sb-big, .streak-banner .sb-sub, .sb-spark, .pill.streak-won, .streak-plus { animation-duration: 1ms; }
+}
 
 /* ---------- the histogram ---------- */
 .hist-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 12px; }

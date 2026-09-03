@@ -248,12 +248,18 @@ await step("the rider speaks on the end sheet, and a streak milestone is stamped
     m.animations = false;
     m.strands = { add: true, sub: true, mul: false, div: false };
     m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
-    // Six days running, yesterday the last: today makes seven.
-    m.streak = 6; m.lastSessionDay = window.__app.day() - 1;
+    // Six days running, yesterday the last: FINISHING today's work makes
+    // seven (0.20.11: a day joins the streak by being finished, not by
+    // being practised), so the day is set two landings short of done.
+    m.streak = 6; m.streakDay = window.__app.day() - 1; m.streakOwed = 0;
+    m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal - 2;
   });
   await page.click('[data-probe="start"]');
   await page.waitForSelector('[data-probe="problem"]');
   await answerN(page, 2);
+  await page.waitForSelector('[data-probe="daily-banner"]', { timeout: 6000 });
+  await page.waitForSelector('[data-probe="daily-banner"]', { state: "detached", timeout: 8000 });
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
   await page.click('[data-probe="quit"]');
   await page.waitForSelector(".sheet");
   await page.click(".sheet .btn.warm, .sheet .btn.go");
@@ -265,6 +271,73 @@ await step("the rider speaks on the end sheet, and a streak milestone is stamped
   must(stamp === "7 DAY STREAK!", `the streak stamp reads "${stamp}"`);
   await closeSheets(page);
   must(await page.$('[data-probe="streak-pill"].streak-hot') !== null, "the home streak pill is not hot at seven");
+});
+
+await step("the streak's purse waits for the home screen, and is paid once", async () => {
+  // Andy (2026-09-03): the ceremony "appears only when you return to the
+  // main title page ... not while you were in the middle of doing math
+  // problems, or if you jump straight into the shop from the math".
+  await goHome(page);
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false;
+    m.strands = { add: true, sub: false, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 0 };
+    // Nothing owned and coins in hand, so the run's end offers the crew and
+    // the shop can be entered without ever standing on the home screen.
+    m.owned = []; m.levels = {}; m.rider = null;
+    m.coins = 100; m.dailyGoal = 3; m.doseDay = window.__app.day(); m.doseCount = 0;
+    // Yesterday was finished too, so today's finish makes it two days.
+    m.streak = 1; m.streakDay = window.__app.day() - 1; m.streakOwed = 0;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  await answerN(page, 3);
+  await page.waitForSelector('[data-probe="daily-banner"]', { timeout: 6000 });
+  // Mid-problem: the day is earned, but nothing is paid and nothing is shown.
+  must(await page.$('[data-probe="streak-ceremony"]') === null, "the streak ceremony played during the session");
+  let m = await page.evaluate(() => window.__app.meta());
+  must(m.streakOwed === 2 && m.coins === 100, `mid-session the purse reads owed=${m.streakOwed} coins=${m.coins}`);
+  await page.waitForSelector('[data-probe="daily-banner"]', { state: "detached", timeout: 8000 });
+  // Out of the run and STRAIGHT INTO THE SHOP: still nothing.
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.warm, .sheet .btn.go");
+  await page.waitForSelector('[data-probe="rider-quip"], .sheet .btn.go', { timeout: 6000 });
+  await page.click(".sheet .btn.go"); // Done, on the run's story
+  // The run's end offers the crew: taking it goes to the shop over the top
+  // of a home screen he never actually looks at.
+  await page.waitForFunction(() => (document.querySelector(".sheet")?.textContent ?? "").includes("in reach"), null, { timeout: 6000 });
+  await page.click(".sheet .btn.go"); // See the crew
+  await page.waitForSelector(".roster");
+  must(await page.$('[data-probe="streak-ceremony"]') === null, "the streak ceremony played in the shop");
+  const inShop = await page.evaluate(() => window.__app.meta());
+  must(inShop.streakOwed === 2, `the shop spent the purse (owed=${inShop.streakOwed})`);
+  const before = inShop.coins;
+  // Home at last: the jingle's moment. Coins, banner, pill, +20.
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="streak-ceremony"]', { timeout: 5000 });
+  const said = (await page.textContent('[data-probe="streak-purse"]')) ?? "";
+  must(said === "+20 coins", `the ceremony says "${said}"`);
+  must(((await page.textContent('[data-probe="streak-ceremony"]')) ?? "").includes("2 DAY STREAK"), "the ceremony does not name the streak");
+  must(await page.$('[data-probe="streak-pill"].streak-won') !== null, "the streak counter did not light up");
+  must((await page.textContent('[data-probe="streak-plus"]')) === "+20", "the counter does not show the coins it earned");
+  must((await page.textContent('[data-probe="streak-pill"]')).startsWith("2 day streak"), "the pill does not read two days");
+  m = await page.evaluate(() => window.__app.meta());
+  must(m.coins === before + 20, `home paid ${m.coins - before} coins, wanted 20`);
+  must(m.streakOwed === 0, "the purse stayed owed after it was paid");
+  // Coming home again pays nothing: a day is celebrated once.
+  await page.click('[data-probe="collection"]');
+  await page.waitForSelector(".roster");
+  await page.click('[data-probe="back"]');
+  await page.waitForTimeout(400);
+  must(await page.$('[data-probe="streak-ceremony"]') === null, "the ceremony played twice");
+  m = await page.evaluate(() => window.__app.meta());
+  must(m.coins === before + 20, `a second visit home paid again (${m.coins})`);
+  // Put the day back for the steps that follow.
+  await page.evaluate(() => { const m = window.__app.meta(); m.dailyGoal = 40; m.doseDay = null; m.doseCount = 0; m.streak = 0; m.streakDay = null; m.streakOwed = 0; });
+  await page.evaluate(() => window.__app.save());
 });
 
 await step("the exit is offered earlier when the clock says the rider is tiring, in the same words", async () => {

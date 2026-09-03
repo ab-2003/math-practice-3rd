@@ -186,6 +186,11 @@ export const COLD_CHECK_MIN_POOL = 3;
 /** Streak days that earn a stamp on the run's story. */
 export const STREAK_MILESTONES = [7, 30, 100] as const;
 
+/** THE DAILY STREAK PURSE (Andy, 2026-09-03). A day joins the streak by
+ *  having its WORK FINISHED, and every day after the first pays this on the
+ *  way home. Never on day one: a streak starts at two. */
+export const STREAK_COINS = 20;
+
 // ---------------------------------------------------------------------------
 // ATTENTION AND TOLERANCE
 //

@@ -45,6 +45,7 @@ import { spotLayer } from "./spots";
 import { helmetById } from "../core/gear";
 import { boardFor } from "../core/boards";
 import { doseDone, resolveRider } from "./screens";
+import { creditDayDone } from "./streak";
 
 type Phase = "asking" | "bailed" | "retry";
 
@@ -125,6 +126,8 @@ export const sessionScreen = (app: App): HTMLElement => {
   let reason: EndReason | undefined;
   let tiredOffered = false;
   let tokenDropped = false;
+  // A milestone stamp for the run's story, set when the day joins the streak.
+  let streakStamp: number | null = null;
   let endedByLimit = false;
 
   const showDailyDone = (): Promise<void> =>
@@ -358,6 +361,11 @@ export const sessionScreen = (app: App): HTMLElement => {
       }
       if (!doseCelebrated && doseNow() >= app.meta.dailyGoal) {
         doseCelebrated = true;
+        // THE STREAK: finishing the day's work is what earns the day. The
+        // purse and its ceremony wait for the home screen (ui/streak.ts).
+        if (creditDayDone(app.meta, app.day) && (STREAK_MILESTONES as readonly number[]).includes(app.meta.streak)) {
+          streakStamp = app.meta.streak;
+        }
         sfx.dailyJingle();
         await showDailyDone();
       }
@@ -509,13 +517,10 @@ export const sessionScreen = (app: App): HTMLElement => {
     if (newBestTricks) app.meta.bestTricksRun = tricksThisRun;
     const newBestLines = linesThisRun > app.meta.bestLinesRun;
     if (newBestLines) app.meta.bestLinesRun = linesThisRun;
-    let streakStamp: number | null = null;
-    if (app.meta.lastSessionDay !== app.day) {
-      app.meta.streak = app.meta.lastSessionDay === app.day - 1 ? app.meta.streak + 1 : 1;
-      app.meta.lastSessionDay = app.day;
-      // A milestone is stamped the day it is reached, and only that day.
-      if ((STREAK_MILESTONES as readonly number[]).includes(app.meta.streak)) streakStamp = app.meta.streak;
-    }
+    app.meta.lastSessionDay = app.day;
+    // Belt and braces: a day whose work is finished counts even if the
+    // crossing moment was missed. Counting a day twice is a no-op.
+    if (doseNow() >= app.meta.dailyGoal) creditDayDone(app.meta, app.day);
 
     await appendResponses(collected);
     await appendSession({
