@@ -1130,6 +1130,13 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.2 - Fill the ten, and show the rest.** Andy's iPad on 7 + 7:
+      "needs to show the 4 more blocks (so smaller blocks)". The bridge
+      picture is now one scaled frame: the ten frame with the start in
+      green and the fill in orange ticks, a plus, then the other four as
+      blue blocks; the text caption is gone. Probed like count on, on
+      the three shapes: block counts by colour, inside the card, no
+      scroll.
 - [x] **0.20.1 - Count on.** Andy: the corrective picture for 10 + 9 was
       wrong. Non-bridge addition now shows the bigger group in green and
       the smaller group in blue, rows of five, a plus between them, and

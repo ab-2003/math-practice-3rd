@@ -188,7 +188,6 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .scaf-panel::before { content: attr(data-label); position: absolute; top: -9px; left: 12px; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); background: var(--bg); padding: 0 6px; }
 .scaf-answer { text-align: center; margin: 0; padding-top: 14px; padding-bottom: 8px; }
 .scaf-head { font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 0 0 8px; color: var(--orange); }
-.scaf-extra { color: var(--dim); font-weight: 800; margin: 8px 0 0; }
 .frame { width: min(100%, 420px); height: auto; margin: 0 auto; display: block; }
 .frame.array { width: min(100%, 300px); }
 .steps { list-style: none; margin: 0; padding: 0; text-align: left; display: grid; gap: 6px; }

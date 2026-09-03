@@ -53,6 +53,39 @@ const tenFrame = (
 };
 
 /**
+ * FILL THE TEN, then the rest (Andy's iPad, 2026-09-03: "needs to show the
+ * 4 more blocks, so smaller blocks"): the ten frame with the start in green
+ * and the fill in orange ticks, a plus, then the leftover as blue blocks,
+ * all in ONE picture that scales to the card, so 7 + 7 shows fourteen.
+ */
+const fillTen = (a: number, toTen: number, rest: number): SVGElement => {
+  const cell = 40;
+  const colsB = Math.min(5, Math.max(rest, 1));
+  const rowsB = Math.max(1, Math.ceil(rest / 5));
+  const gap = 34;
+  const w = 6 + 5 * cell + gap + colsB * cell + 6;
+  const h = 6 + Math.max(2, rowsB) * cell + 6;
+  const g = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "frame blocks", "data-probe": "fill-ten" });
+  for (let i = 0; i < 10; i++) {
+    const x = 6 + (i % 5) * cell;
+    const y = 6 + Math.floor(i / 5) * cell;
+    const on = i < a + toTen;
+    const hot = i >= a && i < a + toTen;
+    g.append(svg("rect", { x, y, width: 34, height: 34, rx: 6, fill: on ? (hot ? "#FF8A1F" : FILL) : "#141922", stroke: INK, "stroke-width": 4 }));
+    if (hot) g.append(svg("path", { d: `M${x + 8} ${y + 17} l6 7 l12 -14`, fill: "none", stroke: INK, "stroke-width": 4, "stroke-linecap": "round" }));
+  }
+  const x0 = 6 + 5 * cell + gap;
+  g.append(svg("text", { x: x0 - gap / 2, y: 6 + cell / 2 + 10, "text-anchor": "middle", "font-size": 30, "font-weight": 900, fill: "#8A97A6" }, "+"));
+  for (let i = 0; i < rest; i++) {
+    g.append(svg("rect", { x: x0 + (i % 5) * cell, y: 6 + Math.floor(i / 5) * cell, width: 34, height: 34, rx: 6, fill: FILL2, stroke: INK, "stroke-width": 4 }));
+  }
+  g.dataset["start"] = String(a);
+  g.dataset["fill"] = String(toTen);
+  g.dataset["rest"] = String(rest);
+  return g;
+};
+
+/**
  * COUNT ON, in blocks (Andy, 2026-09-03): the bigger number as one group
  * of green blocks, the smaller as a group of blue, side by side, so 10 + 9
  * SHOWS nineteen. Rows of five; the blocks scale to the card, however
@@ -159,8 +192,7 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
     const toTen = 10 - a;
     const rest = b - toTen;
     box.append(el("p", { class: "scaf-head", text: "Fill the ten first." }));
-    box.append(tenFrame(10, a, toTen, "#FF8A1F"));
-    box.append(el("p", { class: "scaf-extra", text: `and ${rest} more makes ${f.answer}` }));
+    box.append(fillTen(a, toTen, rest));
     steps.append(step(1, `Start at ${a}.`));
     steps.append(step(2, `Add ${toTen} to fill the ten.`));
     steps.append(step(3, `Add the other ${rest}. That makes ${f.answer}.`));

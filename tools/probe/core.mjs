@@ -345,50 +345,86 @@ await step("the corrective screen is three labelled groups and fits a phone and 
   }
 });
 
+// Open a fresh page at `vp` in which only the addition fact matching `re`
+// is due, run to it (it comes first, or nearly), miss it with `wrong`, and
+// wait for the corrective. Returns the page and its context to close.
+const rollBackTo = async (vp, re, wrong) => {
+  const ctxC = await page.context().browser().newContext({ viewport: vp });
+  const pc = await ctxC.newPage();
+  await pc.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+  await pc.waitForSelector('[data-probe="start"]');
+  await pc.evaluate((src) => {
+    const re = new RegExp(src);
+    const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    // Only the wanted fact is due: it comes first. The deck keys it either way round.
+    const want = [...window.__app.states().keys()].find((id) => re.test(id));
+    for (const [id, st] of window.__app.states()) { st.introduced = false; if (id === want) { st.introduced = true; st.box = 2; st.dueOn = window.__app.day() - 1; } }
+  }, re.source);
+  await pc.click('[data-probe="start"]');
+  await pc.waitForSelector('[data-probe="problem"]');
+  let tries = 0;
+  while (!re.test((await pc.getAttribute('[data-probe="problem"]', "data-fact")) ?? "") && tries < 12) {
+    await pc.evaluate(() => window.__probe.answer(window.__probe.correctAnswer()));
+    await pc.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+    tries += 1;
+  }
+  must(tries < 12, `${vp.width}x${vp.height}: ${re.source} never came`);
+  await pc.evaluate((w) => window.__probe.answer(w), wrong);
+  await pc.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+  await pc.waitForTimeout(1500); // the steps animate in
+  return { pc, ctxC };
+};
+
+// Read the corrective: block counts by colour inside `probe`, whether the
+// picture stays inside its card, the step text, the layout, the keypad.
+const readCorrective = (probe) => (pc) => pc.evaluate((sel) => {
+  const pic = document.querySelector(`[data-probe="${sel}"]`);
+  const rects = pic ? [...pic.querySelectorAll("rect")] : [];
+  const count = (fill) => rects.filter((e) => e.getAttribute("fill") === fill).length;
+  const panel = document.querySelector(".scaf-picture").getBoundingClientRect();
+  const box = pic ? pic.getBoundingClientRect() : null;
+  const steps = [...document.querySelectorAll(".scaf-stepbox .step")].map((e) => e.textContent).join(" | ");
+  const sp = document.querySelector(".scaf-stepbox").getBoundingClientRect();
+  return {
+    green: count("#B6FF3C"), blue: count("#35E6FF"), orange: count("#FF8A1F"), ticks: pic ? pic.querySelectorAll("path").length : 0,
+    fits: box !== null && box.left >= panel.left - 1 && box.right <= panel.right + 1 && box.bottom <= panel.bottom + 1 && box.top >= panel.top - 1,
+    steps, sideBySide: Math.abs(panel.top - sp.top) < 4 && sp.left > panel.right - 4,
+    keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight,
+    scroll: document.documentElement.scrollHeight > innerHeight + 1,
+  };
+}, probe);
+
+const SHAPES = [{ width: 1180, height: 740 }, { width: 820, height: 1180 }, { width: 390, height: 664 }];
+
+const layoutLaw = (vp, r) => {
+  must(r.fits, `${vp.width}x${vp.height}: the blocks escape their card`);
+  must(r.keypad <= r.vh, `${vp.width}x${vp.height}: the keypad ends at ${Math.round(r.keypad)}`);
+  must(!r.scroll, `${vp.width}x${vp.height}: the corrective screen scrolls`);
+  if (vp.width === 1180) must(r.sideBySide, "on a landscape tablet the picture and the steps are not side by side");
+  else must(!r.sideBySide, `${vp.width}x${vp.height}: the picture and the steps should stack`);
+};
+
 await step("10 + 9 rolls back as count on: ten green blocks, nine blue, the count written out, fitting the card", async () => {
   // Andy's iPad (2026-09-03): the picture showed ten blocks for 19.
-  for (const vp of [{ width: 1180, height: 740 }, { width: 820, height: 1180 }, { width: 390, height: 664 }]) {
-    const ctxC = await page.context().browser().newContext({ viewport: vp });
-    const pc = await ctxC.newPage();
-    await pc.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
-    await pc.waitForSelector('[data-probe="start"]');
-    await pc.evaluate(() => {
-      const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
-      // Only 10 + 9 is due: it comes first. The deck keys it either way round.
-      const want = [...window.__app.states().keys()].find((id) => id === "add:10+9" || id === "add:9+10");
-      for (const [id, st] of window.__app.states()) { st.introduced = false; if (id === want) { st.introduced = true; st.box = 2; st.dueOn = window.__app.day() - 1; } }
-    });
-    await pc.click('[data-probe="start"]');
-    await pc.waitForSelector('[data-probe="problem"]');
-    // Answer along until 10 + 9 comes (it is the one due, so soon), then miss it.
-    let tries = 0;
-    while (!/^add:(10\+9|9\+10)$/.test((await pc.getAttribute('[data-probe="problem"]', "data-fact")) ?? "") && tries < 12) {
-      await pc.evaluate(() => window.__probe.answer(window.__probe.correctAnswer()));
-      await pc.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
-      tries += 1;
-    }
-    must(tries < 12, `${vp.width}x${vp.height}: 10 + 9 never came`);
-    await pc.evaluate(() => window.__probe.answer(18));
-    await pc.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
-    await pc.waitForTimeout(1500);
-    const r = await pc.evaluate(() => {
-      const pic = document.querySelector('[data-probe="count-on"]');
-      const rects = pic ? [...pic.querySelectorAll("rect")] : [];
-      const green = rects.filter((e) => e.getAttribute("fill") === "#B6FF3C").length;
-      const blue = rects.filter((e) => e.getAttribute("fill") === "#35E6FF").length;
-      const panel = document.querySelector(".scaf-picture").getBoundingClientRect();
-      const box = pic ? pic.getBoundingClientRect() : null;
-      const steps = [...document.querySelectorAll(".scaf-stepbox .step")].map((e) => e.textContent);
-      const pp = document.querySelector(".scaf-picture").getBoundingClientRect();
-      const sp = document.querySelector(".scaf-stepbox").getBoundingClientRect();
-      return { green, blue, fits: box !== null && box.left >= panel.left - 1 && box.right <= panel.right + 1 && box.bottom <= panel.bottom + 1, steps, sideBySide: Math.abs(pp.top - sp.top) < 4 && sp.left > pp.right - 4, keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight };
-    });
+  for (const vp of SHAPES) {
+    const { pc, ctxC } = await rollBackTo(vp, /^add:(10\+9|9\+10)$/, 18);
+    const r = await readCorrective("count-on")(pc);
     must(r.green === 10 && r.blue === 9, `${vp.width}x${vp.height}: the picture shows ${r.green} green and ${r.blue} blue blocks, wanted 10 and 9`);
-    must(r.fits, `${vp.width}x${vp.height}: the blocks escape their card`);
-    must(r.steps.join(" | ").includes("bigger number: 10") && r.steps.join(" | ").includes("11, 12, 13, 14, 15, 16, 17, 18, 19") && r.steps.join(" | ").includes("makes 19"), `${vp.width}x${vp.height}: the steps read ${r.steps.join(" | ")}`);
-    must(r.keypad <= r.vh, `${vp.width}x${vp.height}: the keypad ends at ${Math.round(r.keypad)}`);
-    if (vp.width === 1180) must(r.sideBySide, "on a landscape tablet the picture and the steps are not side by side");
-    else must(!r.sideBySide, `${vp.width}x${vp.height}: the picture and the steps should stack`);
+    must(r.steps.includes("bigger number: 10") && r.steps.includes("11, 12, 13, 14, 15, 16, 17, 18, 19") && r.steps.includes("makes 19"), `${vp.width}x${vp.height}: the steps read ${r.steps}`);
+    layoutLaw(vp, r);
+    await ctxC.close();
+  }
+});
+
+await step("7 + 7 rolls back as fill the ten: seven green, three orange ticks, and the other four in blue, fitting the card", async () => {
+  // Andy's iPad (2026-09-03): "needs to show the 4 more blocks (so smaller blocks)".
+  for (const vp of SHAPES) {
+    const { pc, ctxC } = await rollBackTo(vp, /^add:7\+7$/, 13);
+    const r = await readCorrective("fill-ten")(pc);
+    must(r.green === 7 && r.orange === 3 && r.ticks === 3 && r.blue === 4, `${vp.width}x${vp.height}: the picture shows ${r.green} green, ${r.orange} orange (${r.ticks} ticks), ${r.blue} blue, wanted 7, 3, 4`);
+    must(r.steps.includes("Start at 7") && r.steps.includes("Add 3 to fill the ten") && r.steps.includes("other 4. That makes 14"), `${vp.width}x${vp.height}: the steps read ${r.steps}`);
+    must(!(await pc.$(".scaf-extra")), "the leftover is still captioned as text instead of drawn");
+    layoutLaw(vp, r);
     await ctxC.close();
   }
 });
