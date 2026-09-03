@@ -1,5 +1,5 @@
 /**
- * THE BOARDS, DRAWN. One renderer, nineteen themes: a real deck silhouette with
+ * THE BOARDS, DRAWN. One renderer, twenty themes: a real deck silhouette with
  * a kicked nose and tail, trucks, wheels with hub colour, a deck-top graphic
  * per theme, and a TRAIL that plays while the board rides (fixed duration,
  * decorative, stands down under reduced motion). The plain board is the old
@@ -131,6 +131,15 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       out.push(svg("ellipse", { class: "ball", cx: 101, cy: 17, rx: 7, ry: 4.2, fill: glow, stroke: INK, "stroke-width": 1.5 }));
       out.push(svg("path", { d: "M97 17 L105 17 M99 15.5 L99 18.5 M101 15.5 L101 18.5 M103 15.5 L103 18.5", stroke: "#FFFFFF", "stroke-width": 1 }));
       break;
+    case "moto":
+      // The dirt track: two knobby tyre tracks down the deck, a berm at the
+      // nose, and a number plate on the tail.
+      for (const y of [13.5, 20.5]) for (let x = 26; x < 92; x += 5) out.push(svg("rect", { x, y: y - 1.2, width: 2.6, height: 2.4, fill: "#3A2412", opacity: 0.9 }));
+      out.push(svg("path", { d: "M22 12 Q30 17 22 22", fill: "none", stroke: glow, "stroke-width": 1.6, opacity: 0.8 }));
+      out.push(svg("path", { d: "M96 11 L100 11 M96 23 L100 23", stroke: glow, "stroke-width": 1.2, opacity: 0.6 }));
+      out.push(svg("path", { class: "plate", d: "M96 12 L108 12 L108 22 L96 22 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
+      out.push(svg("text", { x: 102, y: 20.5, "text-anchor": "middle", "font-size": 9, "font-weight": 900, fill: INK }, "1"));
+      break;
     case "tag":
       // The tag: TL in fat pink over a yellow outline, drips, a crown,
       // and a spray of dots. Skate culture started on a wall.
@@ -225,6 +234,12 @@ const trail = (theme: BoardTheme, [, accent, glow]: readonly [string, string, st
     case "football": // the ball spiralling behind
       g.append(svg("ellipse", { cx: -24, cy: 22, rx: 7, ry: 4.2, fill: glow, stroke: INK, "stroke-width": 1.4, transform: "rotate(-20 -24 22)" }));
       g.append(svg("path", { d: "M-10 26 Q-18 18 -30 24 Q-40 30 -46 22", fill: "none", stroke: "#FFFFFF", "stroke-width": 1.6, "stroke-dasharray": "3 3", opacity: 0.7 }));
+      break;
+    case "moto": // the roost: clods of dirt off the back wheel
+      for (const [x, y, r] of [[-7, 28, 3], [-15, 22, 2.4], [-22, 30, 3.4], [-31, 24, 2.2], [-40, 29, 2.8], [-48, 26, 1.8]] as const) {
+        g.append(svg("circle", { cx: x, cy: y, r, fill: "#6B4A2B", stroke: INK, "stroke-width": 1 }));
+      }
+      g.append(svg("path", { d: "M-4 32 Q-20 18 -44 30", fill: "none", stroke: "#8B5A2B", "stroke-width": 1.6, opacity: 0.5 }));
       break;
     case "tag": // spray mist
       for (const [x, y, r, col] of [[-8, 18, 2, accent], [-14, 26, 1.4, glow], [-20, 15, 1.7, accent], [-28, 24, 2.2, glow], [-36, 18, 1.5, "#35E6FF"], [-42, 28, 1.2, accent]] as const) {

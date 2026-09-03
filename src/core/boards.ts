@@ -19,7 +19,9 @@ export type BoardTheme =
   // 0.20.0 (Andy): a pitch, a building site, a shuriken, a dark knight.
   | "soccer" | "hazard" | "ninja" | "knight"
   // 0.20.0 (Andy): a diamond, and a gridiron.
-  | "baseball" | "football";
+  | "baseball" | "football"
+  // 0.20.3 (Andy): a dirt track.
+  | "moto";
 
 export interface Board {
   readonly id: string;
@@ -53,6 +55,9 @@ export const BOARDS: readonly Board[] = [
   { id: "football", name: "END ZONE", cost: 320, theme: "football",
     lore: "Yard lines down the deck and a football on the tail. The ball spirals behind.",
     palette: ["#2E8B3F", "#0E3A1E", "#8B5A2B"] },
+  { id: "moto", name: "HOLESHOT", cost: 330, theme: "moto",
+    lore: "Dirt on the deck, knobby tracks down it, a number plate on the tail. Roost flies behind.",
+    palette: ["#5A3A1E", "#FFE14D", "#B6FF3C"] },
   { id: "hoops", name: "BUZZER BEATER", cost: 350, theme: "hoops",
     lore: "Hardwood, court lines, and a ball that bounces along behind.",
     palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },

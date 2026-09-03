@@ -202,6 +202,18 @@ const PLANS: Record<Silhouette, Plan> = {
     tailAnchor: [60, 136],
     arms: ["M64 96 L34 116 L42 128 L74 110 Z", "M146 88 L178 100 L172 112 L142 102 Z"],
   },
+  // BRAAPTOR (0.20.3): the motocross rider. Stands to the LEFT of the
+  // stage, one arm reaching for the bar, so the parked bike (a rig of its
+  // own, drawn behind him) has the right half to itself.
+  moto: {
+    body: "M44 150 L48 100 L70 70 L104 62 L124 82 L124 116 L112 150 Z",
+    head: "M96 50 L146 36 L156 58 L146 78 L100 82 Z",
+    face: { x: 108, y: 50, scale: 0.9 },
+    legs: ["M56 144 L46 190 L72 190 L78 144 Z", "M92 144 L88 190 L112 190 L116 144 Z"],
+    spine: [[46, 130], [58, 92], [86, 66], [118, 68]],
+    tailAnchor: [44, 136],
+    arms: ["M110 96 L148 106 L144 118 L106 108 Z"],
+  },
   // SCOOPJAW (0.20.0): the excavator. A cab of a body on treads instead
   // of legs; the boom and bucket are a rig of their own.
   digger: {
@@ -579,9 +591,10 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       for (const x of [-12, 0, 12]) out.push(svg("path", { d: `M${x} 10 L${x} 30`, stroke: accent, "stroke-width": 2 }));
       break;
     case "hardhat":
-      // The site lid: a high dome, a ridge on top, and the brim.
+      // The site lid: a high dome, a ridge on top in the second colour
+      // (Andy: the stripe should differ from the shell), and the brim.
       out.push(svg("path", { d: "M-24 8 A 24 24 0 0 1 24 8 L 24 12 L -24 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
-      out.push(svg("path", { d: "M-6 -14 L6 -14 L6 6 L-6 6 Z", fill: shell, stroke: INK, "stroke-width": 3 }));
+      out.push(svg("path", { d: "M-6 -14 L6 -14 L6 6 L-6 6 Z", fill: accent, stroke: INK, "stroke-width": 3 }));
       out.push(svg("path", { d: "M-34 12 L34 12 L36 18 L-36 18 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
       out.push(svg("path", { d: "M-30 15 L30 15", stroke: accent, "stroke-width": 2, opacity: 0.8 }));
       break;
@@ -747,6 +760,45 @@ export const creatureSvg = (
     arm.append(svg("path", { d: "M170 104 L196 128", stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round" }));
     arm.append(svg("circle", { cx: 172, cy: 120, r: 5, fill: c.palette[2], stroke: INK, "stroke-width": 2.5 }));
     root.append(arm);
+  }
+  // BRAAPTOR's kit: the jersey with its stripe, gloves, and THE BIKE, a rig
+  // of its own PREPENDED so it sits behind him: he hops onto it and the two
+  // ride off together (styles.css, bike-hop counters the hop).
+  if (c.id === "braaptor") {
+    root.append(poly("M62 82 L112 70 L124 96 L118 136 L64 140 L52 106 Z", c.palette[1], 4));
+    root.append(svg("path", { d: "M60 96 L120 84", stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round" }));
+    root.append(svg("path", { d: "M62 118 L118 108", stroke: c.palette[2], "stroke-width": 3, "stroke-linecap": "round", opacity: 0.7 }));
+    root.append(svg("circle", { cx: 150, cy: 112, r: 7, fill: c.palette[2], stroke: INK, "stroke-width": 3 }));
+    const bike = svg("g", { class: "bike" });
+    const wheel = (cx: number): void => {
+      const w = svg("g", { class: "wheel" });
+      w.append(svg("circle", { cx, cy: 170, r: 18, fill: "#22282F", stroke: INK, "stroke-width": 4 }));
+      w.append(svg("circle", { cx, cy: 170, r: 13.5, fill: "none", stroke: "#8A97A6", "stroke-width": 3, "stroke-dasharray": "3 4" }));
+      w.append(svg("circle", { cx, cy: 170, r: 5, fill: "#8A97A6", stroke: INK, "stroke-width": 2 }));
+      w.append(svg("path", { d: `M${cx} 158 L${cx} 182 M${cx - 12} 170 L${cx + 12} 170`, stroke: "#8A97A6", "stroke-width": 2 }));
+      bike.append(w);
+    };
+    wheel(152);
+    wheel(210);
+    bike.append(svg("path", { d: "M152 170 L182 156", stroke: INK, "stroke-width": 6, "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M182 156 L172 128 L196 124 L206 152", fill: "none", stroke: INK, "stroke-width": 6, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M200 128 L212 168", stroke: INK, "stroke-width": 6, "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M134 156 Q150 138 170 152", fill: "none", stroke: c.palette[1], "stroke-width": 6, "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M194 150 Q212 138 228 154", fill: "none", stroke: c.palette[1], "stroke-width": 6, "stroke-linecap": "round" }));
+    bike.append(poly("M166 124 L194 118 L198 132 L172 136 Z", c.palette[2], 3));
+    bike.append(poly("M138 128 L170 124 L172 134 L140 138 Z", INK, 2));
+    bike.append(svg("path", { d: "M198 122 L192 110 L206 108", fill: "none", stroke: INK, "stroke-width": 5, "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M176 150 L152 148", stroke: "#8A97A6", "stroke-width": 4, "stroke-linecap": "round" }));
+    bike.append(svg("path", { d: "M168 162 L178 164", stroke: INK, "stroke-width": 4, "stroke-linecap": "round" }));
+    bike.append(poly("M196 134 L214 132 L216 148 L198 150 Z", "#FFE14D", 3));
+    bike.append(svg("text", { x: 206, y: 146, "text-anchor": "middle", "font-size": 13, "font-weight": 900, fill: INK }, "1"));
+    // The roost: a cloud of dust and clods of dirt off the back wheel
+    // while he rides, big enough to read at tile size.
+    bike.append(svg("ellipse", { class: "roost-cloud", cx: 130, cy: 182, rx: 20, ry: 9, fill: "#8B5A2B", opacity: 0 }));
+    for (const [k, x, y, r] of [[1, 136, 176, 6], [2, 142, 184, 5], [3, 132, 186, 6.5], [4, 140, 180, 4.5]] as const) {
+      bike.append(svg("circle", { class: `roost roost-${k}`, cx: x, cy: y, r, fill: "#8B5A2B", stroke: INK, "stroke-width": 2, opacity: 0 }));
+    }
+    root.prepend(bike);
   }
   // DINGER's kit: the pinstripe shirt, and the bat on its own rig, held up
   // behind the shoulder until the pitch comes.

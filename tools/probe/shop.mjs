@@ -12,12 +12,14 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all thirty-six monsters by name, no mysteries", async () => {
+await step("the shop shows all thirty-seven monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 36, "the roster is not thirty-six");
-  must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "HATTRICK is not 190 coins");
+  must((await page.$$(".mon")).length === 37, "the roster is not thirty-seven");
+  must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "RONALDOHORN is not 190 coins");
+  must(((await page.textContent('[data-mon="hattrick"] .mon-name')) ?? "") === "RONALDOHORN", "the striker is not RONALDOHORN");
+  must(((await page.textContent('[data-mon="braaptor"]')) ?? "").includes("270"), "BRAAPTOR is not 270 coins");
   must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
@@ -50,6 +52,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["scoopjaw", ".boom .bucket"], ["scoopjaw", ".dig-rig .dirt-pile"], ["scoopjaw", ".dirt-fall-3"],
     ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
     ["dinger", ".bat"], ["dinger", ".bat-rig .pitch"], ["dinger", ".bat-rig .crack"], ["gridjaw", ".throw-arm"], ["gridjaw", ".throw-rig .uprights"], ["gridjaw", ".throw-rig .football"],
+    ["braaptor", ".bike"], ["braaptor", ".bike .wheel"], ["braaptor", ".bike .roost-3"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
@@ -83,14 +86,20 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     pitch: getComputedStyle(document.querySelector('[data-mon="dinger"] .pitch')).animationName,
     throwArm: getComputedStyle(document.querySelector('[data-mon="gridjaw"] .throw-arm')).animationName,
     spiral: getComputedStyle(document.querySelector('[data-mon="gridjaw"] .football')).animationName,
+    moto: getComputedStyle(document.querySelector('[data-mon="braaptor"] .creature')).animationName,
+    bike: getComputedStyle(document.querySelector('[data-mon="braaptor"] .bike')).animationName,
+    spin: getComputedStyle(document.querySelector('[data-mon="braaptor"] .bike .wheel')).animationName,
   }));
+  must(names.moto === "idle-moto" && names.bike === "bike-hop" && names.spin === "wheel-spin", `BRAAPTOR's act reads ${names.moto}/${names.bike}/${names.spin}`);
+  // The bike sits BEHIND him, so he lands on it rather than under it.
+  must(await page.evaluate(() => document.querySelector('[data-mon="braaptor"] .creature').firstElementChild.classList.contains("bike")), "BRAAPTOR's bike is not drawn behind him");
   must(names.bat === "bat-swing" && names.pitch === "pitch-in", `DINGER's act reads ${names.bat}/${names.pitch}`);
   must(names.throwArm === "throw-arm" && names.spiral === "spiral-out", `GRIDJAW's act reads ${names.throwArm}/${names.spiral}`);
   must(names.fly === "idle-flykick" && names.ninjaKick === "ninja-kick", `NINJAW's act reads ${names.fly}/${names.ninjaKick}`);
   must(names.sword === "sword-sweep", `GRIMSHIELD's act reads ${names.sword}`);
-  must(names.kick === "kick-swing" && names.shot === "ball-shot", `HATTRICK's act reads ${names.kick}/${names.shot}`);
+  must(names.kick === "kick-swing" && names.shot === "ball-shot", `RONALDOHORN's act reads ${names.kick}/${names.shot}`);
   must(names.boom === "boom-dig" && names.curl === "bucket-curl", `SCOOPJAW's act reads ${names.boom}/${names.curl}`);
-  must(((await page.textContent('[data-mon="hattrick"] .creature')) ?? "").includes("7"), "HATTRICK's shirt has no 7");
+  must(((await page.textContent('[data-mon="hattrick"] .creature')) ?? "").includes("7"), "RONALDOHORN's shirt has no 7");
   must(names.flick === "tongue-flick" && names.lunge === "idle-lunge", `KOMODUSTER's act reads ${names.flick}/${names.lunge}`);
   must(names.fist === "fist-swing" && names.fall === "tower-fall", `WRECKARM's act reads ${names.fist}/${names.fall}`);
   must(names.swipe === "claw-swipe" && names.pounce === "idle-pounce", `PANTHERACLAW's act reads ${names.swipe}/${names.pounce}`);
@@ -105,7 +114,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 36, `${delays.length} idle monsters, wanted 36`);
+  must(delays.length === 37, `${delays.length} idle monsters, wanted 37`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -153,13 +162,13 @@ await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of th
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 36.
+  // colours at tile size. Body plus wings must be unique across all 37.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 36, "could not read the forms");
+  must(forms.length === 37, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
@@ -237,17 +246,17 @@ await step("with no monsters yet, the racks are shut to buying but open to look"
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
-  must((await page.$$(".board-tile")).length === 19, "the board rack is not nineteen boards");
+  must((await page.$$(".board-tile")).length === 20, "the board rack is not twenty boards");
   must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
   must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
   const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
-  must(prices.includes("◆ 100") && prices.includes("◆ 250") && prices.includes("◆ 280") && prices.includes("◆ 320") && prices.includes("◆ 350") && prices.includes("◆ 500") && prices.includes("◆ 1900"), `the prices read ${JSON.stringify(prices)}`);
+  must(prices.includes("◆ 100") && prices.includes("◆ 250") && prices.includes("◆ 280") && prices.includes("◆ 320") && prices.includes("◆ 330") && prices.includes("◆ 350") && prices.includes("◆ 500") && prices.includes("◆ 1900"), `the prices read ${JSON.stringify(prices)}`);
   // The sports lids are 40, every one (Andy).
   const lidPrices = await page.$$eval('[data-helm^="soccer-"] .mon-sub, [data-helm^="basketball-"] .mon-sub, [data-helm^="hockey-"] .mon-sub, [data-helm^="ballcap-"] .mon-sub, [data-helm^="football-"] .mon-sub', (els) => els.map((e) => e.textContent));
   must(lidPrices.length === 10 && lidPrices.every((t) => t === "◆ 40"), `the sports lids read ${JSON.stringify(lidPrices)}`);
   // Thirteen forms, not one deck in thirteen colours: the graphics differ, and Void has its stars.
   const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
-  must(new Set(marks).size >= 18, "the boards are palette swaps");
+  must(new Set(marks).size >= 19, "the boards are palette swaps");
   must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
   // THE THEMED FOUR (0.18.2): cockpit and wings, a puck, a ball, a crowned tag.
   for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"], ["ninja", ".shuriken"], ["knight", ".shield"], ["baseball", ".ball"], ["football", ".ball"]]) {

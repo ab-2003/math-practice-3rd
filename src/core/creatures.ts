@@ -22,7 +22,9 @@ export type Silhouette =
   // 0.20.0: a striker in a number 7 shirt, an excavator, a ninja, a dark knight.
   | "striker" | "digger" | "ninja" | "knight"
   // 0.20.0: a batter, and a football player.
-  | "batter" | "lineman";
+  | "batter" | "lineman"
+  // 0.20.3: a motocross rider, the bike parked beside him.
+  | "moto";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -79,13 +81,14 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "plated", crest: "plates", tail: "spike", eyes: 2, horns: 0,
     palette: ["#FF3D3D", "#3A0000", "#FFD2C2"] ,
     voice: ["Warm landings. Every one of them.", "The ground is steaming again. Good sign."] },
-  // HATTRICK (Andy, 2026-09-03): the striker. Number 7 shirt, the long
-  // socks, and a shot into the top corner for an act.
-  { id: "hattrick", name: "HATTRICK", cost: 190,
-    lore: "Wears the number 7. Puts everything in the top corner, tricks included.",
-    silhouette: "striker", crest: "none", tail: "whip", eyes: 2, horns: 0,
+  // RONALDOHORN (Andy, 2026-09-03; HATTRICK until 0.20.3, the id stays so
+  // a bought striker stays bought): the striker. Number 7 shirt, the long
+  // socks, one horn, and a shot into the top corner for an act.
+  { id: "hattrick", name: "RONALDOHORN", cost: 190,
+    lore: "Wears the number 7 and one horn. Puts everything in the top corner, tricks included.",
+    silhouette: "striker", crest: "none", tail: "whip", eyes: 2, horns: 1,
     palette: ["#3FBF6F", "#0E3A1E", "#E9FFF0"] ,
-    voice: ["Top corner. Top rail. Same thing.", "Hat trick means three. I landed five."] },
+    voice: ["Top corner. Top rail. Same thing.", "Number 7. One horn. Zero misses."] },
   // DINGER (Andy, 2026-09-03): the batter. A bat on its own rig, a pitch
   // coming in, and a crack that sends it out of the park. The cap is a
   // lid to buy.
@@ -115,6 +118,14 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "ninja", crest: "none", tail: "whip", eyes: 2, horns: 0,
     palette: ["#2A2F3A", "#0B0D12", "#D8DEE8"] ,
     voice: ["You heard nothing. That was the trick.", "One kick, one line, gone."] },
+  // BRAAPTOR (Andy, 2026-09-03): the motocross rider. The dirt bike is
+  // parked beside him; the act is the hop on, the ride off, and the roost
+  // of dirt behind. The MOTO DOME in the rack is his lid.
+  { id: "braaptor", name: "BRAAPTOR", cost: 270,
+    lore: "Never walks anywhere the bike can go. Leaves a wall of dirt behind every trick.",
+    silhouette: "moto", crest: "none", tail: "whip", eyes: 2, horns: 0,
+    palette: ["#C13CFF", "#1B1226", "#FFE14D"] ,
+    voice: ["Braap. That was the whole plan.", "Roost on the landing. Nobody saw the rail."] },
   { id: "glaciodon", name: "GLACIODON", cost: 320,
     lore: "Breathes out and the puddle becomes a ramp.",
     silhouette: "brute", crest: "spikes", tail: "club", eyes: 2, horns: 4,

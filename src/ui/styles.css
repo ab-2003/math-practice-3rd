@@ -1286,6 +1286,45 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .bat-rig .crack { animation: crack-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes crack-pop { 0%, 9.5%, 13%, 100% { opacity: 0; } 10% { opacity: 1; } 12% { opacity: 1; } }
 
+/* BRAAPTOR: hop onto the parked bike, a squish of suspension, then ride
+   off to the right and away, roost flying. The bike is a child of the
+   creature, so bike-hop COUNTERS the creature's hop (view-box percentages
+   of the same box) to stay on the ground until the ride starts. */
+.creature.idle-moto { animation-name: idle-moto; }
+@keyframes idle-moto {
+  0%, 3% { transform: none; opacity: 1; }
+  5% { transform: translate(13%, -30%); opacity: 1; }
+  7% { transform: translate(26%, -14%); opacity: 1; }
+  8% { transform: translate(26%, -11%); opacity: 1; }
+  9.5% { transform: translate(26%, -14%) rotate(-4deg); opacity: 1; }
+  12% { transform: translate(32%, -15%) rotate(-8deg); opacity: 1; }
+  16% { transform: translate(42%, -18%) rotate(-3deg) scale(0.7); opacity: 0.7; }
+  19.5% { transform: translate(48%, -20%) scale(0.45); opacity: 0; }
+  21% { transform: none; opacity: 0; }
+  24%, 100% { transform: none; opacity: 1; }
+}
+.bike { transform-box: view-box; animation: bike-hop var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes bike-hop {
+  0%, 3% { transform: none; }
+  5% { transform: translate(-13%, 30%); }
+  7% { transform: translate(-26%, 14%); }
+  8% { transform: translate(-26%, 11%); }
+  9.5%, 20% { transform: translate(-26%, 14%); }
+  21%, 100% { transform: none; }
+}
+.bike .wheel { transform-box: fill-box; transform-origin: 50% 50%; animation: wheel-spin var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes wheel-spin { 0%, 9% { transform: rotate(0); } 20% { transform: rotate(540deg); } 21%, 100% { transform: rotate(0); } }
+.bike .roost { animation: roost-fly var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.bike .roost-2 { animation-name: roost-fly-2; }
+.bike .roost-3 { animation-name: roost-fly-3; }
+.bike .roost-4 { animation-name: roost-fly-4; }
+.bike .roost-cloud { transform-box: fill-box; transform-origin: 100% 100%; animation: roost-cloud var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes roost-fly { 0%, 9.5% { opacity: 0; transform: none; } 10.5% { opacity: 1; } 15% { opacity: 0; transform: translate(-70px, -50px); } 100% { opacity: 0; } }
+@keyframes roost-fly-2 { 0%, 11% { opacity: 0; transform: none; } 12% { opacity: 1; } 16.5% { opacity: 0; transform: translate(-60px, -30px); } 100% { opacity: 0; } }
+@keyframes roost-fly-3 { 0%, 12.5% { opacity: 0; transform: none; } 13.5% { opacity: 1; } 18% { opacity: 0; transform: translate(-80px, -40px); } 100% { opacity: 0; } }
+@keyframes roost-fly-4 { 0%, 10.5% { opacity: 0; transform: none; } 11.5% { opacity: 1; } 16% { opacity: 0; transform: translate(-50px, -64px); } 100% { opacity: 0; } }
+@keyframes roost-cloud { 0%, 9.5% { opacity: 0; transform: scale(0.3); } 11% { opacity: 0.8; transform: scale(1); } 19% { opacity: 0; transform: scale(2.2) translate(-20px, -6px); } 100% { opacity: 0; } }
+
 /* GRIDJAW: the arm winds back and throws; the spiral goes out between the uprights. */
 .creature.idle-lineman { animation-name: idle-stomp; }
 .throw-arm { transform-box: fill-box; transform-origin: 6% 60%; animation: throw-arm var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
@@ -1325,7 +1364,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 @media (prefers-reduced-motion: reduce) {
   .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig, .bat-rig, .throw-rig { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm, .bat, .throw-arm, .football-held { animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm, .bat, .throw-arm, .football-held, .bike, .bike .wheel { animation: none !important; }
+  .bike .roost, .bike .roost-cloud { opacity: 0 !important; animation: none !important; }
 }
 
 /* ---------- speed run ---------- */

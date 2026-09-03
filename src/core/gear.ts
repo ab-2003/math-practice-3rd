@@ -53,7 +53,7 @@ export const HELMETS: readonly Helmet[] = [
   { id: "cone-classic", name: "THE CONE", cost: 60, shape: "cone", colors: ["#FF8A1F", "#FFFFFF"] },
   { id: "cone-void", name: "VOID CONE", cost: 60, shape: "cone", colors: ["#2A0016", "#FF3D8B"] },
   { id: "hardhat-site", name: "HARD HAT", cost: 70, shape: "hardhat", colors: ["#F5B400", "#05070A"] },
-  { id: "hardhat-boss", name: "SITE BOSS", cost: 70, shape: "hardhat", colors: ["#FF8A1F", "#FFFFFF"] },
+  { id: "hardhat-boss", name: "SITE BOSS", cost: 70, shape: "hardhat", colors: ["#FF8A1F", "#35E6FF"] },
   { id: "mohawk-punk", name: "PUNK HAWK", cost: 80, shape: "mohawk", colors: ["#1E242C", "#FF3D8B"] },
   { id: "mohawk-toxic", name: "TOXIC HAWK", cost: 80, shape: "mohawk", colors: ["#0C2E0C", "#B6FF3C"] },
   { id: "full-moto", name: "MOTO DOME", cost: 110, shape: "full", colors: ["#C9D3DC", "#22282F"] },

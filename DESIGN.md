@@ -1130,6 +1130,24 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.3 - BRAAPTOR, HOLESHOT, RONALDOHORN, and the Site Boss stripe.**
+      Andy: a motocross monster whose act is hopping on a dirt bike and
+      riding off kicking up dirt, a motocross board, the soccer striker
+      renamed RONALDOHORN, and the Site Boss lid's top stripe in a
+      different colour. BRAAPTOR (270, sports pricing): the bike is
+      parked beside him as a rig drawn behind him; the act hops him onto
+      it (the bike counter-moves in view-box percentages so it stays on
+      the ground), squishes the suspension, wheelies off to the right
+      and shrinks and fades inside his own tile, wheels spinning, a dust
+      cloud and four clods of roost off the back wheel. The MOTO DOME
+      already in the rack is his lid. HOLESHOT (330): dirt deck, knobby
+      tracks, a berm at the nose, a number plate on the tail, roost for
+      a trail. The striker keeps the id hattrick so a bought one stays
+      bought, gains one horn, and its second voice line. The hard hat
+      ridge draws in the lid's second colour: Site Boss orange with a
+      theme-blue stripe (the plain Hard Hat's ridge goes black). Roster
+      37, boards 20; the shop probe asserts the act's three animations
+      and that the bike is drawn behind him.
 - [x] **0.20.2 - Fill the ten, and show the rest.** Andy's iPad on 7 + 7:
       "needs to show the 4 more blocks (so smaller blocks)". The bridge
       picture is now one scaled frame: the ten frame with the start in

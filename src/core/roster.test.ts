@@ -3,8 +3,8 @@ import { canAffordAny, canLevelUp, cheapestLocked, levelBrings, levelCost, MAX_L
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
-  it("holds exactly thirty-six monsters, seven of them dragons, eight of them kaiju", () => {
-    expect(ROSTER.length).toBe(36);
+  it("holds exactly thirty-seven monsters, seven of them dragons, eight of them kaiju", () => {
+    expect(ROSTER.length).toBe(37);
     expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
     expect(ROSTER.filter((c) => c.kaiju === true).length).toBe(8);
   });
@@ -29,13 +29,18 @@ describe("the open shop", () => {
   });
 
   it("keeps every id and name unique, and every price positive", () => {
-    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(36);
-    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(36);
+    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(37);
+    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(37);
     expect(ROSTER.find((c) => c.id === "ninjaw")!.silhouette).toBe("ninja");
     expect(ROSTER.find((c) => c.id === "grimshield")!.silhouette).toBe("knight");
     expect(ROSTER.find((c) => c.id === "hattrick")!.cost).toBe(190);
+    // The striker was renamed in 0.20.3; the id stays so a bought one stays bought.
+    expect(ROSTER.find((c) => c.id === "hattrick")!.name).toBe("RONALDOHORN");
+    expect(ROSTER.find((c) => c.id === "hattrick")!.horns).toBe(1);
+    expect(ROSTER.find((c) => c.id === "braaptor")!.silhouette).toBe("moto");
+    expect(ROSTER.find((c) => c.id === "braaptor")!.cost).toBe(270);
     // The sports monsters are all under 400 (Andy, 2026-09-03).
-    for (const id of ["skyhook", "puckjaw", "hattrick", "bladeback", "dinger", "gridjaw"]) expect(ROSTER.find((c) => c.id === id)!.cost, id).toBeLessThan(400);
+    for (const id of ["skyhook", "puckjaw", "hattrick", "bladeback", "dinger", "gridjaw", "braaptor"]) expect(ROSTER.find((c) => c.id === id)!.cost, id).toBeLessThan(400);
     // The sports lids are 40, every one.
     for (const h of HELMETS.filter((x) => ["soccer", "basketball", "hockey", "ballcap", "football"].includes(x.shape))) expect(h.cost, h.id).toBe(40);
     expect(ROSTER.find((c) => c.id === "scoopjaw")!.silhouette).toBe("digger");
@@ -49,8 +54,8 @@ describe("the open shop", () => {
 
   it("gives every monster two lines of its own, with no em-dashes", () => {
     const all = ROSTER.flatMap((c) => c.voice);
-    expect(all.length).toBe(72);
-    expect(new Set(all).size).toBe(72);
+    expect(all.length).toBe(74);
+    expect(new Set(all).size).toBe(74);
     for (const line of all) expect(line).not.toContain("—");
     expect(riderVoice(ROSTER[0]!, 0)).toBe(ROSTER[0]!.voice[0]);
     expect(riderVoice(ROSTER[0]!, 1)).toBe(ROSTER[0]!.voice[1]);
