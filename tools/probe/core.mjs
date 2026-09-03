@@ -345,6 +345,54 @@ await step("the corrective screen is three labelled groups and fits a phone and 
   }
 });
 
+await step("10 + 9 rolls back as count on: ten green blocks, nine blue, the count written out, fitting the card", async () => {
+  // Andy's iPad (2026-09-03): the picture showed ten blocks for 19.
+  for (const vp of [{ width: 1180, height: 740 }, { width: 820, height: 1180 }, { width: 390, height: 664 }]) {
+    const ctxC = await page.context().browser().newContext({ viewport: vp });
+    const pc = await ctxC.newPage();
+    await pc.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+    await pc.waitForSelector('[data-probe="start"]');
+    await pc.evaluate(() => {
+      const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+      // Only 10 + 9 is due: it comes first. The deck keys it either way round.
+      const want = [...window.__app.states().keys()].find((id) => id === "add:10+9" || id === "add:9+10");
+      for (const [id, st] of window.__app.states()) { st.introduced = false; if (id === want) { st.introduced = true; st.box = 2; st.dueOn = window.__app.day() - 1; } }
+    });
+    await pc.click('[data-probe="start"]');
+    await pc.waitForSelector('[data-probe="problem"]');
+    // Answer along until 10 + 9 comes (it is the one due, so soon), then miss it.
+    let tries = 0;
+    while (!/^add:(10\+9|9\+10)$/.test((await pc.getAttribute('[data-probe="problem"]', "data-fact")) ?? "") && tries < 12) {
+      await pc.evaluate(() => window.__probe.answer(window.__probe.correctAnswer()));
+      await pc.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+      tries += 1;
+    }
+    must(tries < 12, `${vp.width}x${vp.height}: 10 + 9 never came`);
+    await pc.evaluate(() => window.__probe.answer(18));
+    await pc.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+    await pc.waitForTimeout(1500);
+    const r = await pc.evaluate(() => {
+      const pic = document.querySelector('[data-probe="count-on"]');
+      const rects = pic ? [...pic.querySelectorAll("rect")] : [];
+      const green = rects.filter((e) => e.getAttribute("fill") === "#B6FF3C").length;
+      const blue = rects.filter((e) => e.getAttribute("fill") === "#35E6FF").length;
+      const panel = document.querySelector(".scaf-picture").getBoundingClientRect();
+      const box = pic ? pic.getBoundingClientRect() : null;
+      const steps = [...document.querySelectorAll(".scaf-stepbox .step")].map((e) => e.textContent);
+      const pp = document.querySelector(".scaf-picture").getBoundingClientRect();
+      const sp = document.querySelector(".scaf-stepbox").getBoundingClientRect();
+      return { green, blue, fits: box !== null && box.left >= panel.left - 1 && box.right <= panel.right + 1 && box.bottom <= panel.bottom + 1, steps, sideBySide: Math.abs(pp.top - sp.top) < 4 && sp.left > pp.right - 4, keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight };
+    });
+    must(r.green === 10 && r.blue === 9, `${vp.width}x${vp.height}: the picture shows ${r.green} green and ${r.blue} blue blocks, wanted 10 and 9`);
+    must(r.fits, `${vp.width}x${vp.height}: the blocks escape their card`);
+    must(r.steps.join(" | ").includes("bigger number: 10") && r.steps.join(" | ").includes("11, 12, 13, 14, 15, 16, 17, 18, 19") && r.steps.join(" | ").includes("makes 19"), `${vp.width}x${vp.height}: the steps read ${r.steps.join(" | ")}`);
+    must(r.keypad <= r.vh, `${vp.width}x${vp.height}: the keypad ends at ${Math.round(r.keypad)}`);
+    if (vp.width === 1180) must(r.sideBySide, "on a landscape tablet the picture and the steps are not side by side");
+    else must(!r.sideBySide, `${vp.width}x${vp.height}: the picture and the steps should stack`);
+    await ctxC.close();
+  }
+});
+
 await step("on a phone the grown-ups tabs keep their labels inside their buttons", async () => {
   // Andy's phone (2026-09-03): "the word Progress is escaping".
   const ctxT = await page.context().browser().newContext({ viewport: { width: 390, height: 664 } });

@@ -52,6 +52,58 @@ const tenFrame = (
   return g;
 };
 
+/**
+ * COUNT ON, in blocks (Andy, 2026-09-03): the bigger number as one group
+ * of green blocks, the smaller as a group of blue, side by side, so 10 + 9
+ * SHOWS nineteen. Rows of five; the blocks scale to the card, however
+ * many there are.
+ */
+const twoGroups = (big: number, small: number): SVGElement => {
+  const cell = 40;
+  const colsA = Math.min(5, Math.max(big, 1));
+  const colsB = Math.min(5, Math.max(small, 1));
+  const rowsA = Math.max(1, Math.ceil(big / 5));
+  const rowsB = Math.max(1, Math.ceil(small / 5));
+  const gap = 34;
+  const w = 6 + colsA * cell + gap + colsB * cell + 6;
+  const h = 6 + Math.max(rowsA, rowsB) * cell + 6;
+  const g = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "frame blocks", "data-probe": "count-on" });
+  const block = (x: number, y: number, tint: string): void => {
+    g.append(svg("rect", { x, y, width: 34, height: 34, rx: 6, fill: tint, stroke: INK, "stroke-width": 4 }));
+  };
+  for (let i = 0; i < big; i++) block(6 + (i % 5) * cell, 6 + Math.floor(i / 5) * cell, FILL);
+  const x0 = 6 + colsA * cell + gap;
+  g.append(svg("text", { x: x0 - gap / 2, y: 6 + cell / 2 + 10, "text-anchor": "middle", "font-size": 30, "font-weight": 900, fill: "#8A97A6" }, "+"));
+  for (let i = 0; i < small; i++) block(x0 + (i % 5) * cell, 6 + Math.floor(i / 5) * cell, FILL2);
+  g.dataset["big"] = String(big);
+  g.dataset["small"] = String(small);
+  return g;
+};
+
+/** COUNT BACK, in blocks: the start as green blocks, the ones taken away
+ *  crossed through in orange, so 9 - 4 shows five left. */
+const takeAway = (start: number, taken: number): SVGElement => {
+  const cell = 40;
+  const cols = Math.min(5, Math.max(start, 1));
+  const rows = Math.max(1, Math.ceil(start / 5));
+  const w = 6 + cols * cell + 6;
+  const h = 6 + rows * cell + 6;
+  const g = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "frame blocks", "data-probe": "take-away" });
+  for (let i = 0; i < start; i++) {
+    const x = 6 + (i % 5) * cell;
+    const y = 6 + Math.floor(i / 5) * cell;
+    const gone = i >= start - taken;
+    g.append(svg("rect", { x, y, width: 34, height: 34, rx: 6, fill: gone ? "#FF8A1F" : FILL, stroke: INK, "stroke-width": 4 }));
+    if (gone) g.append(svg("path", { d: `M${x + 8} ${y + 8} l18 18 M${x + 26} ${y + 8} l-18 18`, stroke: INK, "stroke-width": 4, "stroke-linecap": "round" }));
+  }
+  g.dataset["start"] = String(start);
+  g.dataset["taken"] = String(taken);
+  return g;
+};
+
+const countList = (from: number, n: number, dir: 1 | -1): string =>
+  Array.from({ length: n }, (_, i) => String(from + dir * (i + 1))).join(", ");
+
 const step = (n: number, text: string): HTMLElement =>
   el("li", { class: "step" }, el("span", { class: "stepn", text: String(n) }), el("span", { text }));
 
@@ -128,13 +180,24 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
     steps.append(step(1, `${f.a} altogether, split into ${groups} rows.`));
     steps.append(step(2, `Think: ${groups} times what makes ${f.a}?`));
     steps.append(step(3, `${each} in each row. The answer is ${each}.`));
+  } else if (f.kind === "add") {
+    // COUNT ON: start with the bigger number, count the smaller one up.
+    const big = Math.max(shownA, shownB);
+    const small = Math.min(shownA, shownB);
+    box.append(el("p", { class: "scaf-head", text: "Count on." }));
+    box.append(twoGroups(big, small));
+    steps.append(step(1, `Start with the bigger number: ${big}.`));
+    steps.append(step(2, small === 0 ? "Count 0 more: nothing changes." : `Count ${small} more: ${countList(big, small, 1)}.`));
+    steps.append(step(3, `That makes ${f.answer}.`));
   } else {
-    // Small facts he already owns: just show the count, no lecture.
-    const total = Math.max(f.answer, 1);
-    box.append(el("p", { class: "scaf-head", text: "Count it out." }));
-    box.append(tenFrame(Math.min(total, 10), 0, 0, FILL));
-    steps.append(step(1, `${shownA} and ${shownB}.`));
-    steps.append(step(2, `That is ${f.answer}.`));
+    // COUNT BACK: start at the big number, take the small one away.
+    const start = f.a;
+    const taken = f.b;
+    box.append(el("p", { class: "scaf-head", text: "Count back." }));
+    box.append(takeAway(start, taken));
+    steps.append(step(1, `Start at ${start}.`));
+    steps.append(step(2, taken === 0 ? "Take 0 away: nothing changes." : `Take ${taken} away: ${countList(start, taken, -1)}.`));
+    steps.append(step(3, `That leaves ${f.answer}.`));
   }
 
   stepsPanel.append(steps);

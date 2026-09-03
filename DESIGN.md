@@ -1130,6 +1130,15 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.1 - Count on.** Andy: the corrective picture for 10 + 9 was
+      wrong. Non-bridge addition now shows the bigger group in green and
+      the smaller group in blue, rows of five, a plus between them, and
+      the steps say start with the bigger number, count the smaller
+      number up (11, 12, ..., 19), that makes 19. Non-bridge subtraction
+      shows the start group with the taken blocks crossed out and counts
+      back. Picture and steps sit side by side on a landscape tablet;
+      the blocks scale to the card; probed on tablet landscape, tablet
+      portrait and phone with no scroll and nothing outside its card.
 - [x] **0.20.0 - The half pipe and the handrail, and Andy's list.** After
       a fourth rail in height, sometimes a half pipe to drop into, ride
       across and up, and launch out of for a big air trick; after a
