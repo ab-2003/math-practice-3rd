@@ -43,12 +43,16 @@ const ART: Record<string, (p: Pen) => void> = {
     p.line("M300 230 L300 220 L360 220", 4, S2);
   },
   rooftop: (p) => {
-    // the roof edge for ground, a rail between two vents, the antenna
+    // the roof edge for ground, a rail between two vents, the aerial.
+    // The aerial's arms ANGLE UP and there is no horizontal bar: a mast
+    // crossed by one made a religious symbol of the skyline (Andy's phone,
+    // 2026-09-03). Keep any future mast crossbar-free.
     p.line(GROUND, 7);
     p.line("M40 230 L40 180 L100 180 L100 230", 4, S2);
     p.line("M290 230 L290 172 L350 172 L350 230", 4, S2);
     p.rail("M130 198 L262 198 M150 198 L150 230 M242 198 L242 230");
-    p.line("M320 172 L320 120 M312 130 L328 130", 4, S2);
+    p.line("M320 172 L320 118", 4, S2);
+    p.line("M320 140 L306 126 M320 140 L334 126 M320 128 L310 118 M320 128 L330 118", 3, S2);
   },
   plaza: (p) => {
     // a plaza: a low rail and a tall one, a bench, planters

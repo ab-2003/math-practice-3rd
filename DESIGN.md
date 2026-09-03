@@ -1130,6 +1130,10 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.9 - The rooftop aerial is an aerial.** Andy: the rooftop
+      spot's mast and its horizontal crossbar read as a religious symbol.
+      It is a TV aerial now, two pairs of arms angled up the mast and no
+      horizontal bar. A mast in this app stays crossbar-free.
 - [x] **0.20.8 - Division in boxed groups, and the no-scroll law for every
       corrective.** Andy's phone: the division corrective scrolled (four
       rows of two dots drawn at full size). Division now draws each
