@@ -1092,6 +1092,13 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
+- [ ] **0.19.1 - The home screen fits, and the monster is big.** Andy's
+      iPad on its side (2026-09-03): a scroll and a tiny monster. The home
+      is two blocks, hero and panel: stacked on a phone and a portrait
+      tablet (bigger monster there too), side by side on a tablet on its
+      side or a laptop, where the monster fills the height and nothing
+      scrolls. The core probe measures the fit and the monster on a phone
+      and two landscape tablets in three states.
 - [x] **0.19.0 - The Skate Park.** SS9i: a Daily Token for the day's
       work, spent on a pure touch skateboarding game with the rider's
       monster, board and helmet; parent dials for minutes per token and

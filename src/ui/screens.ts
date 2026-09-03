@@ -141,6 +141,13 @@ export const homeScreen = (app: App): HTMLElement => {
   bar.append(iconBtn(icoGear(), "Grown-ups", () => app.go("dashboard"), "grownups"));
   root.append(bar);
 
+  // THE HOME BODY (Andy's landscape iPad, 2026-09-03): the hero and the
+  // controls are two blocks. Stacked on a phone and a portrait tablet;
+  // side by side on a tablet on its side, where stacking scrolled and the
+  // monster came out tiny.
+  const body = el("div", { class: "home-body" });
+  const panel = el("div", { class: "home-panel" });
+  root.append(body);
   const hero = el("div", { class: "hero" });
   hero.append(el("h1", { text: "Trick Line" }));
 
@@ -166,7 +173,7 @@ export const homeScreen = (app: App): HTMLElement => {
       hero.append(el("p", { class: "sub", text: "Land some tricks, then pick any monster in the shop." }));
     }
   }
-  root.append(hero);
+  body.append(hero, panel);
 
   // Today's state lives on the button and, when the work is done, on the
   // big stamp beside the hero: after the dose, everything is EXTRA PRACTICE.
@@ -175,13 +182,13 @@ export const homeScreen = (app: App): HTMLElement => {
   const go = el("button", { type: "button", class: "btn go big", "data-probe": "start" },
     iconSkate(), el("span", { text: done ? "Extra Practice" : "Drop In" }));
   on(go, "click", () => app.go("session"));
-  root.append(go);
+  panel.append(go);
   if (!done) {
     const todayN = app.meta.doseDay === app.day ? app.meta.doseCount : 0;
     const dose = el("div", { class: "dose-line", "data-probe": "dose-progress" });
     dose.append(el("span", { class: "mon-sub", text: `Today's tricks: ${todayN} / ${app.meta.dailyGoal}` }));
     dose.append(progressBar(Math.min(100, Math.round((todayN / app.meta.dailyGoal) * 100)), "#B6FF3C"));
-    root.append(dose);
+    panel.append(dose);
   }
 
   const grid = el("div", { class: "home-grid three" });
@@ -197,7 +204,7 @@ export const homeScreen = (app: App): HTMLElement => {
     el("span", { text: `${bestNow > 0 ? `best ${bestNow} · ` : ""}${used}/${app.meta.speedLimit} today` }));
   on(speed, "click", () => app.go("speed"));
   grid.append(speed);
-  root.append(grid);
+  panel.append(grid);
 
   // THE SKATE PARK (0.19.0): the daily reward's door. Dim until the first
   // Daily Token drops, lit from then on, with the pocket and today's plays.
@@ -221,7 +228,7 @@ export const homeScreen = (app: App): HTMLElement => {
     park.append(el("small", { class: "park-sub", "data-probe": "park-sub", text: "earn a Daily Token" }));
     on(park, "click", () => sheet({ title: "The Skate Park", body: "Finish today's tricks and a Daily Token drops. A token opens the park: your monster, its board, its helmet, tricks down a line.", confirm: "OK" }));
   }
-  root.append(park);
+  panel.append(park);
 
   // Progress toward the next monster, always visible: the classic lever,
   // and it was simply missing.
@@ -236,13 +243,13 @@ export const homeScreen = (app: App): HTMLElement => {
     const bar = progressBar(pct, "#FFE14D");
     bar.classList.add("unlock-bar");
     prog.append(bar);
-    root.append(prog);
+    panel.append(prog);
   }
 
   const coll = el("button", { type: "button", class: "btn alt big", "data-probe": "collection" },
     iconMonster(), el("span", { text: `Monster Shop ${app.meta.owned.length}/${ROSTER.length}` }));
   on(coll, "click", () => app.go("collection"));
-  root.append(coll);
+  panel.append(coll);
 
   return root;
 };

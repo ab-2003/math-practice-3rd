@@ -1411,7 +1411,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .token-big { width: min(30vw, 120px); height: auto; display: block; margin: 4px auto 8px; }
 .token-btn { height: 30px; width: 30px; }
 .park-btn { position: relative; flex-wrap: wrap; row-gap: 0; }
-.park-btn .park-sub { flex-basis: 100%; font-size: 13px; letter-spacing: 0.04em; color: var(--ink); opacity: 0.72; text-transform: uppercase; margin-top: -4px; }
+.park-btn .park-sub { flex-basis: 100%; font-size: 13px; line-height: 1.1; letter-spacing: 0.04em; color: var(--ink); opacity: 0.72; text-transform: uppercase; margin-top: -2px; }
 .park-btn.dim { opacity: 0.55; }
 .park-btn.dim .park-sub { color: var(--dim); opacity: 1; }
 .park-btn.dim .token-btn { filter: grayscale(1) brightness(0.8); }
@@ -1514,6 +1514,44 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .hero .sub { font-size: 14px; }
   .home-grid { margin-bottom: 6px; }
   .dose-line { margin: 4px 0 4px; }
-  .park-btn .park-sub { margin-top: -6px; }
+  .park-btn .park-sub { margin-top: -3px; }
   .unlock-progress { padding: 6px 12px; }
+}
+
+/* ---------- the home screen's two blocks: hero and panel ---------- */
+.home-body { display: grid; grid-template-columns: 1fr; gap: 4px; align-content: start; }
+.home-panel { display: flex; flex-direction: column; gap: 8px; }
+.home-panel .home-grid { margin-bottom: 0; }
+.home-panel .dose-line { margin: 0; }
+/* A portrait tablet has the height: the monster is the point of the screen. */
+@media (min-width: 700px) and (min-height: 900px) {
+  .hero .creature.home-creature { width: clamp(128px, 27vw, 240px); }
+  .home-board { width: clamp(128px, 20vw, 180px); }
+}
+/* A tablet on its side (Andy, 2026-09-03): hero left and BIG, controls
+   right, nothing scrolls. Laptops get the same. */
+@media (min-width: 900px) and (max-height: 900px) {
+  .home-body { grid-template-columns: 0.95fr 1.05fr; align-items: center; gap: 28px; flex: 1; }
+  .hero { padding: 0; gap: 4px; }
+  .hero .creature.home-creature { width: min(44vh, 400px); }
+  .home-board { width: min(24vh, 220px); margin-top: -6px; }
+  .hero .mon-name { font-size: 18px; }
+  .daily-badge { left: 0; right: auto; top: 0; width: 116px; }
+  .home-panel { gap: 8px; }
+  .home-panel .btn.big { min-height: 58px; font-size: clamp(19px, 2.1vw, 25px); }
+  .home-panel .stat { padding: 5px 8px; }
+  .home-panel .stat b { font-size: 22px; }
+  .park-btn .park-sub { margin-top: -3px; }
+  .unlock-progress { padding: 6px 12px; }
+}
+@media (max-width: 560px) {
+  .home-body { gap: 2px; }
+  .home-panel { gap: 6px; }
+  .hero .mon-name { margin-top: 2px; }
+  .home-board { margin-top: -10px; }
+}
+@media (max-width: 560px) {
+  /* The build stamp tucks under the last button on a phone: a hair of
+     overlap with its shadow, none with its face, and it takes no taps. */
+  .stamp { font-size: 9px; line-height: 10px; opacity: 0.55; bottom: 0; pointer-events: none; }
 }
