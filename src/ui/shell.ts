@@ -6,7 +6,7 @@
  */
 
 import { el, on } from "./dom";
-import { unlock } from "./sfx";
+import { unlock, wake } from "./sfx";
 
 declare const __BUILD_STAMP__: string;
 
@@ -101,6 +101,11 @@ export const installShell = (): void => {
   }
   document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
   document.addEventListener("pointerdown", unlock, { capture: true });
+  // The sound has to survive a sleeping iPad: coming back into view, into
+  // focus, or out of the back/forward cache all re-arm the audio context.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) wake(); });
+  window.addEventListener("pageshow", wake);
+  window.addEventListener("focus", wake);
 
   // the build stamp, and a long press on it copies the flight recorder
   const stamp = el("div", { class: "stamp", id: "stamp", text: __BUILD_STAMP__ });

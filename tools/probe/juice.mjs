@@ -26,6 +26,78 @@ await step("landing a full line raises the LINE LANDED banner", async () => {
   await page.waitForSelector('[data-probe="line-banner"]', { state: "detached", timeout: 4000 });
 });
 
+await step("the sound survives a sleeping iPad: an interrupted context wakes with the app", async () => {
+  // Andy's iPad (2026-09-03): "app running, iPad closed, wake it, open the
+  // app, sound stops until you kill and reopen". iOS parks the context and
+  // nothing resumed it, because the app never restarted.
+  await goHome(page);
+  await page.mouse.click(5, 5); // a gesture: the context is built and running
+  await page.waitForTimeout(150);
+  must((await page.evaluate(() => window.__sfx.state())) === "running", `the context did not arm: ${await page.evaluate(() => window.__sfx.state())}`);
+  const t0 = await page.evaluate(() => window.__sfx.time());
+  // The interruption: what locking the iPad does to the context.
+  await page.evaluate(async () => { await window.__sfx.interrupt(); });
+  must((await page.evaluate(() => window.__sfx.state())) === "suspended", "the context did not go under");
+  // Coming back into view is enough. No gesture, no reload, no kill.
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(700);
+  must((await page.evaluate(() => window.__sfx.state())) === "running", `the context stayed asleep: ${await page.evaluate(() => window.__sfx.state())}`);
+  const t1 = await page.evaluate(() => window.__sfx.time());
+  must(t1 > t0, `the audio clock stood still after waking (${t0} then ${t1})`);
+});
+
+await step("the day is done at forty LANDED tricks, never at forty attempts", async () => {
+  // Andy's son (2026-09-03): the app called the day done at 22 of 40. The
+  // dose counted every attempt, so a miss moved it the same as a landing.
+  await goHome(page);
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 0 };
+    m.dailyGoal = 3; m.doseDay = window.__app.day(); m.doseCount = 0;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  const dose = () => page.textContent('[data-probe="dose-chip"]');
+  must((await dose()) === "0 / 3", `the dose opens at ${await dose()}`);
+  // Two misses, each closed by the forced re-entry: effort, but no landings.
+  for (let i = 0; i < 2; i++) {
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    const right = answerOf(await page.getAttribute('[data-probe="problem"]', "data-fact"));
+    await typeAnswer(page, right === 1 ? 2 : 1);
+    await page.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+    await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+    await typeAnswer(page, right);
+    await page.waitForTimeout(200);
+  }
+  must((await dose()) === "0 / 3", `two misses moved the dose to ${await dose()}`);
+  must(await page.$('[data-probe="daily-banner"]') === null, "the day was called done on misses");
+  // Three landings, and only the third one finishes the day.
+  await answerN(page, 2);
+  must((await dose()) === "2 / 3", `two landings read ${await dose()}`);
+  must(await page.$('[data-probe="daily-banner"]') === null, "the day was called done early");
+  await answerN(page, 1);
+  await page.waitForSelector('[data-probe="daily-banner"]', { timeout: 6000 });
+  must((await dose()) === "3 / 3", `the day finished reading ${await dose()}`);
+  await page.waitForSelector('[data-probe="daily-banner"]', { state: "detached", timeout: 8000 });
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 9000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  const banked = await page.evaluate(() => window.__app.meta().doseCount);
+  must(banked === 3, `the run banked ${banked} of the day's work, wanted the 3 landings`);
+  await closeSheets(page);
+  await closeSheets(page);
+  // Put the day back the way the rest of the suite expects to find it, and
+  // hand the next step a running session, which is how it found the screen.
+  await page.evaluate(() => { const m = window.__app.meta(); m.dailyGoal = 40; m.doseDay = null; m.doseCount = 0; });
+  await page.evaluate(() => window.__app.save());
+  await goHome(page);
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+});
+
 await step("the run's end offers the shop, and Later spends nothing", async () => {
   await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = []; });
   // The pause bars ride with the words, on the button and on its sheet (Andy).

@@ -1130,6 +1130,24 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.10 - The day is done at forty LANDINGS, and the sound survives
+      a sleeping iPad.** Andy's son was told the day's work was done at 22
+      of 40: the dose counted every ATTEMPT, so a miss moved it exactly
+      like a landing, while the chip and the home screen both call them
+      "today's tricks". The dose now counts tricks landed, so the fanfare,
+      the badge, the token and the extra-practice flip can only arrive on
+      a real landing; a miss and its forced re-entry cost time, not the
+      count. Effort is still what the exit offer and the struggle detector
+      read. And Andy's iPad: locking it with the app open, then waking it,
+      left the app silent until it was killed and reopened. iOS parks a
+      backgrounded audio context in "interrupted" (a Safari state, not
+      "suspended", so the old resume never fired) and nothing restarts it
+      because the app never restarted. The context now wakes on
+      visibility, focus and pageshow, resumes from ANY non-running state,
+      and is REBUILT when a resumed context reads as running while its
+      clock stands still. Both are probed: the sound step interrupts a
+      live context and proves it comes back without a gesture or a
+      reload, and the dose step proves two misses move nothing.
 - [x] **0.20.9 - The rooftop aerial is an aerial.** Andy: the rooftop
       spot's mast and its horizontal crossbar read as a religious symbol.
       It is a TV aerial now, two pairs of arms angled up the mast and no

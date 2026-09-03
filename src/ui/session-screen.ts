@@ -105,12 +105,17 @@ export const sessionScreen = (app: App): HTMLElement => {
   let bestChain = 0;
   let newTrickName: string | null = null;
   let newSpotName: string | null = null;
-  // THE DAILY DOSE. Crossing the goal mid-session is the day's headline
-  // moment: the one fanfare, the big banner, and the badge waiting at home.
+  // THE DAILY DOSE, IN LANDED TRICKS. Crossing the goal mid-session is the
+  // day's headline moment: the one fanfare, the big banner, and the badge
+  // waiting at home. It counts TRICKS LANDED, never attempts (Andy's son,
+  // 2026-09-03: the day was called done at 22 of 40, because a wrong answer
+  // counted the same as a landed one). The chip says "Today's tricks", so a
+  // miss must not move it, and the fanfare can only fire on a landing.
   const doseBase = app.meta.doseDay === app.day ? app.meta.doseCount : 0;
+  const doseNow = (): number => doseBase + tricksThisRun;
   let doseCelebrated = doseBase >= app.meta.dailyGoal;
   const paintDose = (): void => {
-    const n = doseBase + itemsDone;
+    const n = doseNow();
     doseChip.textContent = `${Math.min(n, app.meta.dailyGoal)} / ${app.meta.dailyGoal}`;
     doseChip.hidden = n >= app.meta.dailyGoal;
     extra.hidden = n < app.meta.dailyGoal;
@@ -325,7 +330,6 @@ export const sessionScreen = (app: App): HTMLElement => {
     session = step.session;
     app.states = step.states;
     itemsDone += 1;
-    paintDose();
 
     if (correct) {
       // Identical treatment whether he retrieved it or worked it out. This is
@@ -337,6 +341,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       bank(COIN_PER_TRICK);
       landed += 1;
       tricksThisRun += 1;
+      paintDose();
       chain += 1;
       bestChain = Math.max(bestChain, chain);
       // The chime and the landing walk UP the line in pitch, so a chain is
@@ -351,7 +356,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       } else if (!app.meta.animations) {
         await playLanding(stage, trick.name);
       }
-      if (!doseCelebrated && doseBase + itemsDone >= app.meta.dailyGoal) {
+      if (!doseCelebrated && doseNow() >= app.meta.dailyGoal) {
         doseCelebrated = true;
         sfx.dailyJingle();
         await showDailyDone();
@@ -499,7 +504,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     app.meta.coins += coins;
     app.meta.linesLanded += linesThisRun;
     app.meta.doseDay = app.day;
-    app.meta.doseCount = doseBase + itemsDone;
+    app.meta.doseCount = doseNow();
     const newBestTricks = tricksThisRun > app.meta.bestTricksRun;
     if (newBestTricks) app.meta.bestTricksRun = tricksThisRun;
     const newBestLines = linesThisRun > app.meta.bestLinesRun;
@@ -536,10 +541,10 @@ export const sessionScreen = (app: App): HTMLElement => {
       const tk = el("p", { class: "note token-line", "data-probe": "token-line" }, tokenIcon(), el("span", { text: " Daily Token earned! Spend it at the Skate Park." }));
       body.append(tk);
     }
-    if (doseBase + itemsDone >= app.meta.dailyGoal) {
+    if (doseNow() >= app.meta.dailyGoal) {
       body.append(el("p", { class: "best-line", text: "TODAY'S WORK: DONE ✓" }));
     } else {
-      body.append(el("p", { class: "note", text: `Today so far: ${doseBase + itemsDone} of ${app.meta.dailyGoal}` }));
+      body.append(el("p", { class: "note", text: `Today so far: ${doseNow()} of ${app.meta.dailyGoal}` }));
     }
     if (newBestTricks && tricksThisRun >= 5) body.append(el("p", { class: "best-line", text: "NEW BEST RUN!" }));
     else if (newBestLines && linesThisRun >= 2) body.append(el("p", { class: "best-line", text: "MOST LINES EVER!" }));

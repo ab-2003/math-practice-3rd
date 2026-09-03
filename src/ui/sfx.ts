@@ -17,16 +17,56 @@ let muted = false;
 export const setMuted = (m: boolean): void => { muted = m; };
 export const isMuted = (): boolean => muted;
 
+const make = (): AudioContext | null => {
+  try {
+    return new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  } catch { return null; } // a device with no audio must never break the app
+};
+
+/** Throw the old context away and build a fresh one. The last resort. */
+const rebuild = (): void => {
+  const old = ctx;
+  ctx = make();
+  void ctx?.resume().catch(() => undefined);
+  try { void old?.close(); } catch { /* already gone */ }
+};
+
 /**
  * iOS never allows audio without a gesture, so the context is created on the
  * first touch and resumed on every subsequent one. Retry forever rather than
- * assuming the first unlock took.
+ * assuming the first unlock took. Resume from ANY state that is not running:
+ * Safari parks a backgrounded context in "interrupted", which is not in the
+ * spec and is not "suspended".
  */
 export const unlock = (): void => {
-  try {
-    ctx ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    if (ctx.state === "suspended") void ctx.resume();
-  } catch { /* a device with no audio must never break the app */ }
+  ctx ??= make();
+  if (ctx && ctx.state !== "running") void ctx.resume().catch(() => undefined);
+};
+
+/**
+ * WAKING UP (Andy's iPad, 2026-09-03: "close the iPad, wake it, open the
+ * app, sound is gone until you kill and reopen"). Locking the device parks
+ * the context in "interrupted" or "suspended" and nothing brings it back on
+ * its own, because the app itself never restarted. Worse, an interrupted
+ * context sometimes resumes into silence: the state reads "running" while
+ * its clock stands still. So this resumes, then CHECKS the clock actually
+ * moved, and rebuilds the context if it did not.
+ */
+export const wake = (): void => {
+  if (!ctx) return; // never armed; the next touch builds it
+  const before = ctx.currentTime;
+  void ctx.resume().catch(() => rebuild());
+  window.setTimeout(() => {
+    if (!ctx) return;
+    if (ctx.state !== "running" || ctx.currentTime <= before) rebuild();
+  }, 400);
+};
+
+// For the probes: the context's state and clock, and a way to interrupt it.
+(window as unknown as Record<string, unknown>).__sfx = {
+  state: (): string => ctx?.state ?? "none",
+  time: (): number => ctx?.currentTime ?? 0,
+  interrupt: (): Promise<void> | undefined => ctx?.suspend(),
 };
 
 const env = (
