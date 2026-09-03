@@ -22,8 +22,9 @@ import { boardFor } from "../core/boards";
 import { helmetById } from "../core/gear";
 import {
   BASE_SPEED, chainLabel, gateWords, HOLD_MS, newRun, PARK_H, PARK_TRICKS, PARK_W, parkGate, press, release,
-  RIDER_X, spendToken, spentToday, update, type Obstacle, type ParkEvent, type ParkState, type Swipe,
+  RIDER_X, spendToken, spentToday, surfaceY, update, type Obstacle, type ParkEvent, type ParkState, type Swipe,
 } from "../core/park";
+import { svg } from "./dom";
 import type { App } from "./appstate";
 import { boardSvg } from "./board-svg";
 import { creatureSvg } from "./creature-svg";
@@ -159,7 +160,11 @@ export const parkScreen = (app: App): HTMLElement => {
   const puff = el("div", { class: "park-puff" });
   riderEl.append(flip, sparks, puff);
   const pops = el("div", { class: "park-pops" });
-  stage.append(far, ground, world, riderEl, pops);
+  // The scene pans DOWN when the rider flies above the stage (a pipe's
+  // launch), so big air is seen, not clipped. The pops stay put.
+  const scene = el("div", { class: "park-scene" });
+  scene.append(far, ground, world, riderEl);
+  stage.append(scene, pops);
   root.append(timer, hud, stage);
 
   // ---- state ------------------------------------------------------------------
@@ -197,6 +202,26 @@ export const parkScreen = (app: App): HTMLElement => {
     else { n.style.height = `${px(o.h)}px`; }
     if (o.kind === "rail") {
       n.append(el("div", { class: "rail-bar" }), el("div", { class: "rail-leg l" }), el("div", { class: "rail-leg r" }));
+    } else if (o.kind === "pipe") {
+      // The bowl, sampled from the same cosine the model rides.
+      const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "pipe-art" });
+      const pts: string[] = [];
+      for (let i = 0; i <= 24; i++) { const t = i / 24; pts.push(`${(t * o.w).toFixed(1)} ${(o.h - surfaceY(o, o.x + t * o.w)).toFixed(1)}`); }
+      g.append(svg("path", { d: `M${pts.join(" L")} L${o.w} ${o.h} L0 ${o.h} Z`, fill: "#232C3B", stroke: "#05070A", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      g.append(svg("path", { d: `M${pts.join(" L")}`, fill: "none", stroke: "#8A97A6", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      n.append(g);
+      n.append(el("i", { class: "coping l" }), el("i", { class: "coping r" }));
+    } else if (o.kind === "stairs") {
+      // Six steps down, and the handrail slanting over them.
+      const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "stairs-art" });
+      const N = 6;
+      const pts: string[] = ["0 0"];
+      for (let i = 0; i < N; i++) { const x0 = (i * o.w) / N, x1 = ((i + 1) * o.w) / N, y = (i * o.h) / N; pts.push(`${x1.toFixed(1)} ${y.toFixed(1)}`, `${x1.toFixed(1)} ${(((i + 1) * o.h) / N).toFixed(1)}`); void x0; }
+      g.append(svg("path", { d: `M${pts.join(" L")} L${o.w} ${o.h} L0 ${o.h} Z`, fill: "#232C3B", stroke: "#05070A", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      for (const t of [0.15, 0.5, 0.85]) g.append(svg("line", { x1: t * o.w, y1: t * o.h - 8, x2: t * o.w, y2: t * o.h, stroke: "#05070A", "stroke-width": 4, "vector-effect": "non-scaling-stroke" }));
+      g.append(svg("line", { x1: 0, y1: -6, x2: o.w, y2: o.h - 6, stroke: "#05070A", "stroke-width": 9, "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }));
+      g.append(svg("line", { x1: 0, y1: -6, x2: o.w, y2: o.h - 6, stroke: "#8A97A6", "stroke-width": 5, "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }));
+      n.append(g);
     } else if (o.kind === "kicker") {
       n.append(el("div", { class: "kicker-face" }));
     } else if (o.kind === "box") {
@@ -222,6 +247,8 @@ export const parkScreen = (app: App): HTMLElement => {
     // The rider: height, crouch, spin.
     const r = st.rider;
     riderEl.style.bottom = `calc(10% + ${px(r.y)}px)`;
+    const camY = Math.max(0, r.y + 150 - PARK_H);
+    scene.style.transform = camY > 0 ? `translateY(${px(camY).toFixed(1)}px)` : "";
     let t = "";
     if (r.mode === "bail") {
       const p = Math.min(1, r.bailT * 1000 / 900);
@@ -232,6 +259,13 @@ export const parkScreen = (app: App): HTMLElement => {
       else if (r.trick.id === "spin") t = `rotateY(${360 * p}deg)`;
       else if (r.trick.id === "grab") t = `scale(0.94, 0.86) rotate(${-14 * Math.sin(p * Math.PI)}deg)`;
       else t = `rotate(${-8 * Math.sin(p * Math.PI)}deg)`;
+    } else if (r.mode === "pipe" || r.mode === "slide") {
+      const o = r.mode === "pipe" ? r.pipeOn : r.grindOn;
+      if (o) {
+        const x = st.scroll + RIDER_X;
+        const slope = (surfaceY(o, x + 6) - surfaceY(o, x - 6)) / 12;
+        t = `rotate(${(-Math.atan(slope) * 180 / Math.PI).toFixed(1)}deg)`;
+      }
     } else if (r.holding && (r.mode === "ground" || r.mode === "grind")) {
       const c = Math.min(1, (r.holdT * 1000) / HOLD_MS);
       t = `scale(${1 + c * 0.04}, ${1 - c * 0.14})`;
@@ -242,7 +276,7 @@ export const parkScreen = (app: App): HTMLElement => {
     // The deck spins on its own for a kickflip.
     if (r.trick?.id === "kickflip") board.style.transform = `rotate(${360 * Math.min(1, r.trickT * 1000 / r.trick.ms)}deg)`;
     else board.style.transform = "";
-    riderEl.classList.toggle("grinding", r.mode === "grind");
+    riderEl.classList.toggle("grinding", r.mode === "grind" || r.mode === "slide");
     riderEl.classList.toggle("bailed", r.mode === "bail");
     riderEl.classList.toggle("charging", r.holding && r.mode !== "air");
     for (const c of trickCls) riderEl.classList.remove(c);
@@ -279,6 +313,9 @@ export const parkScreen = (app: App): HTMLElement => {
         case "land": sfx.thud(); break;
         case "grind": sfx.grindTick(); grindBeat = 0; pop("GRIND"); break;
         case "grindEnd": break;
+        case "slide": sfx.grindTick(); grindBeat = 0; pop("RAIL SLIDE"); break;
+        case "pipeIn": sfx.thud(); pop("DROP IN!"); break;
+        case "pipeOut": sfx.launch(); pop("BIG AIR!", "warm"); break;
         case "bail": sfx.crash(); pop(e.why === "gap" ? "SPLASH!" : "BAIL!", "hot"); puff.classList.remove("go"); void puff.offsetWidth; puff.classList.add("go"); break;
         case "bank": sfx.bank(e.mult); pop(`+${e.points}`, `bank m${Math.min(5, e.mult)}`); scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); break;
         case "timeUp": void end(); break;
@@ -299,7 +336,7 @@ export const parkScreen = (app: App): HTMLElement => {
   const step = (dt: number): void => {
     if (s === null) return;
     const ev = update(s, dt);
-    if (s.rider.mode === "grind") { grindBeat += dt; if (grindBeat > 0.16) { grindBeat = 0; sfx.grindTick(); } }
+    if (s.rider.mode === "grind" || s.rider.mode === "slide") { grindBeat += dt; if (grindBeat > 0.16) { grindBeat = 0; sfx.grindTick(); } }
     react(ev);
     draw(s);
   };

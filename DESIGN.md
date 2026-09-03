@@ -960,7 +960,15 @@ banked as its points TIMES its length (to x5). Rails, boxes, gaps and
 kickers arrive in patterns whose rest is TIME, not distance (1.5s easing
 to 0.9s over two minutes), so a faster line never becomes a denser one.
 THE STAIRS (Andy's first play): sets of three and four rails that climb,
-spaced so one ollie off each lands on the next, three hops in a row. The
+spaced so one ollie off each lands on the next, three hops in a row.
+THE HALF PIPE and THE HANDRAIL (0.20.0): sometimes the top of the four
+leads straight into a half pipe (a cosine bowl from lip to ground to
+lip): drop in, across, up the far wall and out with PIPE_VY, air enough
+for a backflip and more, the chain still open. Sometimes the top of the
+three leads onto a staircase with a handrail slanting down it: a RAIL
+SLIDE to the bottom, tap to hop off with a trick, the bottom step is
+flat ground and the chain banks. Their walls stop a rider on the ground
+like a rail's. The
 speed climbs from 250 to 480 units a second in about half a minute of
 clean riding, read out in the HUD, and a bail drops it straight back to
 base. Easy to start, hard to master: reading the air you have against
@@ -1092,7 +1100,12 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.19.3 - The rider performs at home.** Andy: "have your skater
+- [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth
+      rail in height, sometimes a half pipe to drop into, ride across and
+      up, and launch out of for a big air trick; after a third, sometimes
+      a staircase with a diagonal handrail to grind down. On the alpha
+      channel first.
+- [x] **0.19.3 - The rider performs at home.** Andy: "have your skater
       perform its shop animation on a slow loop, like every 15 seconds."
       The home hero is drawn on the idle clock, plays one cycle on
       arrival, parks every animation at its rest pose, and plays again

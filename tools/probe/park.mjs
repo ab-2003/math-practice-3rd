@@ -163,6 +163,57 @@ await step("a late backflip bails, loses the chain, and resets the speed", async
   must(st.rider.mode === "ground", "the rider did not get back up");
 });
 
+await step("the half pipe launches big air off the top rail, and the handrail slides down the stairs", async () => {
+  // Plant the pipe and the stairs on the real line and ride them by hand.
+  await flatLine();
+  await page.evaluate(() => {
+    const s = window.__park.state();
+    const x = s.scroll + 130;
+    s.rider.mode = "ground"; s.rider.y = 0; s.rider.vy = 0; s.rider.trick = null; s.chain = [];
+    s.obstacles.push({ id: 9001, kind: "rail", x: x - 100, w: 130, h: 124, used: false });
+    s.obstacles.push({ id: 9002, kind: "pipe", x: x + 30, w: 380, h: 124, used: false });
+    s.rider.mode = "grind"; s.rider.y = 124; s.rider.grindOn = s.obstacles[0]; s.rider.grindT = 0.2;
+  });
+  await tick(0.05);
+  must(await page.$('[data-probe="park-stage"] .park-pipe .pipe-art') !== null, "the half pipe is not drawn");
+  let seen = { pipe: false, air: false };
+  for (let i = 0; i < 60; i++) {
+    await tick(0.05);
+    const st = await park();
+    if (st.rider.mode === "pipe") seen.pipe = true;
+    if (seen.pipe && st.rider.mode === "air" && st.rider.vy > 800) { seen.air = true; break; }
+    if (st.rider.mode === "bail") break;
+  }
+  must(seen.pipe, "the rider never dropped into the pipe");
+  must(seen.air, "the rider never launched out of the pipe with big air");
+  must(await page.$('[data-probe="park-rider"]') !== null, "the rider vanished");
+  await tick(2);
+  // And the stairs.
+  await flatLine();
+  await page.evaluate(() => {
+    const s = window.__park.state();
+    const x = s.scroll + 130;
+    s.rider.mode = "ground"; s.rider.y = 0; s.rider.vy = 0; s.rider.trick = null; s.chain = [];
+    s.obstacles.push({ id: 9003, kind: "rail", x: x - 100, w: 130, h: 90, used: false });
+    s.obstacles.push({ id: 9004, kind: "stairs", x: x + 30, w: 300, h: 90, used: false });
+    s.rider.mode = "grind"; s.rider.y = 90; s.rider.grindOn = s.obstacles[0]; s.rider.grindT = 0.2;
+  });
+  await tick(0.05);
+  must(await page.$('[data-probe="park-stage"] .park-stairs .stairs-art') !== null, "the staircase is not drawn");
+  let slid = false;
+  const before = (await park()).score;
+  for (let i = 0; i < 80; i++) {
+    await tick(0.05);
+    const st = await park();
+    if (st.rider.mode === "slide") slid = true;
+    if (slid && st.rider.mode === "ground") break;
+    if (st.rider.mode === "bail") break;
+  }
+  const after = await park();
+  must(slid, "the rider never slid the handrail");
+  must(after.rider.mode === "ground" && after.score > before, `after the stairs: ${after.rider.mode}, score ${before} -> ${after.score}`);
+});
+
 await step("the ? button replays the tutorial and pauses the clock", async () => {
   await page.click('[data-probe="park-help"]');
   await page.waitForSelector('[data-probe="park-tutorial"]', { timeout: 4000 });
@@ -178,16 +229,19 @@ await step("Back mid-run asks, Keep skating resumes, and time running out ends w
   await page.click(".sheet .btn.ghost"); // Keep skating
   await page.waitForTimeout(200);
   must(await page.$('[data-probe="park-stage"]') !== null, "Keep skating left the park");
+  const live = await park();
   await page.evaluate(() => { window.__park.state().timeLeftMs = 400; });
   await tick(0.6);
   await page.waitForSelector('[data-probe="park-results"]', { timeout: 4000 });
   const text = (await page.textContent(".sheet")) ?? "";
-  must(text.includes("Time's up") && text.includes("100") && text.includes("1 trick landed") && text.includes("1 bail"), `the results read: ${text.slice(0, 160)}`);
+  const fin = await park();
+  must(fin.score >= live.score && fin.score > 0, `the run's score went ${live.score} -> ${fin.score}`);
+  must(text.includes("Time's up") && text.includes(String(fin.score)) && text.includes(`${fin.tricksLanded} trick`) && text.includes(`best chain ${fin.bestChain}`) && text.includes(`${fin.bails} bail`), `the results read: ${text.slice(0, 160)}`);
   must(text.includes("NEW BEST"), "a first score is not a new best");
   must(await page.$(".sheet .row .btn.go") === null, "Another token is offered with no token left");
   must(text.includes("No Daily Token yet"), "the results do not say why another play is not on");
   const m = await meta();
-  must(m.parkBest === 100 && m.parkBestChain === 1, `bests: ${m.parkBest}/${m.parkBestChain}`);
+  must(m.parkBest === fin.score && m.parkBestChain === fin.bestChain, `bests: ${m.parkBest}/${m.parkBestChain} vs ${fin.score}/${fin.bestChain}`);
   await page.click(".sheet .btn.ghost"); // Done
   await page.waitForSelector('[data-probe="start"]', { timeout: 4000 });
   must(await page.$('[data-probe="park-open"].park-new') === null, "the door still pulses after the park has been opened");

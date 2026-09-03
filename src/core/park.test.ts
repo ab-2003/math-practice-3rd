@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   awardDailyToken, BASE_SPEED, chainLabel, G, KICK_VY, LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX,
-  PARK_TRICKS, PARK_W, parkGate, press, release, RIDER_X, riderX, spendToken, spentToday, trickFor, update,
+  PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, release, RIDER_X, riderX, spendToken, spentToday, surfaceY, trickFor, update,
   type Obstacle, type ParkEvent, type ParkMeta, type ParkState,
 } from "./park";
 
@@ -259,6 +259,75 @@ describe("the line", () => {
     expect(s.speed).toBe(BASE_SPEED);
   });
 
+  it("drops off the top rail into a half pipe, rides through, and launches out with big air", () => {
+    const s = flat();
+    // Already grinding the top of a four rail set, 30 units from its end.
+    const top = plant(s, "rail", -100, 130, 124);
+    const pipe = plant(s, "pipe", 30, 380, 124);
+    s.rider.mode = "grind"; s.rider.y = 124; s.rider.grindOn = top; s.rider.grindT = 0.4;
+    const all = runUntil(s, (e) => e.some((x) => x.kind === "pipeOut" || x.kind === "bail"), 5);
+    expect(kinds(all)).toContain("grindEnd");
+    expect(kinds(all)).toContain("pipeIn");
+    expect(kinds(all)).toContain("pipeOut");
+    expect(kinds(all)).not.toContain("bail");
+    expect(s.rider.mode).toBe("air");
+    expect(s.rider.vy).toBe(PIPE_VY);
+    expect(s.rider.y).toBeCloseTo(124, 0);
+    // The bowl: lip, bottom, lip.
+    expect(surfaceY(pipe, pipe.x)).toBeCloseTo(124, 5);
+    expect(surfaceY(pipe, pipe.x + pipe.w / 2)).toBeCloseTo(0, 5);
+    expect(surfaceY(pipe, pipe.x + pipe.w)).toBeCloseTo(124, 5);
+    // The grind is still on the chain, and a backflip fits in the air.
+    expect(s.chain.map((c) => c.name)).toEqual(["GRIND"]);
+    release(s, "left", []);
+    const rest = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 5);
+    const banked = rest.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.chain.map((c) => c.name)).toEqual(["GRIND", "BACKFLIP"]);
+    expect(banked?.kind === "bank" && banked.mult).toBe(2);
+  });
+
+  it("rolls off the third rail onto the handrail, slides to the bottom, and banks the slide", () => {
+    const s = flat();
+    const top = plant(s, "rail", -100, 130, 90);
+    const stairs = plant(s, "stairs", 30, 300, 90);
+    s.rider.mode = "grind"; s.rider.y = 90; s.rider.grindOn = top; s.rider.grindT = 0.3;
+    const all = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 6);
+    expect(kinds(all)).toContain("slide");
+    expect(kinds(all)).not.toContain("bail");
+    expect(kinds(all)).toContain("land");
+    expect(surfaceY(stairs, stairs.x)).toBeCloseTo(90, 5);
+    expect(surfaceY(stairs, stairs.x + stairs.w)).toBeCloseTo(0, 5);
+    const banked = all.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.chain.map((c) => c.name)).toEqual(["GRIND", "RAIL SLIDE"]);
+    expect(s.rider.mode).toBe("ground");
+  });
+
+  it("hops off the handrail mid-slide with a trick, and the slide counts", () => {
+    const s = flat();
+    const top = plant(s, "rail", -100, 130, 90);
+    plant(s, "stairs", 30, 300, 90);
+    s.rider.mode = "grind"; s.rider.y = 90; s.rider.grindOn = top;
+    runUntil(s, (e) => e.some((x) => x.kind === "slide"), 4);
+    for (let t = 0; t < 0.2; t += STEP) update(s, STEP);
+    press(s); release(s, "up", []);
+    const rest = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 5);
+    const banked = rest.find((e) => e.kind === "bank");
+    // The hop lands back on the handrail lower down, so the slide resumes.
+    const names = banked?.kind === "bank" ? banked.chain.map((c) => c.name) : [];
+    expect(names.slice(0, 3)).toEqual(["GRIND", "RAIL SLIDE", "KICKFLIP"]);
+    expect(names.length).toBeGreaterThanOrEqual(3);
+    expect(banked?.kind === "bank" && banked.mult).toBeGreaterThanOrEqual(3);
+  });
+
+  it("running into the pipe's or the staircase's wall on the ground is a bail", () => {
+    for (const kind of ["pipe", "stairs"] as const) {
+      const s = flat();
+      plant(s, kind, 40, 300, 124);
+      const all = runUntil(s, (e) => e.some((x) => x.kind === "bail"), 3);
+      expect(kinds(all)).toContain("bail");
+    }
+  });
+
   it("a kicker launches without a tap, and high enough for a backflip", () => {
     const s = flat();
     plant(s, "kicker", 30, 84, 44);
@@ -284,7 +353,7 @@ describe("the line", () => {
       for (const o of c.obstacles) if (!seen.some((x) => x.id === o.id)) seen.push({ ...o });
     }
     expect(seen.length).toBeGreaterThan(20);
-    expect(new Set(seen.map((o) => o.kind)).size).toBe(4);
+    expect(new Set(seen.map((o) => o.kind)).size).toBeGreaterThanOrEqual(4);
     const sorted = [...seen].sort((x, y) => x.x - y.x);
     for (let i = 1; i < sorted.length; i++) expect(sorted[i]!.x).toBeGreaterThanOrEqual(sorted[i - 1]!.x + sorted[i - 1]!.w);
     // Everything spawns ahead of the stage's right edge.

@@ -70,7 +70,13 @@ export const PARK_TRICKS: readonly ParkTrick[] = [
 
 export const trickFor = (swipe: Swipe): ParkTrick => PARK_TRICKS.find((t) => t.swipe === swipe)!;
 
-export type ObstacleKind = "rail" | "box" | "gap" | "kicker";
+/** THE HALF PIPE and THE HANDRAIL (0.20.0, Andy): after the top of a
+ *  four rail set, sometimes a half pipe to drop into, ride through and
+ *  launch out of, big; after a three rail set, sometimes a staircase
+ *  with a handrail slanting down it to slide. */
+export type ObstacleKind = "rail" | "box" | "gap" | "kicker" | "pipe" | "stairs";
+/** Out of the pipe's far lip: bigger air than any ollie or kicker. */
+export const PIPE_VY = 900;
 export interface Obstacle {
   id: number;
   kind: ObstacleKind;
@@ -83,7 +89,7 @@ export interface Obstacle {
   used: boolean;
 }
 
-export type Mode = "ground" | "air" | "grind" | "bail";
+export type Mode = "ground" | "air" | "grind" | "pipe" | "slide" | "bail";
 export type BailWhy = "trick" | "rail" | "box" | "gap";
 
 export interface ChainItem { name: string; points: number }
@@ -96,6 +102,9 @@ export type ParkEvent =
   | { kind: "land" }
   | { kind: "grind" }
   | { kind: "grindEnd"; points: number }
+  | { kind: "pipeIn" }
+  | { kind: "pipeOut" }
+  | { kind: "slide" }
   | { kind: "bail"; why: BailWhy }
   | { kind: "bank"; chain: ChainItem[]; points: number; mult: number }
   | { kind: "timeUp" };
@@ -110,8 +119,10 @@ export interface Rider {
   /** The trick in progress and how far along it is, in seconds. */
   trick: ParkTrick | null;
   trickT: number;
+  /** The rail, or the handrail, under the trucks; the pipe under the wheels. */
   grindOn: Obstacle | null;
   grindT: number;
+  pipeOn: Obstacle | null;
   /** Holding a press on the ground: how long, for the crouch and the charge. */
   holding: boolean;
   holdT: number;
@@ -148,7 +159,7 @@ const rng = (s: ParkState): number => {
 
 export const newRun = (minutes: number, seed = 1): ParkState => ({
   running: true, timeLeftMs: minutes * 60_000, scroll: 0, speed: BASE_SPEED, elapsed: 0,
-  rider: { y: 0, vy: 0, mode: "ground", bailT: 0, bailWhy: null, trick: null, trickT: 0, grindOn: null, grindT: 0, holding: false, holdT: 0 },
+  rider: { y: 0, vy: 0, mode: "ground", bailT: 0, bailWhy: null, trick: null, trickT: 0, grindOn: null, grindT: 0, pipeOn: null, holding: false, holdT: 0 },
   chain: [], score: 0, bestChain: 0, bestBank: 0, tricksLanded: 0, bails: 0,
   obstacles: [], nextX: PARK_W + 260, nextId: 1, seed,
 });
@@ -179,6 +190,12 @@ const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Pie
   // on the next. Three hops in a row is the satisfaction he asked for.
   { min: 0.1, make: () => [{ kind: "rail", dx: 0, w: 170, h: 34 }, { kind: "rail", dx: 230, w: 170, h: 62 }, { kind: "rail", dx: 460, w: 190, h: 90 }] },
   { min: 0.45, make: () => [{ kind: "rail", dx: 0, w: 150, h: 34 }, { kind: "rail", dx: 210, w: 150, h: 64 }, { kind: "rail", dx: 420, w: 150, h: 94 }, { kind: "rail", dx: 630, w: 200, h: 124 }] },
+  // Sometimes the top of the four leads straight into a HALF PIPE: drop in,
+  // across, up the far wall, and out with air enough for a big trick.
+  { min: 0.5, make: () => [{ kind: "rail", dx: 0, w: 150, h: 34 }, { kind: "rail", dx: 210, w: 150, h: 64 }, { kind: "rail", dx: 420, w: 150, h: 94 }, { kind: "rail", dx: 630, w: 200, h: 124 }, { kind: "pipe", dx: 830, w: 380, h: 124 }] },
+  // Sometimes the top of the three leads onto a STAIRCASE with a handrail
+  // slanting down it, to slide to the bottom.
+  { min: 0.3, make: () => [{ kind: "rail", dx: 0, w: 170, h: 34 }, { kind: "rail", dx: 230, w: 170, h: 62 }, { kind: "rail", dx: 460, w: 190, h: 90 }, { kind: "stairs", dx: 650, w: 300, h: 90 }] },
 ];
 
 const spawn = (s: ParkState): void => {
@@ -198,6 +215,21 @@ const spawn = (s: ParkState): void => {
   s.nextX = end + Math.max(180, s.speed * rest);
 };
 
+/**
+ * Where the surface is under a given world x: a pipe dips from its lip
+ * to the ground and back (a cosine bowl), a staircase's handrail slants
+ * from its top straight down to the ground. Everything else is flat.
+ */
+export const surfaceY = (o: Obstacle, x: number): number => {
+  const t = Math.max(0, Math.min(1, (x - o.x) / o.w));
+  if (o.kind === "pipe") return o.h * Math.cos(Math.PI * t) ** 2;
+  if (o.kind === "stairs") return o.h * (1 - t);
+  return o.h;
+};
+
+/** The rider's centre is over the obstacle. */
+const over = (s: ParkState, o: Obstacle): boolean => { const x = riderX(s); return x >= o.x && x <= o.x + o.w; };
+
 const overlaps = (s: ParkState, o: Obstacle, pad = 0): boolean => {
   const x = riderX(s);
   return x + RIDER_W / 2 - pad > o.x && x - RIDER_W / 2 + pad < o.x + o.w;
@@ -211,12 +243,12 @@ const overlaps = (s: ParkState, o: Obstacle, pad = 0): boolean => {
 export const press = (s: ParkState): void => {
   if (!s.running) return;
   const r = s.rider;
-  if (r.mode === "ground" || r.mode === "grind") { r.holding = true; r.holdT = 0; }
+  if (r.mode === "ground" || r.mode === "grind" || r.mode === "slide") { r.holding = true; r.holdT = 0; }
 };
 
 const ollie = (s: ParkState, vy: number, ev: ParkEvent[], charge: number): void => {
   const r = s.rider;
-  if (r.mode === "grind") endGrind(s, ev);
+  if (r.mode === "grind" || r.mode === "slide") endGrind(s, ev);
   r.mode = "air";
   r.vy = vy;
   r.y = Math.max(r.y, 0.01);
@@ -242,8 +274,8 @@ export const release = (s: ParkState, swipe: Swipe | null, ev: ParkEvent[]): voi
   const holdT = r.holdT;
   r.holding = false;
   r.holdT = 0;
-  if (!s.running || r.mode === "bail") return;
-  if (r.mode === "ground" || r.mode === "grind") {
+  if (!s.running || r.mode === "bail" || r.mode === "pipe") return;
+  if (r.mode === "ground" || r.mode === "grind" || r.mode === "slide") {
     const charge = swipe !== null ? 0 : Math.max(0, Math.min(1, (holdT * 1000 - 140) / (HOLD_MS - 140)));
     ollie(s, OLLIE_VY + (OLLIE_VY_MAX - OLLIE_VY) * charge, ev, charge);
     if (swipe !== null) startTrick(s, trickFor(swipe), ev);
@@ -263,6 +295,7 @@ const bail = (s: ParkState, why: BailWhy, ev: ParkEvent[]): void => {
   r.bailWhy = why;
   r.trick = null;
   r.grindOn = null;
+  r.pipeOn = null;
   r.vy = 0;
   s.chain = [];
   s.bails += 1;
@@ -274,7 +307,7 @@ const endGrind = (s: ParkState, ev: ParkEvent[]): void => {
   const r = s.rider;
   if (r.grindOn === null) return;
   const points = Math.round(GRIND_BASE + GRIND_PER_S * r.grindT);
-  s.chain.push({ name: "GRIND", points });
+  s.chain.push({ name: r.grindOn.kind === "stairs" ? "RAIL SLIDE" : "GRIND", points });
   r.grindOn = null;
   ev.push({ kind: "grindEnd", points });
 };
@@ -321,7 +354,7 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
   if (s.timeLeftMs <= 0) {
     s.timeLeftMs = 0;
     s.running = false;
-    if (s.rider.mode === "grind") endGrind(s, ev);
+    if (s.rider.mode === "grind" || s.rider.mode === "slide") endGrind(s, ev);
     if (s.rider.mode !== "bail") bank(s, ev);
     ev.push({ kind: "timeUp" });
     return ev;
@@ -364,6 +397,27 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
     for (const o of s.obstacles) {
       if (o.kind === "box" && !o.used && overlaps(s, o, 6) && r.y < o.h - 8) { o.used = true; bail(s, "box", ev); return ev; }
     }
+    // The pipe catches anything that comes down into it; the handrail
+    // catches a landing near its line and throws one that comes in under.
+    for (const o of s.obstacles) {
+      if ((o.kind !== "pipe" && o.kind !== "stairs") || r.vy > 0) continue;
+      if (!o.used && riderX(s) - RIDER_W / 2 < o.x + 18 && riderX(s) + RIDER_W / 2 > o.x && r.y < o.h - 18) { o.used = true; bail(s, "rail", ev); return ev; }
+      if (!over(s, o)) continue;
+      const sy = surfaceY(o, riderX(s));
+      if (o.kind === "pipe" && r.y <= sy + 10) {
+        if (!settleTrick(s, ev)) return ev;
+        r.mode = "pipe"; r.pipeOn = o; r.y = sy; r.vy = 0;
+        ev.push({ kind: "pipeIn" });
+        return ev;
+      }
+      if (o.kind === "stairs" && r.y <= sy + 10 && r.y >= sy - 18) {
+        if (!settleTrick(s, ev)) return ev;
+        r.mode = "slide"; r.grindOn = o; r.grindT = 0; r.y = sy; r.vy = 0;
+        ev.push({ kind: "slide" });
+        return ev;
+      }
+      if (o.kind === "stairs" && !o.used && r.y < sy - 18) { o.used = true; bail(s, "box", ev); return ev; }
+    }
     if (r.y <= 0) {
       r.y = 0;
       r.vy = 0;
@@ -389,6 +443,36 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
     return ev;
   }
 
+  if (r.mode === "pipe") {
+    const o = r.pipeOn!;
+    const x = riderX(s);
+    if (x >= o.x + o.w) {
+      // Off the far lip, straight up, with air for anything.
+      r.pipeOn = null;
+      r.mode = "air"; r.y = o.h; r.vy = PIPE_VY;
+      ev.push({ kind: "pipeOut" });
+      return ev;
+    }
+    r.y = surfaceY(o, x);
+    return ev;
+  }
+
+  if (r.mode === "slide") {
+    r.grindT += dt;
+    const o = r.grindOn!;
+    const x = riderX(s);
+    if (x >= o.x + o.w) {
+      // The bottom of the stairs is flat ground: the chain banks here.
+      endGrind(s, ev);
+      r.mode = "ground"; r.y = 0;
+      ev.push({ kind: "land" });
+      bank(s, ev);
+      return ev;
+    }
+    r.y = surfaceY(o, x);
+    return ev;
+  }
+
   // On the ground: kickers launch, gaps swallow, rails and boxes stop you.
   for (const o of s.obstacles) {
     const x = riderX(s);
@@ -399,8 +483,8 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
       return ev;
     }
     if (o.kind === "gap" && overlaps(s, o, 14)) { bail(s, "gap", ev); return ev; }
-    if ((o.kind === "rail" || o.kind === "box") && !o.used && x + RIDER_W / 2 > o.x && x - RIDER_W / 2 < o.x + 18) {
-      o.used = true; bail(s, o.kind, ev); return ev;
+    if ((o.kind === "rail" || o.kind === "box" || o.kind === "pipe" || o.kind === "stairs") && !o.used && x + RIDER_W / 2 > o.x && x - RIDER_W / 2 < o.x + 18) {
+      o.used = true; bail(s, o.kind === "box" ? "box" : "rail", ev); return ev;
     }
   }
   return ev;

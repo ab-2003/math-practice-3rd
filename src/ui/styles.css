@@ -1451,6 +1451,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .park-skyline { width: var(--strip, 800px); height: 100%; display: flex; align-items: flex-end; gap: 2%; padding: 0 1%; box-sizing: border-box; flex: none; }
 .park-skyline i { display: block; flex: 1; background: #1A2130; border-top: 3px solid #232C3B; opacity: 0.9; }
 .park-moon { position: absolute; right: 6%; top: 8%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: #2A3442; box-shadow: 0 0 0 8px rgba(158, 199, 255, 0.05); }
+.park-scene { position: absolute; inset: 0; will-change: transform; }
 .park-world { position: absolute; inset: 0; }
 .park-ob { position: absolute; bottom: 10%; will-change: transform; }
 .park-rail .rail-bar { position: absolute; left: 0; right: 0; top: 0; height: 24%; min-height: 6px; background: var(--dim); border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 2px 0 var(--ink); }
@@ -1458,6 +1459,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .park-rail .rail-leg.l { left: 6%; } .park-rail .rail-leg.r { right: 6%; }
 .park-box { background: var(--orange); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
 .park-box .box-stripe { position: absolute; inset: 40% 0 auto 0; height: 22%; background: var(--ink); opacity: 0.55; }
+.park-pipe, .park-stairs { overflow: visible; }
+.park-pipe .pipe-art, .park-stairs .stairs-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.park-pipe .coping { position: absolute; top: -4px; width: 10px; height: 8px; border-radius: 4px; background: var(--dim); border: 2px solid var(--ink); }
+.park-pipe .coping.l { left: -5px; } .park-pipe .coping.r { right: -5px; }
 .park-kicker .kicker-face { position: absolute; inset: 0; background: var(--cyan); clip-path: polygon(0 100%, 100% 0, 100% 100%); }
 .park-kicker::after { content: ""; position: absolute; right: -3px; top: 0; bottom: 0; width: 4px; background: var(--ink); }
 .park-gap { bottom: calc(10% - 4px); background: repeating-linear-gradient(135deg, #0B0D10 0 6px, #161B22 6px 12px); border-left: 3px solid var(--ink); border-right: 3px solid var(--ink); transform-origin: top; }
