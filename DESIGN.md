@@ -959,6 +959,8 @@ trick and grind before the board next touches flat ground is one CHAIN,
 banked as its points TIMES its length (to x5). Rails, boxes, gaps and
 kickers arrive in patterns whose rest is TIME, not distance (1.5s easing
 to 0.9s over two minutes), so a faster line never becomes a denser one.
+Flat rails vary a lot in length, and run longer as the line speeds up
+(a short one early, a long grind later; Andy after the half pipe round).
 THE STAIRS (Andy's first play): sets of three and four rails that climb,
 spaced so one ollie off each lands on the next, three hops in a row.
 THE HALF PIPE and THE HANDRAIL (0.20.0): sometimes the top of the four
@@ -1100,7 +1102,7 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.20.0-alpha.3 - Andy's list.** The day's game time (a parent
+- [x] **0.20.0-alpha.3 - Andy's list.** The day's game time (a parent
       dial, off by default, never under 15 on; every screen but the
       grown-ups' counts; toasts at three minutes and one; then home with
       "come back tomorrow" after the current line, straight away from the
@@ -1128,11 +1130,12 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
-- [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth
-      rail in height, sometimes a half pipe to drop into, ride across and
-      up, and launch out of for a big air trick; after a third, sometimes
-      a staircase with a diagonal handrail to grind down. On the alpha
-      channel first.
+- [x] **0.20.0 - The half pipe and the handrail, and Andy's list.** After
+      a fourth rail in height, sometimes a half pipe to drop into, ride
+      across and up, and launch out of for a big air trick; after a
+      third, sometimes a staircase with a diagonal handrail to grind down
+      ("perfect", Andy). Five rounds on the alpha channel, then promoted
+      with everything above.
 - [x] **0.19.4 - "undefined" on the door, and a Facts tab.** Andy's phone
       showed "undefined" for the park dials on the parent door (a record
       mirrored before the dials existed carried no value, and the bonus

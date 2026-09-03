@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   awardDailyToken, BASE_SPEED, chainLabel, G, KICK_VY, LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX,
-  PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, release, RIDER_X, riderX, spendToken, spentToday, surfaceY, trickFor, update,
+  PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, railLength, release, RIDER_X, riderX, spendToken, spentToday, surfaceY, trickFor, update,
   type Obstacle, type ParkEvent, type ParkMeta, type ParkState,
 } from "./park";
 
@@ -338,6 +338,29 @@ describe("the line", () => {
     const rest = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 3);
     expect(kinds(rest)).toContain("land");
     expect(s.score).toBe(300);
+  });
+
+  it("varies the flat rails a lot, and runs them longer as the line speeds up", () => {
+    const widths = (elapsed: number): number[] => {
+      const out: number[] = [];
+      for (let seed = 1; seed <= 40; seed++) {
+        const s = newRun(7, seed);
+        s.elapsed = elapsed;
+        for (let t = 0; t < 8; t += STEP) update(s, STEP);
+        for (const o of s.obstacles) if (o.kind === "rail" && o.h === 34) out.push(o.w);
+      }
+      return out;
+    };
+    const early = widths(0);
+    const late = widths(150);
+    expect(Math.min(...early)).toBeLessThan(200);
+    expect(Math.max(...early) - Math.min(...early)).toBeGreaterThan(120);
+    expect(Math.max(...late)).toBeGreaterThan(500);
+    // The single rail's own length: the roll spreads it, the speed stretches it.
+    expect(railLength(0, 0)).toBe(140);
+    expect(railLength(1, 0)).toBe(340);
+    expect(railLength(0, 1)).toBe(360);
+    expect(railLength(1, 1)).toBe(560);
   });
 
   it("lays the line down ahead, deterministically per seed, and never overlaps a pattern with the next", () => {

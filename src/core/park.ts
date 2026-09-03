@@ -176,8 +176,15 @@ export const difficulty = (s: ParkState): number => Math.min(1, s.elapsed / 120)
 
 type Piece = { kind: ObstacleKind; dx: number; w: number; h: number };
 
+/** A flat rail's length from the roll `r` (0..1) and the difficulty `d`
+ *  (0..1): 140 to 340 early, 360 to 560 once the line is fast. */
+export const railLength = (r: number, d: number): number => Math.round(140 + r * 200 + d * 220);
+
 const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Piece[] }> = [
-  { min: 0, make: (r) => [{ kind: "rail", dx: 0, w: 180 + r * 140, h: 34 }] },
+  // Flat rails vary a lot in length, and run longer as the line speeds up
+  // (Andy, 2026-09-03): a short one early, a long grind later.
+  { min: 0, make: (r, d) => [{ kind: "rail", dx: 0, w: railLength(r, d), h: 34 }] },
+  { min: 0.35, make: (r) => [{ kind: "rail", dx: 0, w: 420 + r * 200, h: 34 }] },
   { min: 0, make: () => [{ kind: "kicker", dx: 0, w: 84, h: 44 }] },
   { min: 0, make: () => [{ kind: "box", dx: 0, w: 46, h: 40 }] },
   { min: 0.15, make: () => [{ kind: "kicker", dx: 0, w: 84, h: 44 }, { kind: "rail", dx: 250, w: 240, h: 34 }] },
