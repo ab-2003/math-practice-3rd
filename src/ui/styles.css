@@ -180,6 +180,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .scaf-wrap { max-width: 760px; }
   .frame { width: min(100%, 330px); }
   .frame.blocks { max-height: 130px; }
+  .frame.array { max-height: 130px; }
 }
 .scaf-wrap { width: 100%; max-width: 560px; margin: 0 auto; display: grid; gap: 8px; justify-items: stretch; }
 .scaf-note { font-size: 14px; font-weight: 800; color: var(--dim); margin: 0; text-align: center; }
@@ -189,7 +190,9 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .scaf-answer { text-align: center; margin: 0; padding-top: 14px; padding-bottom: 8px; }
 .scaf-head { font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 0 0 8px; color: var(--orange); }
 .frame { width: min(100%, 420px); height: auto; margin: 0 auto; display: block; }
-.frame.array { width: min(100%, 300px); }
+/* Arrays and share groups scale to the card too: a tall divisor once ran
+   the picture off a phone (Andy, 2026-09-03). */
+.frame.array { width: min(100%, 300px); max-height: 150px; }
 .steps { list-style: none; margin: 0; padding: 0; text-align: left; display: grid; gap: 6px; }
 .step { display: flex; gap: 10px; align-items: flex-start; font-size: 17px; font-weight: 700; line-height: 1.3; }
 .stepn {
@@ -1772,7 +1775,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .scaf-head { font-size: 15px; margin-bottom: 3px; }
   .frame { width: min(100%, 250px); }
   .frame.blocks { max-height: 70px; }
-  .frame.array { width: min(100%, 200px); }
+  .frame.array { width: min(100%, 220px); max-height: 96px; }
   .steps { gap: 3px; }
   .step { font-size: 14px; gap: 7px; line-height: 1.2; }
   .stepn { width: 22px; height: 22px; font-size: 12px; }

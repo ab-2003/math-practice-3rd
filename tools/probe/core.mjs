@@ -349,17 +349,18 @@ await step("the corrective screen is three labelled groups and fits a phone and 
 // is due, run to it (it comes first, or nearly), miss it with `wrong`, and
 // wait for the corrective. Returns the page and its context to close.
 const rollBackTo = async (vp, re, wrong) => {
+  const kind = re.source.match(/(add|sub|mul|div)/)[1]; // the strand to switch on, from the id
   const ctxC = await page.context().browser().newContext({ viewport: vp });
   const pc = await ctxC.newPage();
   await pc.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
   await pc.waitForSelector('[data-probe="start"]');
-  await pc.evaluate((src) => {
+  await pc.evaluate(([src, kind]) => {
     const re = new RegExp(src);
-    const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
+    const m = window.__app.meta(); m.animations = false; m.strands = { add: kind === "add", sub: kind === "sub", mul: kind === "mul", div: kind === "div" }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 };
     // Only the wanted fact is due: it comes first. The deck keys it either way round.
     const want = [...window.__app.states().keys()].find((id) => re.test(id));
     for (const [id, st] of window.__app.states()) { st.introduced = false; if (id === want) { st.introduced = true; st.box = 2; st.dueOn = window.__app.day() - 1; } }
-  }, re.source);
+  }, [re.source, kind]);
   await pc.click('[data-probe="start"]');
   await pc.waitForSelector('[data-probe="problem"]');
   let tries = 0;
@@ -387,6 +388,10 @@ const readCorrective = (probe) => (pc) => pc.evaluate((sel) => {
   const sp = document.querySelector(".scaf-stepbox").getBoundingClientRect();
   return {
     green: count("#B6FF3C"), blue: count("#35E6FF"), orange: count("#FF8A1F"), ticks: pic ? pic.querySelectorAll("path").length : 0,
+    dots: pic ? pic.querySelectorAll("circle").length : 0, groups: pic ? pic.querySelectorAll("[data-group]").length : 0,
+    boxes: pic ? [...pic.querySelectorAll("rect")].filter((e) => e.getAttribute("stroke-dasharray")).length : 0,
+    numerals: pic ? [...pic.querySelectorAll("text")].map((e) => e.textContent).join(","): "",
+    picH: box ? box.height : 0, head: document.querySelector(".scaf-head")?.textContent ?? "",
     fits: box !== null && box.left >= panel.left - 1 && box.right <= panel.right + 1 && box.bottom <= panel.bottom + 1 && box.top >= panel.top - 1,
     steps, sideBySide: Math.abs(panel.top - sp.top) < 4 && sp.left > panel.right - 4,
     keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight,
@@ -426,6 +431,30 @@ await step("7 + 7 rolls back as fill the ten: seven green, three orange ticks, a
     must(!(await pc.$(".scaf-extra")), "the leftover is still captioned as text instead of drawn");
     layoutLaw(vp, r);
     await ctxC.close();
+  }
+});
+
+await step("every corrective kind fits a portrait phone and a landscape tablet with no scroll, division as boxed numbered groups", async () => {
+  // Andy's phone (2026-09-03): "Scrolling showed up in division corrective
+  // ... dotted line with rounded corners around each group with superscript
+  // number ... validate no scroll for all corrective screens across all
+  // types on both portrait phone and landscape tablet."
+  const CASES = [
+    { re: /^sub:9-4$/, wrong: 6, probe: "take-away", check: (r) => r.green === 5 && r.orange === 4 },
+    { re: /^sub:13-5$/, wrong: 9, probe: "find-ten", check: (r) => r.boxes === 0 && r.ticks >= 5 },
+    { re: /^mul:9x9$/, wrong: 80, probe: "array", check: (r) => r.dots === 81 },
+    { re: /^div:8\/4$/, wrong: 3, probe: "share", check: (r) => r.groups === 4 && r.dots === 8 && r.boxes === 4 && r.numerals === "1,2,3,4" && r.head.includes("4 groups") },
+    { re: /^div:81\/9$/, wrong: 8, probe: "share", check: (r) => r.groups === 9 && r.dots === 81 && r.boxes === 9 && r.numerals.endsWith(",9") },
+  ];
+  for (const vp of [{ width: 390, height: 664 }, { width: 1180, height: 740 }]) {
+    for (const c of CASES) {
+      const { pc, ctxC } = await rollBackTo(vp, c.re, c.wrong);
+      const r = await readCorrective(c.probe)(pc);
+      must(r.picH > 0, `${vp.width}x${vp.height}: ${c.re.source} drew no ${c.probe} picture`);
+      must(c.check(r), `${vp.width}x${vp.height}: ${c.re.source} picture reads ${JSON.stringify({ green: r.green, orange: r.orange, dots: r.dots, groups: r.groups, boxes: r.boxes, numerals: r.numerals, head: r.head })}`);
+      layoutLaw(vp, r);
+      await ctxC.close();
+    }
   }
 });
 

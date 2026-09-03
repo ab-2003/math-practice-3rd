@@ -143,7 +143,7 @@ const step = (n: number, text: string): HTMLElement =>
 /** An array of dots: rows by columns. The picture multiplication and division share. */
 const dotArray = (rows: number, cols: number): SVGElement => {
   const cell = 22;
-  const g = svg("svg", { viewBox: `0 0 ${cols * cell + 8} ${rows * cell + 8}`, class: "frame array" });
+  const g = svg("svg", { viewBox: `0 0 ${cols * cell + 8} ${rows * cell + 8}`, class: "frame array", "data-probe": "array" });
   for (let r = 0; r < rows; r++) {
     // Each row lights in turn, so the picture skip-counts along with step 2
     // instead of arriving as a wall of dots.
@@ -156,6 +156,53 @@ const dotArray = (rows: number, cols: number): SVGElement => {
     }
     g.append(row);
   }
+  return g;
+};
+
+/**
+ * SHARE INTO GROUPS (Andy's phone, 2026-09-03): every group in a dotted
+ * rounded box with its own small number, so 8 shared into 4 reads as four
+ * boxed pairs. The boxes are laid out in lines chosen to keep the picture
+ * near the card's own 2:1 shape rather than a tall column, and the frame
+ * scales to the card (styles.css caps its height), so it never scrolls.
+ */
+const shareGroups = (groups: number, each: number): SVGElement => {
+  const cell = 22;
+  const numCol = 14;                       // the numeral's column inside the box
+  const bw = numCol + each * cell + 4;     // box width
+  const bh = cell + 6;                     // box height
+  const gapX = 8;
+  const gapY = 6;
+  // Pick boxes per line so the whole picture sits nearest a 2:1 shape.
+  let perLine = 1;
+  let best = Infinity;
+  for (let k = 1; k <= Math.min(groups, 5); k++) {
+    const lines = Math.ceil(groups / k);
+    const w = k * bw + (k - 1) * gapX;
+    const h = lines * bh + (lines - 1) * gapY;
+    const off = Math.abs(w / h - 2);
+    if (off < best) { best = off; perLine = k; }
+  }
+  const lines = Math.ceil(groups / perLine);
+  const w = perLine * bw + (perLine - 1) * gapX + 4;
+  const h = lines * bh + (lines - 1) * gapY + 4;
+  const g = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "frame array share", "data-probe": "share" });
+  for (let i = 0; i < groups; i++) {
+    const x = 2 + (i % perLine) * (bw + gapX);
+    const y = 2 + Math.floor(i / perLine) * (bh + gapY);
+    const box = svg("g", { class: "arow", style: `animation-delay:${120 + i * 110}ms`, "data-group": String(i + 1) });
+    box.append(svg("rect", { x, y, width: bw, height: bh, rx: 9, fill: "none", stroke: "#8A97A6", "stroke-width": 2, "stroke-dasharray": "5 4" }));
+    box.append(svg("text", { x: x + 4, y: y + 12, "font-size": 13, "font-weight": 900, fill: "#FF8A1F" }, String(i + 1)));
+    for (let c = 0; c < each; c++) {
+      box.append(svg("circle", {
+        cx: x + numCol + c * cell + cell / 2, cy: y + bh / 2, r: cell / 2 - 4,
+        fill: i % 2 === 0 ? FILL : FILL2, stroke: INK, "stroke-width": 3,
+      }));
+    }
+    g.append(box);
+  }
+  g.dataset["groups"] = String(groups);
+  g.dataset["each"] = String(each);
   return g;
 };
 
@@ -182,7 +229,9 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
     const toTen = m - 10;      // take this much to land on ten
     const rest = s - toTen;    // then take the rest out of the ten
     box.append(el("p", { class: "scaf-head", text: "Find the ten." }));
-    box.append(tenFrame(10, 10 - rest, rest, "#FF8A1F", toTen));
+    const frame = tenFrame(10, 10 - rest, rest, "#FF8A1F", toTen);
+    frame.setAttribute("data-probe", "find-ten");
+    box.append(frame);
     steps.append(step(1, `Start at ${m}.`));
     steps.append(step(2, `Take ${toTen} to land on 10.`));
     steps.append(step(3, `Take ${rest} more. That leaves ${f.answer}.`));
@@ -207,11 +256,11 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
   } else if (f.kind === "div") {
     const groups = f.b;
     const each = f.answer;
-    box.append(el("p", { class: "scaf-head", text: `Share ${f.a} into ${groups} rows.` }));
-    box.append(dotArray(groups, Math.max(each, 1)));
-    steps.append(step(1, `${f.a} altogether, split into ${groups} rows.`));
+    box.append(el("p", { class: "scaf-head", text: `Share ${f.a} into ${groups} groups.` }));
+    box.append(shareGroups(groups, Math.max(each, 1)));
+    steps.append(step(1, `${f.a} altogether, split into ${groups} groups.`));
     steps.append(step(2, `Think: ${groups} times what makes ${f.a}?`));
-    steps.append(step(3, `${each} in each row. The answer is ${each}.`));
+    steps.append(step(3, `${each} in each group. The answer is ${each}.`));
   } else if (f.kind === "add") {
     // COUNT ON: start with the bigger number, count the smaller one up.
     const big = Math.max(shownA, shownB);

@@ -1130,6 +1130,20 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.8 - Division in boxed groups, and the no-scroll law for every
+      corrective.** Andy's phone: the division corrective scrolled (four
+      rows of two dots drawn at full size). Division now draws each
+      group in a dotted rounded box with its own small number, the boxes
+      laid out in lines chosen to sit nearest the card's 2:1 shape, and
+      the arrays (division and multiplication) scale to the card like
+      the block frames (max-height 150/130/96 on desktop, landscape
+      tablet, phone). "Rows" became "groups" in the heading and steps.
+      The core probe now rolls back every corrective kind (count on,
+      fill the ten, count back, find the ten, the array, share into
+      groups at 8 into 4 and 81 into 9) on a portrait phone and a
+      landscape tablet and asserts each picture inside its card, no page
+      scroll, the keypad above the fold, side by side only on the
+      tablet, and the group boxes, numerals and dot counts.
 - [x] **0.20.7 - No more 16-7, 16-8, 16-9.** Andy's phone: "I get a lot of
       ascending or descending problems like 16-7 then 16-8 then 16-9. I
       don't think we should intentionally do that?" We did not mean to.
