@@ -305,6 +305,20 @@ await step("the stamina log names how a run ended", async () => {
   must(text.includes("took a breather"), "the breather run is not named as such");
 });
 
+await step("the home rider performs its shop act on arrival, then rests until the next beat", async () => {
+  // Andy, 2026-09-03: "have your skater perform its shop animation on a slow loop".
+  await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; window.__app.go("home"); });
+  await page.waitForSelector(".hero .creature.idle", { timeout: 4000 });
+  await page.waitForTimeout(300);
+  const early = await page.evaluate(() => { const a = document.querySelector(".hero .creature").getAnimations({ subtree: true }); return { n: a.length, running: a.filter((x) => x.playState === "running").length, rig: !!document.querySelector(".hero .creature .logrig") }; });
+  must(early.n > 0, "the home rider has no act animations");
+  must(early.rig, "the home rider is not GRINDJAW's act (no log rig)");
+  must(early.running === early.n, `on arrival ${early.running} of ${early.n} animations run`);
+  await page.waitForTimeout(5400);
+  const later = await page.evaluate(() => { const a = document.querySelector(".hero .creature").getAnimations({ subtree: true }); return { n: a.length, paused: a.filter((x) => x.playState === "paused" && x.currentTime === 0).length }; });
+  must(later.paused === later.n, `after the act ${later.paused} of ${later.n} animations rest at zero`);
+});
+
 await step("on a phone and a landscape tablet the home screen fits without a scroll, in every state", async () => {
   // Andy's phone (2026-09-02): the shop button was a screen and a half
   // down. His iPad on its side (2026-09-03): a scroll and a tiny monster.

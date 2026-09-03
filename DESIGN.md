@@ -1092,7 +1092,13 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
-- [ ] **0.19.2 - The bonus round has an off switch.** Andy: "for the
+- [ ] **0.19.3 - The rider performs at home.** Andy: "have your skater
+      perform its shop animation on a slow loop, like every 15 seconds."
+      The home hero is drawn on the idle clock, plays one cycle on
+      arrival, parks every animation at its rest pose, and plays again
+      every fifteen seconds. (A fifteen second cycle would have been slow
+      motion: the keyframes are percentages.)
+- [x] **0.19.2 - The bonus round has an off switch.** Andy: "for the
       younger kids." A synced dial `elapsedOn` (default on, at level 1) on
       the bonus card of both doors; off, a finished run ends without the
       round and the level and clock controls step aside. The settings

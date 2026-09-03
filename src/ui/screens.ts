@@ -157,9 +157,19 @@ export const homeScreen = (app: App): HTMLElement => {
   const star = owned.length > 0 ? resolveRider(app) : null;
   if (star) {
     const starHelm = app.meta.gear[star.id] !== undefined ? helmetById(app.meta.gear[star.id]!) : undefined;
-    const art = creatureSvg(star, { level: app.meta.levels[star.id] ?? 1, ...(starHelm ? { helmet: starHelm } : {}) });
+    // THE RIDER PERFORMS AT HOME (Andy, 2026-09-03): its shop act, once on
+    // arrival and then every fifteen seconds. The act runs at its own speed
+    // (one idle cycle), then every animation is parked at its rest pose
+    // until the next beat; a fifteen second cycle would have been slow
+    // motion, since the keyframes are percentages.
+    const art = creatureSvg(star, { level: app.meta.levels[star.id] ?? 1, idle: 0, ...(starHelm ? { helmet: starHelm } : {}) });
     art.classList.add("home-creature");
     hero.append(art);
+    const anims = (): Animation[] => art.getAnimations({ subtree: true });
+    const rest = (): void => { for (const a of anims()) { a.pause(); a.currentTime = 0; } };
+    const act = (): void => { for (const a of anims()) { a.currentTime = 0; a.play(); } window.setTimeout(rest, HOME_ACT_MS); };
+    window.setTimeout(act, 60);
+    const beat = window.setInterval(() => { if (!root.isConnected) { window.clearInterval(beat); return; } act(); }, HOME_ACT_EVERY_MS);
     // The rider stands on its board: a bought deck is visible before any run.
     const deck = boardFor(app.meta.boardOf, star.id, app.meta.boardsOwned);
     if (deck.id !== PLAIN_BOARD) hero.append(boardSvg(deck, { cls: "home-board" }));
@@ -255,6 +265,9 @@ export const homeScreen = (app: App): HTMLElement => {
 };
 
 const PEEK_MS = 60_000;
+/** The home rider's act: one idle cycle, then a rest until the next beat. */
+export const HOME_ACT_MS = 4900;
+export const HOME_ACT_EVERY_MS = 15_000;
 
 export const collectionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
