@@ -305,6 +305,19 @@ await step("the stamina log names how a run ended", async () => {
   must(text.includes("took a breather"), "the breather run is not named as such");
 });
 
+await step("the grown-ups screen has a Facts tab: four full grids, one cell per fact", async () => {
+  await goHome(page);
+  await pinIn(page);
+  await page.click('[data-probe="tab-facts"]');
+  await page.waitForSelector('[data-probe="facts-tab"]', { timeout: 6000 });
+  must((await page.$$('[data-probe="facts-tab"] .heat')).length === 4, "the facts tab does not show four grids");
+  const n = await page.$$eval('[data-probe="facts-tab"] .heat-cell', (els) => els.length);
+  must(n > 200, `only ${n} fact cells on the facts tab`);
+  must(await page.$('[data-probe="facts-tab"] .facts-legend') !== null, "the facts tab has no legend");
+  await page.click('[data-probe="back"]');
+  await page.waitForSelector('[data-probe="start"]');
+});
+
 await step("the home rider performs its shop act on arrival, then rests until the next beat", async () => {
   // Andy, 2026-09-03: "have your skater perform its shop animation on a slow loop".
   await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; window.__app.go("home"); });

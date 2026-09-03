@@ -30,7 +30,8 @@ import { el, mount, on } from "./dom";
 import { icoRefresh } from "./icons";
 import { sheet } from "./sheet";
 import { snapshotFromBackup } from "./snapshot";
-import { checkBackup, type Backup } from "./store";
+import { checkBackup, hydrateMeta, type Backup, type Meta } from "./store";
+import { factsTab } from "./dash/facts";
 import { toast } from "./toast";
 
 /** Offer a text file without a network round trip. */
@@ -67,7 +68,7 @@ export const forgetRider = (code: string): void => {
 type Source =
   | { kind: "cloud"; code: string; res: CloudOk; settings: Fields }
   | { kind: "file"; name: string; backup: Backup };
-type Tab = "progress" | "trends" | "settings";
+type Tab = "progress" | "facts" | "trends" | "settings";
 
 export const bootParent = async (root: HTMLElement): Promise<void> => {
   const deck = buildDeck();
@@ -222,7 +223,7 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
       on(b, "click", () => { tab = id; render(); });
       return b;
     };
-    tabs.append(tabBtn("progress", "Progress"), tabBtn("trends", "Trends"));
+    tabs.append(tabBtn("progress", "Progress"), tabBtn("facts", "Facts"), tabBtn("trends", "Trends"));
     if (src.kind === "cloud") tabs.append(tabBtn("settings", "Settings"));
     screen.append(tabs, pane);
 
@@ -239,6 +240,8 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
       row.append(csvBtn);
       tools.append(row);
       pane.append(tools);
+    } else if (tab === "facts") {
+      pane.append(factsTab(snap));
     } else if (tab === "trends") {
       pane.append(trendsTab(snap, today()));
     } else if (src.kind === "cloud") {
@@ -250,7 +253,10 @@ export const bootParent = async (root: HTMLElement): Promise<void> => {
   // ---- settings, from here: the cloud document as the model ----------------------
   const settingsPane = (src: Extract<Source, { kind: "cloud" }>, states: SettingsModel["states"]): HTMLElement => {
     const wrap = el("div", { "data-probe": "settings-tab" });
-    const running = settingsOf(src.res.backup.meta);
+    // A record mirrored by a device from before a dial existed has no
+    // value for it; hydrate with the defaults, as the device itself does,
+    // or the door shows "undefined" and a switch that reads as off.
+    const running = settingsOf(hydrateMeta(src.res.backup.meta as Partial<Meta>));
     // What the door sees: the document's value where it has one, else what
     // the device is running.
     const effective = (): SyncedSettings => {

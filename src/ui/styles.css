@@ -1560,3 +1560,14 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
      overlap with its shadow, none with its face, and it takes no taps. */
   .stamp { font-size: 9px; line-height: 10px; opacity: 0.55; bottom: 0; pointer-events: none; }
 }
+
+/* ---------- the facts tab ---------- */
+.facts-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 4px 0 10px; }
+.facts-key { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--dim); text-transform: none; }
+.facts-swatch { width: 16px; height: 16px; border-radius: 4px; border: 2px solid var(--ink); display: inline-block; }
+.facts-swatch.mastered { background: #B6FF3C; }
+.facts-swatch.working { background: #A88A3A; }
+.facts-swatch.unseen { background: #1E242C; }
+.facts-card { margin-bottom: 12px; }
+.facts-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 8px; }
+.facts-head .title { margin: 0; }
