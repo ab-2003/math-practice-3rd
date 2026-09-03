@@ -474,7 +474,7 @@ export const sessionScreen = (app: App): HTMLElement => {
       sheet({
         title: "Line landed!",
         body: `That is ${itemsDone} so far and ${coins} coins. Keep rolling, or call it a good run?`,
-        cancel: "Call it",
+        cancel: "Call it", cancelIcon: icoPause, // Andy: "Call it" gets the pause bars too
         confirm: "Keep rolling",
         onConfirm: () => resolve(),
         // Calling it is his decision and it is not quitting. It is logged as

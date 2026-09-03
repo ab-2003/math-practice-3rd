@@ -51,7 +51,7 @@ describe("the trick vocabulary", () => {
 describe("the spots", () => {
   it("open with the street and earn the rest", () => {
     expect(spotForDay(0, 0).id).toBe("street");
-    expect(spotUnlockedBetween(14, 15)?.id).toBe("halfpipe");
+    expect(spotUnlockedBetween(14, 15)?.id).toBe("stairs");
     expect(spotUnlockedBetween(15, 16)).toBeNull();
   });
 

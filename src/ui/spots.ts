@@ -2,57 +2,103 @@
  * THE SPOTS: scenery behind the stage, earned by lines landed. Deliberately
  * dim, stroke-only, pointer-inert: the world grows richer as mastery
  * accumulates, but the equation always owns the contrast.
+ *
+ * EVERY SPOT IS A RAIL LINE (Andy, 2026-09-03). The rider crosses the stage
+ * left to right on the rail lane, so the scenery is always flat ground with
+ * a rail to grind, in a different configuration per spot: a street rail, a
+ * stair set with a handrail, a rooftop rail, a plaza with two, a kink rail.
+ * The half pipe and the bowl he "just moved through" are gone. Stroke widths
+ * pick the lit colour: 7 is the ground (acid), 5 a rail (cyan), 4 detail
+ * (warm); see styles.css under "the victory lap".
  */
 import { svg } from "./dom";
 
 const S = "#2E3843";
 const S2 = "#3A4754";
 
+interface Pen {
+  /** A dim stroke: ground at 7, detail at 4. */
+  line: (d: string, w?: number, stroke?: string) => void;
+  /** A rail: width 5, marked data-rail so a probe can prove one is there. */
+  rail: (d: string) => void;
+  circle: (cx: number, cy: number, r: number) => void;
+}
+
+const GROUND = "M0 230 L400 230";
+
+const ART: Record<string, (p: Pen) => void> = {
+  street: (p) => {
+    // the street: ground, one flat rail on posts, a curb
+    p.line(GROUND, 7);
+    p.rail("M120 200 L280 200 M140 200 L140 230 M260 200 L260 230");
+    p.line("M20 230 L20 218 L70 218", 4, S2);
+  },
+  stairs: (p) => {
+    // a four-stair set down to the right, the handrail slanting with it, and
+    // a ledge at the top to pop off
+    p.line(GROUND, 7);
+    p.line("M150 190 L175 190 L175 200 L200 200 L200 210 L225 210 L225 220 L250 220 L250 230", 4, S2);
+    p.line("M60 190 L150 190", 4, S2);
+    p.rail("M136 174 L262 218 M148 178 L148 190 M250 214 L250 230");
+    p.line("M300 230 L300 220 L360 220", 4, S2);
+  },
+  rooftop: (p) => {
+    // the roof edge for ground, a rail between two vents, the antenna
+    p.line(GROUND, 7);
+    p.line("M40 230 L40 180 L100 180 L100 230", 4, S2);
+    p.line("M290 230 L290 172 L350 172 L350 230", 4, S2);
+    p.rail("M130 198 L262 198 M150 198 L150 230 M242 198 L242 230");
+    p.line("M320 172 L320 120 M312 130 L328 130", 4, S2);
+  },
+  plaza: (p) => {
+    // a plaza: a low rail and a tall one, a bench, planters
+    p.line(GROUND, 7);
+    p.rail("M50 208 L170 208 M70 208 L70 230 M150 208 L150 230");
+    p.rail("M220 190 L350 190 M240 190 L240 230 M330 190 L330 230");
+    p.line("M0 214 L36 214 M8 214 L8 230 M28 214 L28 230", 4, S2);
+    p.line("M180 230 L180 216 L206 216 L206 230 M366 230 L366 216 L392 216 L392 230", 4, S2);
+  },
+  kink: (p) => {
+    // a kink rail: flat, a drop, flat again; a flat box past it
+    p.line(GROUND, 7);
+    p.rail("M60 194 L170 194 L250 214 L330 214 M80 194 L80 230 M170 194 L170 230 M250 214 L250 230 M310 214 L310 230");
+    p.line("M350 230 L350 218 L392 218", 4, S2);
+  },
+  frostpark: (p) => {
+    // winter: a snowed-over rail with icicles, drifts, and falling flakes
+    p.line(GROUND, 7);
+    p.rail("M110 196 L290 196 M130 196 L130 230 M270 196 L270 230");
+    p.line("M150 200 L150 214 M190 200 L190 210 M230 200 L230 216", 4, S2);
+    p.line("M0 226 C30 210 70 210 100 226", 5, S2);
+    p.line("M300 226 C330 212 370 212 400 226", 5, S2);
+    for (const [x, y] of [[60, 60], [140, 40], [220, 90], [320, 50], [360, 120], [90, 130]] as const) {
+      p.line(`M${x - 8} ${y} L${x + 8} ${y} M${x} ${y - 8} L${x} ${y + 8} M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}`, 3, S2);
+    }
+  },
+  boardwalk: (p) => {
+    // summer: planks on posts over the water, a rail down the boards, a low
+    // sun, a gull or two
+    p.line("M0 214 L400 214", 7);
+    for (let x = 20; x < 400; x += 36) p.line(`M${x} 214 L${x} 200`, 3, S2);
+    p.rail("M140 184 L260 184 M160 184 L160 214 M240 184 L240 214");
+    p.line("M60 214 L60 250 M200 214 L200 250 M340 214 L340 250", 5, S2);
+    p.line("M0 246 C40 238 80 254 120 246 C160 238 200 254 240 246 C280 238 320 254 360 246 L400 246", 4, S2);
+    p.circle(320, 70, 30);
+    p.line("M80 70 q10 -10 20 0 q10 -10 20 0 M150 44 q8 -8 16 0 q8 -8 16 0", 4, S2);
+  },
+};
+
 const draw = (id: string): SVGElement => {
   const g = svg("svg", { viewBox: "0 0 400 260", class: "spot-art", "aria-hidden": "true", "data-spot": id });
-  const line = (d: string, w = 5, stroke = S): SVGElement =>
-    svg("path", { d, fill: "none", stroke, "stroke-width": w, "stroke-linecap": "round" });
-  if (id === "halfpipe") {
-    g.append(line("M20 40 C20 200 120 230 200 230 C280 230 380 200 380 40", 7));
-    g.append(line("M12 40 L44 40 M356 40 L388 40", 7, S2));
-  } else if (id === "rooftop") {
-    g.append(line("M0 230 L400 230", 7));
-    g.append(line("M40 230 L40 150 L110 150 L110 230", 5));
-    g.append(line("M150 230 L150 110 L230 110 L230 230", 5));
-    g.append(line("M270 230 L270 170 L350 170 L350 230", 5));
-    g.append(line("M190 110 L190 70 M182 78 L198 78", 4, S2));
-  } else if (id === "bowl") {
-    g.append(svg("circle", { cx: 320, cy: 60, r: 34, fill: "none", stroke: S2, "stroke-width": 5 }));
-    g.append(line("M0 200 C100 260 300 260 400 200", 7));
-    g.append(line("M0 170 L80 170 M320 170 L400 170", 4, S2));
-  } else if (id === "megaramp") {
-    g.append(line("M20 230 L260 230 C330 230 370 190 380 40", 7));
-    g.append(line("M380 40 L380 230", 5, S2));
-    g.append(line("M40 230 L40 214 M70 230 L70 214", 4, S2));
-  } else if (id === "frostpark") {
-    // winter: a snowed-over rail with icicles, drifts, and falling flakes
-    g.append(line("M0 230 L400 230", 7));
-    g.append(line("M110 196 L290 196 M130 196 L130 230 M270 196 L270 230", 5, S2));
-    g.append(line("M150 200 L150 214 M190 200 L190 210 M230 200 L230 216", 4, S2));
-    g.append(line("M0 226 C30 210 70 210 100 226", 5, S2));
-    g.append(line("M300 226 C330 212 370 212 400 226", 5, S2));
-    for (const [x, y] of [[60, 60], [140, 40], [220, 90], [320, 50], [360, 120], [90, 130]] as const) {
-      g.append(line(`M${x - 8} ${y} L${x + 8} ${y} M${x} ${y - 8} L${x} ${y + 8} M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}`, 3, S2));
-    }
-  } else if (id === "boardwalk") {
-    // summer: planks on posts over the water, a low sun, a gull or two
-    g.append(line("M0 214 L400 214", 7));
-    for (let x = 20; x < 400; x += 36) g.append(line(`M${x} 214 L${x} 200`, 3, S2));
-    g.append(line("M60 214 L60 250 M200 214 L200 250 M340 214 L340 250", 5, S2));
-    g.append(line("M0 246 C40 238 80 254 120 246 C160 238 200 254 240 246 C280 238 320 254 360 246 L400 246", 4, S2));
-    g.append(svg("circle", { cx: 320, cy: 70, r: 30, fill: "none", stroke: S2, "stroke-width": 5 }));
-    g.append(line("M80 70 q10 -10 20 0 q10 -10 20 0 M150 44 q8 -8 16 0 q8 -8 16 0", 4, S2));
-  } else {
-    // the street: ground, a rail, a curb
-    g.append(line("M0 230 L400 230", 7));
-    g.append(line("M120 200 L280 200 M140 200 L140 230 M260 200 L260 230", 5, S2));
-    g.append(line("M20 230 L20 218 L70 218", 4, S2));
-  }
+  const stroke = (d: string, w: number, col: string, extra: Record<string, string> = {}): void => {
+    g.append(svg("path", { d, fill: "none", stroke: col, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round", ...extra }));
+  };
+  const pen: Pen = {
+    line: (d, w = 5, col = S) => stroke(d, w, col),
+    rail: (d) => stroke(d, 5, S2, { "data-rail": "1" }),
+    circle: (cx, cy, r) => { g.append(svg("circle", { cx, cy, r, fill: "none", stroke: S2, "stroke-width": 5 })); },
+  };
+  (ART[id] ?? ART["street"]!)(pen);
   return g;
 };
 
@@ -62,3 +108,6 @@ export const spotLayer = (id: string): HTMLElement => {
   wrap.append(draw(id));
   return wrap;
 };
+
+// For the probes: light any spot on demand (the day picks one otherwise).
+(window as unknown as Record<string, unknown>).__spot = spotLayer;

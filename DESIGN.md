@@ -1130,6 +1130,23 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.5 - Every spot is a rail line; Call it pauses too; the dark sword.**
+      Andy's phone: the half pipe behind the lap "doesn't make much
+      sense since your character doesn't drop in ... he just moves
+      through it". Every spot is now flat ground with a rail in a
+      different configuration: THE STREET (a flat rail, a curb), THE
+      STAIR SET at 15 lines (four stairs down with a slanting handrail
+      and a ledge), THE ROOFTOP at 40 (a rail between two vents), THE
+      PLAZA at 80 (a low rail and a tall one, a bench, planters), THE
+      KINK RAIL at 140 (flat, a drop, flat, a box); the winter park and
+      the boardwalk keep their rails. The half pipe, the bowl and the
+      mega ramp are retired. A static rail law (spots.test.ts) proves
+      every spot draws a rail; the juice probe lights all seven through
+      a window hook and checks each has a rail, flat ground and its own
+      shape. "Call it" on the line-break offer wears the pause bars like
+      the breather (sheets take a cancelIcon). And DARK LANCE is DARK
+      SWORD: pommel, wrapped grip, a wide crossguard, a tapered blade
+      with a fuller, the crestless shield still on the tail.
 - [x] **0.20.4 - The shop bar freezes, and the breather gets its pause bars.**
       Andy's phone: the Back and wallet row scrolled away with the shop.
       The page scrolls, not the screen (the app grows with its content),

@@ -95,8 +95,8 @@ export const BOARDS: readonly Board[] = [
   { id: "ninja", name: "SHURIKEN", cost: 1800, theme: "ninja",
     lore: "Black on black with one red stripe. A shuriken spins off the tail.",
     palette: ["#0B0D12", "#E8483A", "#D8DEE8"] },
-  { id: "knight", name: "DARK LANCE", cost: 1900, theme: "knight",
-    lore: "Black plate down the deck, a lance along it, a crestless shield.",
+  { id: "knight", name: "DARK SWORD", cost: 1900, theme: "knight",
+    lore: "Black plate down the deck, a dark sword along it, hilt and all, and a crestless shield.",
     palette: ["#12141B", "#8FA0B4", "#B33A6E"] },
 ];
 

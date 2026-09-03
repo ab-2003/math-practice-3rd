@@ -109,10 +109,16 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       out.push(svg("circle", { cx: 100, cy: 17, r: 1.5, fill: INK }));
       break;
     case "knight":
-      // Black plate, a lance along the deck, a crestless shield at the tail.
-      out.push(svg("path", { d: "M22 17 L84 17", stroke: accent, "stroke-width": 3.2, "stroke-linecap": "round" }));
-      out.push(svg("path", { d: "M84 14 L96 17 L84 20 Z", fill: accent, stroke: INK, "stroke-width": 1.2, "stroke-linejoin": "round" }));
-      out.push(svg("path", { d: "M34 12 L44 12 L44 22 L34 22 Z", fill: "none", stroke: glow, "stroke-width": 1.4 }));
+      // Black plate, a DARK SWORD along the deck (Andy, 2026-09-03: "scratch
+      // the lance", a sword with a noticeable hilt): pommel, wrapped grip,
+      // a wide crossguard, a tapered blade with a fuller; the crestless
+      // shield stays on the tail.
+      out.push(svg("circle", { class: "pommel", cx: 25, cy: 17, r: 2.6, fill: glow, stroke: INK, "stroke-width": 1 }));
+      out.push(svg("path", { d: "M27 17 L38 17", stroke: glow, "stroke-width": 3.2, "stroke-linecap": "round" }));
+      out.push(svg("path", { d: "M29 15.5 L29 18.5 M32 15.5 L32 18.5 M35 15.5 L35 18.5", stroke: INK, "stroke-width": 0.9, opacity: 0.7 }));
+      out.push(svg("path", { class: "hilt", d: "M38 10.5 L42 10.5 L42 23.5 L38 23.5 Z M36 10 L40 12 M36 24 L40 22", fill: glow, stroke: INK, "stroke-width": 1.1, "stroke-linejoin": "round" }));
+      out.push(svg("path", { class: "blade", d: "M42 14.4 L84 15 L94 17 L84 19 L42 19.6 Z", fill: accent, stroke: INK, "stroke-width": 1.1, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M46 17 L82 17", stroke: INK, "stroke-width": 0.9, opacity: 0.6 }));
       out.push(svg("path", { class: "shield", d: "M98 11 L108 11 L108 18 Q103 24 98 18 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
       out.push(svg("path", { d: "M100 13 L106 13 L106 17 Q103 20 100 17 Z", fill: glow, opacity: 0.85 }));
       break;

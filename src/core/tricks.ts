@@ -65,12 +65,16 @@ export const lineTricks = (lineIndex: number, linesLanded: number): Trick[] => {
 
 export interface Spot { id: string; name: string; atLines: number }
 
+// Every spot is a RAIL LINE on flat ground, in a different configuration
+// (Andy, 2026-09-03: the rider crosses left to right, so a half pipe or a
+// bowl he never drops into "doesn't make much sense"; the halfpipe, bowl
+// and mega ramp of 0.7 gave way to a stair set, a plaza and a kink rail).
 export const SPOTS: ReadonlyArray<Spot> = [
   { id: "street", name: "THE STREET", atLines: 0 },
-  { id: "halfpipe", name: "THE HALFPIPE", atLines: 15 },
+  { id: "stairs", name: "THE STAIR SET", atLines: 15 },
   { id: "rooftop", name: "THE ROOFTOP", atLines: 40 },
-  { id: "bowl", name: "SUNSET BOWL", atLines: 80 },
-  { id: "megaramp", name: "THE MEGA RAMP", atLines: 140 },
+  { id: "plaza", name: "THE PLAZA", atLines: 80 },
+  { id: "kink", name: "THE KINK RAIL", atLines: 140 },
 ];
 
 /**

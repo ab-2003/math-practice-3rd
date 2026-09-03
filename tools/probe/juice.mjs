@@ -103,6 +103,32 @@ await step("crossing the dose mid-session plays the banner moment", async () => 
   await closeSheets(page);
 });
 
+await step("every spot, lit, is a rail line on flat ground in its own configuration", async () => {
+  // Andy (2026-09-03): "half pipe as background doesn't make much sense since
+  // your character doesn't drop in ... make several configurations of the rail line".
+  const r = await page.evaluate(() => {
+    const ids = ["street", "stairs", "rooftop", "plaza", "kink", "frostpark", "boardwalk"];
+    const out = [];
+    for (const id of ids) {
+      const layer = window.__spot(id);
+      document.body.append(layer);
+      const art = layer.querySelector(".spot-art");
+      const rails = [...art.querySelectorAll("[data-rail]")].map((e) => e.getAttribute("d"));
+      const ground = [...art.querySelectorAll('path[stroke-width="7"]')].length;
+      out.push({ id, spot: art.getAttribute("data-spot"), rails: rails.length, railD: rails.join("|"), ground });
+      layer.remove();
+    }
+    return out;
+  });
+  const seen = new Set();
+  for (const s of r) {
+    must(s.spot === s.id && s.rails >= 1, `${s.id} has no rail (${s.rails})`);
+    must(s.ground >= 1, `${s.id} has no flat ground`);
+    must(!seen.has(s.railD), `${s.id} repeats another spot's rail`);
+    seen.add(s.railD);
+  }
+});
+
 await step("landing a line with animations on plays the victory lap and lights the spot", async () => {
   await goHome(page);
   await page.evaluate(() => {
@@ -128,6 +154,10 @@ await step("landing a line with animations on plays the victory lap and lights t
   await typeAnswer(page, answerOf(id5));
   await page.waitForSelector(".lap-run", { timeout: 4000 });
   must(await page.$(".spot.lit") !== null, "the spot did not light for the lap");
+  // Every spot is a rail line (Andy): the lit one has a rail, and it is not
+  // the retired half pipe, bowl or mega ramp.
+  must(await page.$(".spot.lit .spot-art [data-rail]") !== null, "the lit spot has no rail line");
+  must(!["halfpipe", "bowl", "megaramp"].includes(await page.getAttribute(".spot.lit .spot-art", "data-spot")), "a retired spot shape is back");
   must(await page.$(".lap-run .trick-creature") !== null, "no rider on the lap");
   await page.waitForSelector(".lap-run", { state: "detached", timeout: 7000 });
   must(await page.$(".spot.lit") === null, "the spot stayed lit after the lap");
@@ -206,6 +236,8 @@ await step("the exit is offered earlier when the clock says the rider is tiring,
   must(text.includes("Line landed!") && text.includes("Keep rolling"), `the tired offer reads "${text.slice(0, 60)}"`);
   const lower = text.toLowerCase();
   for (const banned of ["tired", "slow", "speed", "time"]) must(!lower.includes(banned), `the offer mentions "${banned}"`);
+  must(await page.$(".sheet .btn.ghost svg.ico-pause") !== null, "Call it has no pause icon");
+  must(await page.$(".sheet .btn.go svg.ico-pause") === null, "Keep rolling wears a pause icon");
   await page.click(".sheet .btn.ghost"); // Call it
   await page.waitForTimeout(500);
   await closeSheets(page);

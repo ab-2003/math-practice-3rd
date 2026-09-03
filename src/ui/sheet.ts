@@ -7,6 +7,8 @@ export interface SheetOpts {
   /** An icon drawn before the confirm label (the breather's pause bars). */
   confirmIcon?: () => SVGElement;
   cancel?: string;
+  /** The same for the cancel label ("Call it" at a line break is a breather too). */
+  cancelIcon?: () => SVGElement;
   onConfirm?: () => void;
   onCancel?: () => void;
   danger?: boolean;
@@ -38,6 +40,7 @@ export const sheet = (opts: SheetOpts): { close: () => void } => {
 
   if (opts.cancel !== undefined) {
     const b = el("button", { type: "button", class: "btn ghost" }, el("span", { text: opts.cancel }));
+    if (opts.cancelIcon !== undefined) b.prepend(opts.cancelIcon());
     on(b, "click", () => close(true));
     row.append(b);
   }
