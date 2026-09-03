@@ -337,6 +337,9 @@ await step("the corrective screen is three labelled groups and fits a phone and 
       keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight,
     }));
     must(r.panels.join("|") === "the picture|step by step|your turn", `the groups read ${r.panels.join("|")} at ${vp.width}x${vp.height}`);
+    // The number to type stands apart: the theme's blue, underlined.
+    const n = await ps.evaluate(() => { const e = document.querySelector('[data-probe="retype-n"]'); const cs = getComputedStyle(e); return { text: e.textContent, color: cs.color, underline: cs.textDecorationLine }; });
+    must(/^\d+$/.test(n.text ?? "") && n.color === "rgb(53, 230, 255)" && n.underline.includes("underline"), `the retype number reads ${JSON.stringify(n)}`);
     must(r.keypad <= r.vh, `the keypad ends at ${Math.round(r.keypad)} on a ${vp.width}x${vp.height} screen`);
     await ctxS.close();
   }

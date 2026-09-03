@@ -1,5 +1,5 @@
 /**
- * PROBE: SHOP. Thirty-two monsters, their forms and acts, the rack, the
+ * PROBE: SHOP. Thirty-four monsters, their forms and acts, the rack, the
  * confirms, the peek, gear, send out, the level gate, and the off-stage pause.
  */
 import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
@@ -12,11 +12,11 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all thirty-two monsters by name, no mysteries", async () => {
+await step("the shop shows all thirty-four monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 32, "the roster is not thirty-two");
+  must((await page.$$(".mon")).length === 34, "the roster is not thirty-four");
   must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "HATTRICK is not 190 coins");
   must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
@@ -25,8 +25,11 @@ await step("the shop shows all thirty-two monsters by name, no mysteries", async
   must(await page.evaluate(() => document.querySelector(".roster")?.lastElementChild?.getAttribute("data-mon")) === "voidwyrm",
     "VOIDWYRM is not the final monster in the shop");
   must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
-  must((await page.$$(".helm-tile")).length === 30, "the gear rack is not thirty helmets");
-  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
+  must((await page.$$(".helm-tile")).length === 34, "the gear rack is not thirty-four helmets");
+  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site", "headband-red", "knight-dark"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
+  // The ninja's eyes are slits under the mask; the headband is a lid, not part of him.
+  must((await page.$$('[data-mon="ninjaw"] .head path[stroke="#D8DEE8"]')).length === 2, "NINJAW's eyes are not the ninja's slits");
+  must(await page.$('[data-mon="ninjaw"] .helm') === null, "NINJAW wears a lid he has not bought");
   // THE KAIJU SIX wear their tag, SKYHOOK is the 150 door, the pilot's lid is on the rack.
   must((await page.$$('[data-probe="kaiju-tag"]')).length === 8, "the kaiju eight are not tagged");
   must((await page.$$('[data-probe="dragon-tag"]')).length === 7, "the seven dragons are not tagged");
@@ -45,6 +48,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["komoduster", ".komodo-rig .tongue-fork"], ["komoduster", ".dust-k"],
     ["hattrick", ".kick-leg"], ["hattrick", ".goal-rig .goal-net"], ["hattrick", ".goal-rig .ball"],
     ["scoopjaw", ".boom .bucket"], ["scoopjaw", ".dig-rig .dirt-pile"], ["scoopjaw", ".dirt-fall-3"],
+    ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
@@ -71,7 +75,12 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     shot: getComputedStyle(document.querySelector('[data-mon="hattrick"] .goal-rig .ball')).animationName,
     boom: getComputedStyle(document.querySelector('[data-mon="scoopjaw"] .boom')).animationName,
     curl: getComputedStyle(document.querySelector('[data-mon="scoopjaw"] .bucket')).animationName,
+    fly: getComputedStyle(document.querySelector('[data-mon="ninjaw"] .creature')).animationName,
+    ninjaKick: getComputedStyle(document.querySelector('[data-mon="ninjaw"] .ninja-leg')).animationName,
+    sword: getComputedStyle(document.querySelector('[data-mon="grimshield"] .sword-arm')).animationName,
   }));
+  must(names.fly === "idle-flykick" && names.ninjaKick === "ninja-kick", `NINJAW's act reads ${names.fly}/${names.ninjaKick}`);
+  must(names.sword === "sword-sweep", `GRIMSHIELD's act reads ${names.sword}`);
   must(names.kick === "kick-swing" && names.shot === "ball-shot", `HATTRICK's act reads ${names.kick}/${names.shot}`);
   must(names.boom === "boom-dig" && names.curl === "bucket-curl", `SCOOPJAW's act reads ${names.boom}/${names.curl}`);
   must(((await page.textContent('[data-mon="hattrick"] .creature')) ?? "").includes("7"), "HATTRICK's shirt has no 7");
@@ -89,7 +98,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 32, `${delays.length} idle monsters, wanted 32`);
+  must(delays.length === 34, `${delays.length} idle monsters, wanted 34`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -137,13 +146,13 @@ await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of th
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 32.
+  // colours at tile size. Body plus wings must be unique across all 34.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 32, "could not read the forms");
+  must(forms.length === 34, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
@@ -206,23 +215,26 @@ await step("a HELD tap on Close does not open the monster underneath (the ghost 
 await step("with no monsters yet, the racks are on display but shut", async () => {
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "the fresh profile owns something");
   must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");
-  must((await page.$$(".helm-tile[disabled]")).length === 30, "a helmet is tappable before the first monster");
+  must((await page.$$(".helm-tile[disabled]")).length === 34, "a helmet is tappable before the first monster");
   const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
   must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
   // THE BOARD RACK: thirteen decks, plain always owned, shut until the first monster.
   must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
-  must((await page.$$(".board-tile")).length === 15, "the board rack is not fifteen boards");
-  must((await page.$$(".board-tile[disabled]")).length === 15, "a board is tappable before the first monster");
+  must((await page.$$(".board-tile")).length === 17, "the board rack is not seventeen boards");
+  must((await page.$$(".board-tile[disabled]")).length === 17, "a board is tappable before the first monster");
   must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
   must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
   const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
-  must(prices.includes("◆ 100") && prices.includes("◆ 500") && prices.includes("◆ 1100") && prices.includes("◆ 1500") && prices.includes("◆ 1700"), `the prices read ${JSON.stringify(prices)}`);
+  must(prices.includes("◆ 100") && prices.includes("◆ 250") && prices.includes("◆ 300") && prices.includes("◆ 350") && prices.includes("◆ 500") && prices.includes("◆ 1900"), `the prices read ${JSON.stringify(prices)}`);
+  // The sports lids are 40, every one (Andy).
+  const lidPrices = await page.$$eval('[data-helm^="soccer-"] .mon-sub, [data-helm^="basketball-"] .mon-sub, [data-helm^="hockey-"] .mon-sub', (els) => els.map((e) => e.textContent));
+  must(lidPrices.length === 6 && lidPrices.every((t) => t === "◆ 40"), `the sports lids read ${JSON.stringify(lidPrices)}`);
   // Thirteen forms, not one deck in thirteen colours: the graphics differ, and Void has its stars.
   const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
-  must(new Set(marks).size >= 14, "the boards are palette swaps");
+  must(new Set(marks).size >= 16, "the boards are palette swaps");
   must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
   // THE THEMED FOUR (0.18.2): cockpit and wings, a puck, a ball, a crowned tag.
-  for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"]]) {
+  for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"], ["ninja", ".shuriken"], ["knight", ".shield"]]) {
     must(await page.$(`[data-board-tile="${id}"] ${prop}`) !== null, `the ${id} board lost its ${prop}`);
   }
   must(await page.$eval('[data-board-tile="hoops"] .ball', (e) => e.getAttribute("fill")) === "#EE6730", "the court ball is not basketball orange");

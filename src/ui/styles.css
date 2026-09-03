@@ -190,6 +190,9 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   border: 3px solid var(--ink); font-size: 15px;
 }
 .retype { color: var(--orange); font-weight: 900; text-transform: uppercase; font-size: 17px; letter-spacing: 0.06em; }
+/* The number to type stands apart (Andy, 2026-09-03): the theme's blue,
+   underlined, a size up. */
+.retype-n { color: var(--cyan); text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; font-size: 1.35em; padding: 0 2px; }
 
 /* ---------- keypad ---------- */
 
@@ -1226,6 +1229,36 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .dirt-fall-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.2s); }
 @keyframes dirt-drop { 0%, 17% { opacity: 0; transform: none; } 18% { opacity: 1; } 22%, 100% { opacity: 0; transform: translateY(150px); } }
 
+/* NINJAW: a leap, the leg snaps out, speed lines and a pow. */
+.creature.idle-ninja { animation-name: idle-flykick; }
+@keyframes idle-flykick {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: translateY(6px) scaleY(0.92); }
+  8% { transform: translate(10px, -26px) rotate(-8deg); }
+  12% { transform: translate(14px, -22px) rotate(-10deg); }
+  17% { transform: translate(4px, 0) rotate(0); }
+}
+.ninja-leg { transform-box: fill-box; transform-origin: 50% 0%; animation: ninja-kick var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes ninja-kick { 0%, 6%, 17%, 100% { transform: rotate(0); } 8.5% { transform: rotate(-80deg); } 13% { transform: rotate(-70deg); } }
+.kick-rig .kick-lines { animation: kick-flash var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.kick-rig .kick-pow { animation: pow-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes kick-flash { 0%, 8%, 14%, 100% { opacity: 0; } 9% { opacity: 1; } 12% { opacity: 0.7; } }
+@keyframes pow-pop { 0%, 8.5%, 13%, 100% { opacity: 0; } 9.5% { opacity: 1; } 11.5% { opacity: 1; } }
+
+/* GRIMSHIELD: the greatsword raises and comes round; the shimmer trail
+   draws in behind the blade, three arcs a beat apart, and glints hang. */
+.creature.idle-knight { animation-name: idle-stomp; }
+.sword-arm { transform-box: fill-box; transform-origin: 4% 70%; animation: sword-sweep var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes sword-sweep { 0%, 3%, 21%, 100% { transform: rotate(0); } 7% { transform: rotate(-78deg); } 9% { transform: rotate(-84deg); } 11.5% { transform: rotate(34deg); } 16% { transform: rotate(28deg); } }
+.slash-rig .slash-arc { stroke-dasharray: 260; stroke-dashoffset: 260; animation: slash-sweep var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+.slash-rig .slash-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.06s); }
+.slash-rig .slash-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.12s); }
+@keyframes slash-sweep { 0%, 9% { opacity: 0; stroke-dashoffset: 260; } 9.5% { opacity: 1; } 12% { stroke-dashoffset: 0; opacity: 1; } 15% { opacity: 0.8; } 20%, 100% { opacity: 0; stroke-dashoffset: 0; } }
+.slash-rig .glint { animation: glint-hang var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.slash-rig .glint-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.1s); }
+.slash-rig .glint-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.2s); }
+@keyframes glint-hang { 0%, 11% { opacity: 0; transform: scale(0.4); } 12.5% { opacity: 1; transform: scale(1.2); } 16% { opacity: 1; transform: scale(1); } 20%, 100% { opacity: 0; transform: scale(0.6); } }
+
 /* KOMODUSTER: a low lunge, the forked tongue flicks twice, dust at the feet. */
 .creature.idle-komodo { animation-name: idle-lunge; }
 @keyframes idle-lunge {
@@ -1248,8 +1281,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes dust-kick { 0%, 6.5% { opacity: 0; transform: none; } 8% { opacity: 1; } 14% { opacity: 0; transform: translate(-10px, -8px) scale(1.4); } 100% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */

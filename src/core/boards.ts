@@ -4,8 +4,8 @@
  *
  * PLAIN BOARD is always owned and costs nothing, so there is always a way
  * back. The custom boards are priced as a real save: the first is a
- * quick win, the rest are the spring's long arc, the themed four (0.18.2) at
- * the top of the ladder. VOID BOARD matches
+ * quick win, the sports decks a short save under 400, the rest the spring's long
+ * arc up the ladder. VOID BOARD matches
  * VOIDWYRM, Kallen's commission, and costs what the dragon costs.
  *
  * Pure data, like the monsters and helmets: the drawing lives in
@@ -16,8 +16,8 @@ export type BoardTheme =
   | "plain" | "ember" | "void" | "frost" | "storm" | "tide" | "gilded" | "magma" | "neon"
   // 0.18.2 (Andy): a fighter jet, a rink, a court, and a wall of tags.
   | "jet" | "hockey" | "hoops" | "tag"
-  // 0.20.0 (Andy): a pitch, and a building site.
-  | "soccer" | "hazard";
+  // 0.20.0 (Andy): a pitch, a building site, a shuriken, a dark knight.
+  | "soccer" | "hazard" | "ninja" | "knight";
 
 export interface Board {
   readonly id: string;
@@ -38,6 +38,16 @@ export const BOARDS: readonly Board[] = [
   { id: "ember", name: "EMBER DECK", cost: 100, theme: "ember",
     lore: "Warm to the touch. The tail leaves a little fire behind.",
     palette: ["#FF5A2A", "#3A0E00", "#FFE14D"] },
+  // The sports decks are a short save, under 400 (Andy, 2026-09-03).
+  { id: "soccer", name: "PITCH DECK", cost: 250, theme: "soccer",
+    lore: "A whole pitch, nose to tail, and a ball on the tail. Grass flies.",
+    palette: ["#3FBF6F", "#0E3A1E", "#FFFFFF"] },
+  { id: "hockey", name: "SLAPSHOT", cost: 300, theme: "hockey",
+    lore: "Rink lines on the deck and a puck on the tail. Ice shavings on every stop.",
+    palette: ["#E4F2FC", "#D33A3A", "#2F7DFF"] },
+  { id: "hoops", name: "BUZZER BEATER", cost: 350, theme: "hoops",
+    lore: "Hardwood, court lines, and a ball that bounces along behind.",
+    palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },
   { id: "void", name: "VOID BOARD", cost: 500, theme: "void",
     lore: "Cut from the same dark as VOIDWYRM. It trails a comet.",
     palette: ["#251C4A", "#0A0620", "#9DB8FF"] },
@@ -63,21 +73,18 @@ export const BOARDS: readonly Board[] = [
   { id: "jet", name: "AFTERBURNER", cost: 1200, theme: "jet",
     lore: "A cockpit up front, wings out the sides. It does not fly. It nearly does.",
     palette: ["#55657A", "#1A2230", "#FF8A1F"] },
-  { id: "hockey", name: "SLAPSHOT", cost: 1300, theme: "hockey",
-    lore: "Rink lines on the deck and a puck on the tail. Ice shavings on every stop.",
-    palette: ["#E4F2FC", "#D33A3A", "#2F7DFF"] },
-  { id: "hoops", name: "BUZZER BEATER", cost: 1400, theme: "hoops",
-    lore: "Hardwood, court lines, and a ball that bounces along behind.",
-    palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },
   { id: "tag", name: "STREET TAG", cost: 1500, theme: "tag",
     lore: "Tagged, dripped and crowned. The wall started it.",
     palette: ["#1E242C", "#FF3D8B", "#FFE14D"] },
-  { id: "soccer", name: "PITCH DECK", cost: 1600, theme: "soccer",
-    lore: "A whole pitch, nose to tail, and a ball on the tail. Grass flies.",
-    palette: ["#3FBF6F", "#0E3A1E", "#FFFFFF"] },
   { id: "hazard", name: "SITE DECK", cost: 1700, theme: "hazard",
     lore: "Hazard stripes and a hard hat sticker. Gravel sprays behind it.",
     palette: ["#F5B400", "#05070A", "#FF8A1F"] },
+  { id: "ninja", name: "SHURIKEN", cost: 1800, theme: "ninja",
+    lore: "Black on black with one red stripe. A shuriken spins off the tail.",
+    palette: ["#0B0D12", "#E8483A", "#D8DEE8"] },
+  { id: "knight", name: "DARK LANCE", cost: 1900, theme: "knight",
+    lore: "Black plate down the deck, a lance along it, a crestless shield.",
+    palette: ["#12141B", "#8FA0B4", "#B33A6E"] },
 ];
 
 export const boardById = (id: string): Board | undefined => BOARDS.find((b) => b.id === id);

@@ -416,7 +416,8 @@ export const sessionScreen = (app: App): HTMLElement => {
     box.append(scaffold(f, p.a === 0 && p.blank === "a" ? p.expected : p.a, p.b));
     // The third group: the answer. Its label sits on the retype line; the
     // slot and the keypad below it belong to it.
-    box.append(el("p", { class: "retype scaf-panel scaf-answer", "data-label": "your turn", text: `Type ${p.expected} to roll on`, "data-probe": "retype" }));
+    box.append(el("p", { class: "retype scaf-panel scaf-answer", "data-label": "your turn", "data-probe": "retype" },
+      "Type ", el("b", { class: "retype-n", "data-probe": "retype-n", text: String(p.expected) }), " to roll on"));
     eq.hidden = false;
     mount(stage, box);
     // pad.reset() rather than clearing the slot text by hand: the keypad holds

@@ -1,5 +1,5 @@
 /**
- * THE BOARDS, DRAWN. One renderer, fifteen themes: a real deck silhouette with
+ * THE BOARDS, DRAWN. One renderer, seventeen themes: a real deck silhouette with
  * a kicked nose and tail, trucks, wheels with hub colour, a deck-top graphic
  * per theme, and a TRAIL that plays while the board rides (fixed duration,
  * decorative, stands down under reduced motion). The plain board is the old
@@ -101,6 +101,21 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       for (let x = 24; x < 96; x += 14) out.push(svg("path", { d: `M${x} 22 L${x + 7} 12 L${x + 12} 12 L${x + 5} 22 Z`, fill: accent, opacity: 0.85 }));
       out.push(svg("path", { class: "hat", d: "M84 19 A 7 6 0 0 1 98 19 L100 19 L100 21 L82 21 L82 19 Z", fill: glow, stroke: INK, "stroke-width": 1.5, "stroke-linejoin": "round" }));
       break;
+    case "ninja":
+      // Black on black, one red stripe, a shuriken on the tail.
+      out.push(svg("path", { d: "M24 15 L96 15", stroke: accent, "stroke-width": 3, "stroke-linecap": "round" }));
+      out.push(svg("path", { d: "M24 19 L96 19", stroke: glow, "stroke-width": 1, opacity: 0.35 }));
+      out.push(svg("path", { class: "shuriken", d: "M100 9 L103 14 L108 17 L103 20 L100 25 L97 20 L92 17 L97 14 Z", fill: glow, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
+      out.push(svg("circle", { cx: 100, cy: 17, r: 1.5, fill: INK }));
+      break;
+    case "knight":
+      // Black plate, a lance along the deck, a crestless shield at the tail.
+      out.push(svg("path", { d: "M22 17 L84 17", stroke: accent, "stroke-width": 3.2, "stroke-linecap": "round" }));
+      out.push(svg("path", { d: "M84 14 L96 17 L84 20 Z", fill: accent, stroke: INK, "stroke-width": 1.2, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M34 12 L44 12 L44 22 L34 22 Z", fill: "none", stroke: glow, "stroke-width": 1.4 }));
+      out.push(svg("path", { class: "shield", d: "M98 11 L108 11 L108 18 Q103 24 98 18 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M100 13 L106 13 L106 17 Q103 20 100 17 Z", fill: glow, opacity: 0.85 }));
+      break;
     case "tag":
       // The tag: TL in fat pink over a yellow outline, drips, a crown,
       // and a spray of dots. Skate culture started on a wall.
@@ -176,6 +191,15 @@ const trail = (theme: BoardTheme, [, accent, glow]: readonly [string, string, st
     case "hazard": // gravel
       for (const [x, y, r] of [[-8, 30, 2.2], [-16, 24, 1.6], [-24, 31, 2], [-32, 26, 1.5], [-40, 30, 1.8]] as const) {
         g.append(svg("circle", { cx: x, cy: y, r, fill: "#8A97A6", stroke: INK, "stroke-width": 1 }));
+      }
+      break;
+    case "ninja": // shuriken spinning off, and a wisp of smoke
+      g.append(svg("path", { d: "M-14 22 L-11 27 L-6 30 L-11 33 L-14 38 L-17 33 L-22 30 L-17 27 Z", fill: glow, stroke: INK, "stroke-width": 1.2, "stroke-linejoin": "round" }));
+      g.append(svg("path", { d: "M-24 18 Q-32 12 -40 18 Q-46 22 -44 28", fill: "none", stroke: glow, "stroke-width": 2, "stroke-linecap": "round", opacity: 0.4 }));
+      break;
+    case "knight": // dark sparks off the plate
+      for (const [x, y] of [[-8, 26], [-16, 20], [-24, 30], [-34, 22]] as const) {
+        g.append(svg("path", { d: `M${x} ${y - 4} L${x + 1} ${y} L${x + 4} ${y + 1} L${x + 1} ${y + 2} L${x} ${y + 6} L${x - 1} ${y + 2} L${x - 4} ${y + 1} L${x - 1} ${y} Z`, fill: glow }));
       }
       break;
     case "tag": // spray mist

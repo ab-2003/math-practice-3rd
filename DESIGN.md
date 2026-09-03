@@ -1112,7 +1112,16 @@ zero image requests.
       and long socks, who kicks a ball into the net), SCOOPJAW (380, an
       excavator on treads whose boom digs and dumps), PITCH DECK and SITE
       DECK, and soccer, basketball, hockey and hard-hat lids in two
-      colourways each.
+      colourways each. Then NINJAW (260, a gi, a belt, slit eyes under the
+      hood, a flying kick; the headband is a lid to buy), GRIMSHIELD (440,
+      black plate, a crestless shield, a sword sweep), NINJA BAND and DARK
+      HELM lids in two colourways, SHURIKEN and DARK LANCE decks. The
+      dark knight swings a GREATSWORD with a shimmer trail (three arcs a
+      beat apart, glints that hang). Sports gear came down: the sports
+      monsters all under 400, the sports decks 250 to 350, the sports
+      lids 40 each. And the
+      number to type on the corrective screen stands apart: the theme's
+      blue, underlined, a size up.
 - [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth
       rail in height, sometimes a half pipe to drop into, ride across and
       up, and launch out of for a big air trick; after a third, sometimes

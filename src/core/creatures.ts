@@ -19,8 +19,8 @@ export type Silhouette =
   | "wrecker" | "panther"
   // 0.18.6: a Komodo dragon.
   | "komodo"
-  // 0.20.0: a striker in a number 7 shirt, and an excavator.
-  | "striker" | "digger";
+  // 0.20.0: a striker in a number 7 shirt, an excavator, a ninja, a dark knight.
+  | "striker" | "digger" | "ninja" | "knight";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -89,6 +89,14 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "serpent", crest: "sail", tail: "blade", eyes: 3, horns: 2,
     palette: ["#2FA8FF", "#001E3A", "#CBE9FF"] ,
     voice: ["Lined those tricks up by size. Beautiful.", "Dragged that whole run up the beach."] },
+  // NINJAW (Andy, 2026-09-03): the ninja. A gi, a belt, the eyes of a
+  // ninja under the hood, and a flying kick for an act. The headband is
+  // a lid in the rack, not part of him.
+  { id: "ninjaw", name: "NINJAW", cost: 260,
+    lore: "Nobody hears the landing. Nobody sees the kick until it has happened.",
+    silhouette: "ninja", crest: "none", tail: "whip", eyes: 2, horns: 0,
+    palette: ["#2A2F3A", "#0B0D12", "#D8DEE8"] ,
+    voice: ["You heard nothing. That was the trick.", "One kick, one line, gone."] },
   { id: "glaciodon", name: "GLACIODON", cost: 320,
     lore: "Breathes out and the puddle becomes a ramp.",
     silhouette: "brute", crest: "spikes", tail: "club", eyes: 2, horns: 4,
@@ -106,6 +114,13 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "raptor", crest: "plates", tail: "blade", eyes: 3, horns: 2,
     palette: ["#C98A3A", "#2E1900", "#FFE0B0"] ,
     voice: ["One bad idea after another, all of them landed.", "Something rattled loose. Landed it anyway."] },
+  // GRIMSHIELD (Andy, 2026-09-03): the dark knight. Plate, a shield, a
+  // sword, and a sword slash for an act. The great helm is a lid to buy.
+  { id: "grimshield", name: "GRIMSHIELD", cost: 440,
+    lore: "Black plate, a shield with no crest, and a sword that has never missed a rail.",
+    silhouette: "knight", crest: "none", tail: "blade", eyes: 2, horns: 0,
+    palette: ["#3A3F4C", "#12141B", "#B33A6E"] ,
+    voice: ["The shield held. The sword landed.", "Dark knights land in the dark. Ask the rail."] },
   { id: "nightcoil", name: "NIGHTCOIL", cost: 540,
     lore: "You do not see it land. You only hear the landing.",
     silhouette: "serpent", crest: "none", tail: "whip", eyes: 3, horns: 1,

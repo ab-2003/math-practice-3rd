@@ -212,6 +212,28 @@ const PLANS: Record<Silhouette, Plan> = {
     spine: [[62, 120], [70, 84], [112, 68], [146, 78]],
     tailAnchor: [58, 128],
   },
+  // NINJAW (0.20.0): lean and quick, up on the toes, arms in a guard. The
+  // kicking leg is a rig of its own.
+  ninja: {
+    body: "M70 148 L74 100 L92 70 L126 62 L148 78 L148 114 L136 148 Z",
+    head: "M120 52 L170 38 L182 60 L168 80 L124 84 Z",
+    face: { x: 132, y: 50, scale: 0.9 },
+    legs: ["M78 142 L66 190 L92 190 L98 142 Z"],
+    spine: [[72, 128], [80, 94], [110, 68], [138, 70]],
+    tailAnchor: [70, 136],
+    arms: ["M78 100 L48 88 L44 100 L76 114 Z", "M144 92 L176 82 L180 94 L146 106 Z"],
+  },
+  // GRIMSHIELD (0.20.0): the dark knight, broad in plate, planted. The
+  // sword arm is a rig of its own; the shield arm is drawn with him.
+  knight: {
+    body: "M56 152 L58 100 L78 72 L120 60 L154 76 L160 116 L150 152 Z",
+    head: "M122 54 L178 40 L192 64 L176 86 L126 90 Z",
+    face: { x: 136, y: 54, scale: 1 },
+    legs: ["M66 146 L58 190 L90 190 L92 146 Z", "M116 146 L114 190 L146 190 L142 146 Z"],
+    spine: [[58, 130], [66, 92], [100, 66], [140, 68]],
+    tailAnchor: [56, 138],
+    arms: ["M64 104 L36 118 L44 132 L74 118 Z"],
+  },
   // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
   // the tail curling behind.
   chameleon: {
@@ -541,6 +563,20 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       out.push(svg("path", { d: "M-34 12 L34 12 L36 18 L-36 18 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
       out.push(svg("path", { d: "M-30 15 L30 15", stroke: accent, "stroke-width": 2, opacity: 0.8 }));
       break;
+    case "headband":
+      // The ninja's band: a strip around the brow with two tails flying
+      // back, and a plate at the front.
+      out.push(svg("path", { d: "M-28 2 L28 -2 L28 10 L-28 14 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-26 6 L-44 -6 L-40 -16 L-30 0 Z M-26 8 L-46 8 L-42 -2 L-28 4 Z", fill: shell, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+      out.push(svg("rect", { x: -8, y: 0, width: 16, height: 10, rx: 2, fill: accent, stroke: INK, "stroke-width": 2.5 }));
+      break;
+    case "knight":
+      // The great helm: a tall dome, the visor slit, the breaths, a plume.
+      out.push(svg("path", { d: "M-26 8 A 26 28 0 0 1 26 8 L 26 26 L -26 26 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-20 10 L20 10", stroke: accent, "stroke-width": 4, "stroke-linecap": "round" }));
+      out.push(svg("path", { d: "M0 12 L0 24 M-10 16 L-10 22 M10 16 L10 22", stroke: INK, "stroke-width": 2.5, "stroke-linecap": "round" }));
+      out.push(svg("path", { d: "M-4 -18 Q-2 -40 18 -34 Q6 -30 8 -20 Z", fill: accent, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+      break;
     case "pilot":
       // The flight helmet: a deep shell, a tinted visor dropped over the
       // eyes, the oxygen-mask clip at the cheek, a chin strap.
@@ -623,6 +659,11 @@ export const creatureSvg = (
   headG.append(poly(plan.head, body, SW + 1));
   // PANDAMONIUM wears the red panda's cream mask; the eyes sit on it.
   if (c.id === "pandamonium") headG.append(poly("M132 64 L170 60 L177 82 L164 95 L134 93 Z", c.palette[2], 3));
+  // NINJAW's mask: the band over the face, and the eyes narrowed to slits
+  // through it. Drawn after the face lands (below), via the head group.
+  if (c.id === "ninjaw") {
+    headG.dataset["ninja"] = "1";
+  }
   // PANTHERACLAW's ears, up, gold inside; and gold claws on every paw.
   if (c.id === "pantheraclaw") {
     headG.append(poly("M154 90 L158 68 L172 86 Z", body, 4));
@@ -639,6 +680,36 @@ export const creatureSvg = (
     for (const [sx, sy, r] of [[58, 124, 3], [78, 134, 2.4], [96, 118, 3], [114, 132, 2.6], [132, 120, 2.8], [148, 134, 2.2], [88, 142, 2]] as const) {
       root.append(svg("circle", { cx: sx, cy: sy, r, fill: c.palette[1], opacity: 0.55 }));
     }
+  }
+  // NINJAW's gi: the wrap across the chest, the belt, and the kicking leg on
+  // its own rig. The hood is the head itself; the mask band goes on with
+  // the face below, so the eyes come out as a ninja's.
+  if (c.id === "ninjaw") {
+    root.append(poly("M84 80 L128 68 L142 96 L138 136 L86 140 L76 104 Z", "#3B4252", 4));
+    root.append(svg("path", { d: "M92 82 L128 130 M116 72 L84 128", stroke: c.palette[2], "stroke-width": 4, "stroke-linecap": "round", opacity: 0.85 }));
+    root.append(poly("M80 126 L140 122 L142 134 L82 138 Z", "#E8483A", 3));
+    const leg = svg("g", { class: "ninja-leg" });
+    leg.append(poly("M112 142 L108 190 L134 190 L134 142 Z", body, SW - 1));
+    leg.append(poly("M106 184 L138 184 L142 196 L104 196 Z", INK, 2));
+    root.append(leg);
+  }
+  // GRIMSHIELD's plate: pauldrons, a crestless shield on the off arm, and
+  // the sword arm on its own rig.
+  if (c.id === "grimshield") {
+    root.append(poly("M70 74 L102 66 L106 84 L74 92 Z", "#5A6272", 4));
+    root.append(poly("M116 62 L150 72 L146 90 L114 80 Z", "#5A6272", 4));
+    root.append(poly("M24 104 L60 100 L62 132 Q44 150 26 134 Z", "#12141B", 5));
+    root.append(svg("path", { d: "M32 108 L54 106 L54 126 Q44 138 34 128 Z", fill: "#3A3F4C", stroke: c.palette[2], "stroke-width": 2 }));
+    // The GREATSWORD: two hands on a long grip, a wide blade with a fuller.
+    const arm = svg("g", { class: "sword-arm" });
+    arm.append(poly("M142 96 L186 104 L184 120 L144 112 Z", body, SW - 1));
+    arm.append(svg("path", { d: "M178 112 L250 30", stroke: INK, "stroke-width": 15, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M178 112 L250 30", stroke: "#B8C2CF", "stroke-width": 9, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M186 104 L244 38", stroke: "#E8EEF6", "stroke-width": 2, "stroke-linecap": "round", opacity: 0.8 }));
+    arm.append(svg("path", { d: "M170 104 L196 128", stroke: INK, "stroke-width": 9, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M170 104 L196 128", stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round" }));
+    arm.append(svg("circle", { cx: 172, cy: 120, r: 5, fill: c.palette[2], stroke: INK, "stroke-width": 2.5 }));
+    root.append(arm);
   }
   // HATTRICK's kit: the number 7 shirt, the long socks, and a kicking leg
   // on its own rig so the act can swing it.
@@ -705,6 +776,15 @@ export const creatureSvg = (
 
   headG.append(...horns(c, plan, lvl >= 7));
   headG.append(...face(c, plan, lvl >= 4));
+  if (headG.dataset["ninja"] === "1") {
+    // The mask band sits over the round eyes; two narrow slits look out.
+    const f = plan.face;
+    headG.append(poly(`M${f.x - 6} ${f.y - 8} L${f.x + 48} ${f.y - 14} L${f.x + 50} ${f.y + 14} L${f.x - 4} ${f.y + 18} Z`, "#12141B", 3));
+    for (const ex of [f.x + 8, f.x + 28]) {
+      headG.append(svg("path", { d: `M${ex - 8} ${f.y + 4} L${ex + 8} ${f.y + 1}`, stroke: "#D8DEE8", "stroke-width": 5, "stroke-linecap": "round" }));
+      headG.append(svg("path", { d: `M${ex - 5} ${f.y + 3.5} L${ex + 5} ${f.y + 1.5}`, stroke: INK, "stroke-width": 2, "stroke-linecap": "round" }));
+    }
+  }
   root.append(headG);
 
   // TRIOMAW grows two more heads off the coil, each with its own neck,
@@ -1130,6 +1210,30 @@ export const creatureSvg = (
     const dust = svg("g", { class: "dust-k" });
     for (const [dx, r] of [[24, 5], [44, 6], [160, 5], [182, 6]] as const) dust.append(svg("circle", { cx: dx, cy: 186, r, fill: "#B8B28A", opacity: 0.8 }));
     rig.append(dust);
+    root.append(rig);
+  }
+
+  // NINJAW's flying kick: the root leaps (its idle), the leg snaps out,
+  // and speed lines flash off the foot.
+  if (opts.idle !== undefined && c.id === "ninjaw") {
+    const rig = svg("g", { class: "kick-rig" });
+    rig.append(svg("path", { class: "kick-lines", d: "M170 120 L206 112 M172 132 L214 128 M170 144 L206 146", stroke: c.palette[2], "stroke-width": 4, "stroke-linecap": "round", opacity: 0 }));
+    rig.append(svg("path", { class: "kick-pow", d: "M212 126 l4 -10 l2 10 l10 -5 l-6 9 l9 4 l-11 2 l4 9 l-8 -6 l-3 9 l-2 -10 l-9 4 l6 -8 l-9 -4 l10 -2 z", fill: "#FFE14D", stroke: INK, "stroke-width": 2, opacity: 0 }));
+    root.append(rig);
+  }
+
+  // GRIMSHIELD's sweep: the greatsword raises and comes round, and a
+  // SHIMMER TRAIL follows the blade (the power of the sword, Andy): three
+  // arcs drawing in behind it, each a beat later and fainter, and glints
+  // that hang in the air after.
+  if (opts.idle !== undefined && c.id === "grimshield") {
+    const rig = svg("g", { class: "slash-rig" });
+    rig.append(svg("path", { class: "slash-arc slash-1", d: "M158 -4 Q252 50 228 150", fill: "none", stroke: c.palette[2], "stroke-width": 9, "stroke-linecap": "round", opacity: 0 }));
+    rig.append(svg("path", { class: "slash-arc slash-2", d: "M166 10 Q240 58 220 136", fill: "none", stroke: "#E6A6C8", "stroke-width": 5, "stroke-linecap": "round", opacity: 0 }));
+    rig.append(svg("path", { class: "slash-arc slash-3", d: "M172 24 Q230 64 214 124", fill: "none", stroke: "#FFFFFF", "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0 }));
+    for (const [k, gx, gy, r] of [[1, 236, 44, 6], [2, 244, 96, 5], [3, 226, 138, 4]] as const) {
+      rig.append(svg("path", { class: `glint glint-${k}`, d: `M${gx} ${gy - r} L${gx + r * 0.3} ${gy - r * 0.3} L${gx + r} ${gy} L${gx + r * 0.3} ${gy + r * 0.3} L${gx} ${gy + r} L${gx - r * 0.3} ${gy + r * 0.3} L${gx - r} ${gy} L${gx - r * 0.3} ${gy - r * 0.3} Z`, fill: "#FFFFFF", stroke: c.palette[2], "stroke-width": 1.2, opacity: 0 }));
+    }
     root.append(rig);
   }
 
