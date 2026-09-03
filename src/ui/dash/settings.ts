@@ -63,7 +63,25 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   const [focus, dayCard, park, bonus] = settingsCards(model);
   wrap.append(focus!);
   wrap.append(section("The day"));
-  wrap.append(dayCard!, park!, bonus!);
+  wrap.append(dayCard!, park!);
+
+  // ---- daily tokens: the parent's hand on the pocket ------------------------------
+  // A token normally drops with the day's work. A grown-up can give one
+  // (a sick day, a reward) or reopen today's park once the cap is hit.
+  // Device-side, behind the PIN, on this rider's own pocket.
+  const spent = app.meta.parkDay === app.day ? app.meta.parkSpent : 0;
+  const tokenCard = el("div", { class: "card", "data-probe": "token-card" });
+  tokenCard.append(el("h3", { class: "title", text: "Daily Tokens" }));
+  tokenCard.append(el("p", { class: "note", "data-probe": "token-count", text:
+    `${app.profile.name} has ${app.meta.tokens} Daily ${app.meta.tokens === 1 ? "Token" : "Tokens"} in the pocket and has spent ${spent} today. A token drops with the day's work; a grown-up can give one too, or reopen the park for today.` }));
+  const trow = el("div", { class: "stepper", style: "flex-wrap:wrap" });
+  const grant = el("button", { type: "button", class: "btn small alt", "data-probe": "grant-token" }, el("span", { text: "Give a Daily Token" }));
+  on(grant, "click", () => { app.meta.tokens += 1; app.meta.parkUnlocked = true; void app.save().then(opts.rerender); });
+  const reopen = el("button", { type: "button", class: "btn small ghost", "data-probe": "reopen-park", ...(spent === 0 ? { disabled: true } : {}) }, el("span", { text: "Reopen the park today" }));
+  on(reopen, "click", () => { app.meta.parkDay = app.day; app.meta.parkSpent = 0; void app.save().then(opts.rerender); });
+  trow.append(grant, reopen);
+  tokenCard.append(trow);
+  wrap.append(tokenCard, bonus!);
 
 
   // ---- riders ------------------------------------------------------------------

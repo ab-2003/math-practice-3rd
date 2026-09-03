@@ -992,10 +992,11 @@ gate, tutorial, ollie, trick, bank, bail, help, leave, time up, results,
 the day's cap, the dials, a landscape fit, and the token dropping with a
 real dose exactly once.
 
-**The alpha channel** carried an "Alpha testing" card on the kid's
-settings tab (grant a token, reset the park day and tutorial) so Andy
-could test without a day's practice per play. Removed at 0.19.0, as
-planned; the probe awards its token the way the day's work does.
+**The parent's hand on the pocket.** A "Daily Tokens" card on the kid's
+settings tab (behind the PIN, this device) shows the pocket and today's
+spend, GIVES a token (a sick day, a reward), and REOPENS today's park
+once the cap is hit. It began as the alpha channel's testing card; Andy
+kept it as a parent power and asked for the testing language to go.
 
 ## Unit test law
 

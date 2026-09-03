@@ -46,7 +46,7 @@ await step("before any token the park door is on the home screen, dim, and expla
   await closeSheets(page);
 });
 
-await step("the parent dials default to 7 minutes and 3 tokens a day; a token is granted by hand for the rest", async () => {
+await step("the parent dials default to 7 minutes and 3 tokens a day, and a grown-up can give a token", async () => {
   await openSettings(page);
   must(await page.$('[data-probe="park-card"]') !== null, "no Skate Park card in settings");
   must((await page.textContent('[data-probe="park-minutes"]')) === "7", "minutes per token is not 7");
@@ -57,13 +57,14 @@ await step("the parent dials default to 7 minutes and 3 tokens a day; a token is
   must((await meta()).parkMinutes === 8, "the minutes did not reach meta");
   await page.click('[data-probe="park-minutes-minus"]');
   await page.waitForTimeout(300);
-  // The alpha channel had a grant button here; production does not, so the
-  // probe awards the token the way the day's work does.
-  await page.evaluate(() => { const m = window.__app.meta(); m.tokens = 1; m.parkUnlocked = true; });
-  await page.evaluate(() => window.__app.save());
-  must(await page.$('[data-probe="grant-token"]') === null, "the alpha grant button is still on the settings tab");
+  const card = (await page.textContent('[data-probe="token-card"]')) ?? "";
+  must(!/test|alpha/i.test(card), `the token card still talks about testing: ${card.slice(0, 80)}`);
+  must(await page.$('[data-probe="reopen-park"][disabled]') !== null, "Reopen is offered with nothing spent today");
+  await page.click('[data-probe="grant-token"]');
+  await page.waitForTimeout(300);
   const m = await meta();
-  must(m.tokens === 1 && m.parkUnlocked === true, `granting gave tokens=${m.tokens} unlocked=${m.parkUnlocked}`);
+  must(m.tokens === 1 && m.parkUnlocked === true, `giving a token gave tokens=${m.tokens} unlocked=${m.parkUnlocked}`);
+  must(((await page.textContent('[data-probe="token-count"]')) ?? "").includes("1 Daily Token"), "the card does not count the token");
 });
 
 await step("the first token lights the door, which pulses until the park is opened once", async () => {
@@ -202,6 +203,14 @@ await step("the day's cap closes the park, and the cap follows the parent dial",
   must(((await page.textContent('[data-probe="park-locked"]')) ?? "").includes("all 3 plays for today"), "the closed park does not say the cap");
   await page.click('[data-probe="back"]');
   await page.waitForSelector('[data-probe="start"]');
+  // A grown-up can reopen today's park from the settings tab.
+  await openSettings(page);
+  must(await page.$('[data-probe="reopen-park"]:not([disabled])') !== null, "Reopen is not offered with plays spent");
+  await page.click('[data-probe="reopen-park"]');
+  await page.waitForTimeout(300);
+  must((await meta()).parkSpent === 0, "Reopen did not clear today's spend");
+  await page.evaluate(() => { const m = window.__app.meta(); m.parkSpent = 3; m.parkDay = window.__app.day(); });
+  await page.evaluate(() => window.__app.save());
   // The parent raises the cap to 4: one more play opens up. Through the one real path.
   must(await page.evaluate(() => window.__app.set("parkTokensPerDay", 4)) === true, "the cap did not apply");
   await goHome(page);
