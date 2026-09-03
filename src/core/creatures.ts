@@ -145,11 +145,14 @@ export const ROSTER: readonly Creature[] = [
     voice: ["One bad idea after another, all of them landed.", "Something rattled loose. Landed it anyway."] },
   // GRIMSHIELD (Andy, 2026-09-03): the dark knight. Plate, a shield, a
   // sword, and a sword slash for an act. The great helm is a lid to buy.
-  { id: "grimshield", name: "GRIMSHIELD", cost: 440,
-    lore: "Black plate, a shield with no crest, and a sword that has never missed a rail.",
+  // GRIMSWORD (GRIMSHIELD until 0.20.6; the id stays so a bought one stays
+  // bought). Andy: blocky armour, and "a true dark sword" with a pointy tip
+  // and a cooler hilt.
+  { id: "grimshield", name: "GRIMSWORD", cost: 440,
+    lore: "Blocky black plate, riveted shut, and a dark sword with a point that has never missed a rail.",
     silhouette: "knight", crest: "none", tail: "blade", eyes: 2, horns: 0,
     palette: ["#3A3F4C", "#12141B", "#B33A6E"] ,
-    voice: ["The shield held. The sword landed.", "Dark knights land in the dark. Ask the rail."] },
+    voice: ["The plate held. The sword landed.", "Dark knights land in the dark. Ask the rail."] },
   { id: "nightcoil", name: "NIGHTCOIL", cost: 540,
     lore: "You do not see it land. You only hear the landing.",
     silhouette: "serpent", crest: "none", tail: "whip", eyes: 3, horns: 1,

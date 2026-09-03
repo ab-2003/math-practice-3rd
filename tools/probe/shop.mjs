@@ -19,6 +19,7 @@ await step("the shop shows all thirty-seven monsters by name, no mysteries", asy
   must((await page.$$(".mon")).length === 37, "the roster is not thirty-seven");
   must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "RONALDOHORN is not 190 coins");
   must(((await page.textContent('[data-mon="hattrick"] .mon-name')) ?? "") === "RONALDOHORN", "the striker is not RONALDOHORN");
+  must(((await page.textContent('[data-mon="grimshield"] .mon-name')) ?? "") === "GRIMSWORD", "the dark knight is not GRIMSWORD");
   must(((await page.textContent('[data-mon="braaptor"]')) ?? "").includes("270"), "BRAAPTOR is not 270 coins");
   must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
@@ -50,7 +51,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["komoduster", ".komodo-rig .tongue-fork"], ["komoduster", ".dust-k"],
     ["hattrick", ".kick-leg"], ["hattrick", ".goal-rig .goal-net"], ["hattrick", ".goal-rig .ball"],
     ["scoopjaw", ".boom .bucket"], ["scoopjaw", ".dig-rig .dirt-pile"], ["scoopjaw", ".dirt-fall-3"],
-    ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
+    ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm .blade"], ["grimshield", ".sword-arm .hilt"], ["grimshield", ".sword-arm .pommel"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
     ["dinger", ".bat"], ["dinger", ".bat-rig .pitch"], ["dinger", ".bat-rig .crack"], ["gridjaw", ".throw-arm"], ["gridjaw", ".throw-rig .uprights"], ["gridjaw", ".throw-rig .football"],
     ["braaptor", ".bike"], ["braaptor", ".bike .wheel"], ["braaptor", ".bike .roost-3"],
   ]) {
@@ -96,7 +97,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
   must(names.bat === "bat-swing" && names.pitch === "pitch-in", `DINGER's act reads ${names.bat}/${names.pitch}`);
   must(names.throwArm === "throw-arm" && names.spiral === "spiral-out", `GRIDJAW's act reads ${names.throwArm}/${names.spiral}`);
   must(names.fly === "idle-flykick" && names.ninjaKick === "ninja-kick", `NINJAW's act reads ${names.fly}/${names.ninjaKick}`);
-  must(names.sword === "sword-sweep", `GRIMSHIELD's act reads ${names.sword}`);
+  must(names.sword === "sword-sweep", `GRIMSWORD's act reads ${names.sword}`);
   must(names.kick === "kick-swing" && names.shot === "ball-shot", `RONALDOHORN's act reads ${names.kick}/${names.shot}`);
   must(names.boom === "boom-dig" && names.curl === "bucket-curl", `SCOOPJAW's act reads ${names.boom}/${names.curl}`);
   must(((await page.textContent('[data-mon="hattrick"] .creature')) ?? "").includes("7"), "RONALDOHORN's shirt has no 7");

@@ -33,6 +33,7 @@ describe("the open shop", () => {
     expect(new Set(ROSTER.map((c) => c.name)).size).toBe(37);
     expect(ROSTER.find((c) => c.id === "ninjaw")!.silhouette).toBe("ninja");
     expect(ROSTER.find((c) => c.id === "grimshield")!.silhouette).toBe("knight");
+    expect(ROSTER.find((c) => c.id === "grimshield")!.name).toBe("GRIMSWORD"); // renamed in 0.20.6, id kept
     expect(ROSTER.find((c) => c.id === "hattrick")!.cost).toBe(190);
     // The striker was renamed in 0.20.3; the id stays so a bought one stays bought.
     expect(ROSTER.find((c) => c.id === "hattrick")!.name).toBe("RONALDOHORN");

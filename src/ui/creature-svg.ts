@@ -235,7 +235,7 @@ const PLANS: Record<Silhouette, Plan> = {
     tailAnchor: [70, 136],
     arms: ["M78 100 L48 88 L44 100 L76 114 Z", "M144 92 L176 82 L180 94 L146 106 Z"],
   },
-  // GRIMSHIELD (0.20.0): the dark knight, broad in plate, planted. The
+  // GRIMSWORD (0.20.0, GRIMSHIELD then): the dark knight, broad in plate, planted. The
   // sword arm is a rig of its own; the shield arm is drawn with him.
   knight: {
     body: "M56 152 L58 100 L78 72 L120 60 L154 76 L160 116 L150 152 Z",
@@ -743,22 +743,52 @@ export const creatureSvg = (
     leg.append(poly("M106 184 L138 184 L142 196 L104 196 Z", INK, 2));
     root.append(leg);
   }
-  // GRIMSHIELD's plate: pauldrons, a crestless shield on the off arm, and
-  // the sword arm on its own rig.
+  // GRIMSWORD's plate (Andy, 2026-09-03: "blocky armor"): a riveted chest
+  // plate, two rows of fauld plates at the waist, square pauldrons, greaves
+  // on both legs, the crestless shield on the off arm, and THE DARK SWORD on
+  // its own rig: a tapered blade to a point, a magenta edge, a fuller, a
+  // wide crossguard with a gem, a wrapped grip, a pommel.
   if (c.id === "grimshield") {
-    root.append(poly("M70 74 L102 66 L106 84 L74 92 Z", "#5A6272", 4));
-    root.append(poly("M116 62 L150 72 L146 90 L114 80 Z", "#5A6272", 4));
+    const PLATE = "#5A6272";
+    const PLATE2 = "#4A5262";
+    const rivet = (x: number, y: number): void => { root.append(svg("circle", { cx: x, cy: y, r: 2.2, fill: INK })); };
+    // greaves, under the chest so the plates stack down the body
+    root.append(poly("M60 160 L94 158 L92 186 L58 188 Z", PLATE, 3));
+    root.append(poly("M114 158 L146 156 L146 184 L114 186 Z", PLATE, 3));
+    rivet(76, 172); rivet(130, 170);
+    // the fauld: two rows of plates at the waist
+    root.append(poly("M62 134 L150 126 L150 142 L64 148 Z", PLATE2, 4));
+    root.append(poly("M64 146 L148 140 L146 156 L66 160 Z", PLATE, 4));
+    // the chest plate, riveted, with a light strip
+    root.append(poly("M66 96 L148 88 L152 128 L70 136 Z", PLATE, 4));
+    root.append(svg("path", { d: "M76 104 L140 98", stroke: "#8FA0B4", "stroke-width": 3, "stroke-linecap": "round", opacity: 0.7 }));
+    rivet(74, 102); rivet(144, 96); rivet(76, 130); rivet(146, 122);
+    // square pauldrons
+    root.append(poly("M66 72 L104 64 L108 88 L70 96 Z", PLATE, 4));
+    root.append(poly("M114 60 L152 70 L150 94 L112 84 Z", PLATE, 4));
+    rivet(86, 80); rivet(132, 76);
+    // the crestless shield on the off arm
     root.append(poly("M24 104 L60 100 L62 132 Q44 150 26 134 Z", "#12141B", 5));
     root.append(svg("path", { d: "M32 108 L54 106 L54 126 Q44 138 34 128 Z", fill: "#3A3F4C", stroke: c.palette[2], "stroke-width": 2 }));
-    // The GREATSWORD: two hands on a long grip, a wide blade with a fuller.
+    // THE DARK SWORD. The guard sits at (190,100); the tip at (256,22).
     const arm = svg("g", { class: "sword-arm" });
     arm.append(poly("M142 96 L186 104 L184 120 L144 112 Z", body, SW - 1));
-    arm.append(svg("path", { d: "M178 112 L250 30", stroke: INK, "stroke-width": 15, "stroke-linecap": "round" }));
-    arm.append(svg("path", { d: "M178 112 L250 30", stroke: "#B8C2CF", "stroke-width": 9, "stroke-linecap": "round" }));
-    arm.append(svg("path", { d: "M186 104 L244 38", stroke: "#E8EEF6", "stroke-width": 2, "stroke-linecap": "round", opacity: 0.8 }));
-    arm.append(svg("path", { d: "M170 104 L196 128", stroke: INK, "stroke-width": 9, "stroke-linecap": "round" }));
-    arm.append(svg("path", { d: "M170 104 L196 128", stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round" }));
-    arm.append(svg("circle", { cx: 172, cy: 120, r: 5, fill: c.palette[2], stroke: INK, "stroke-width": 2.5 }));
+    // grip and pommel first, so the guard covers the join
+    arm.append(svg("path", { d: "M187 103 L172 121", stroke: INK, "stroke-width": 10, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M187 103 L172 121", stroke: "#2A2F3A", "stroke-width": 6, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M182 106 L185 109 M178 111 L181 114 M174 116 L177 119", stroke: c.palette[2], "stroke-width": 1.8, "stroke-linecap": "round" }));
+    arm.append(svg("circle", { class: "pommel", cx: 169, cy: 125, r: 5.5, fill: c.palette[2], stroke: INK, "stroke-width": 2.5 }));
+    // the blade: dark steel to a point, a magenta edge, a fuller
+    arm.append(svg("path", { class: "blade", d: "M184 95 L232 41 L256 22 L242 49 L196 105 Z", fill: "#4A5262", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+    arm.append(svg("path", { d: "M196 103 L242 48 L255 24", fill: "none", stroke: c.palette[2], "stroke-width": 2.6, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    arm.append(svg("path", { d: "M186 97 L232 43", stroke: "#B8C2CF", "stroke-width": 1.6, "stroke-linecap": "round", opacity: 0.8 }));
+    arm.append(svg("path", { d: "M196 96 L236 50", stroke: INK, "stroke-width": 1.6, "stroke-linecap": "round", opacity: 0.55 }));
+    // the crossguard: a wide bar with turned tips and a gem
+    arm.append(svg("path", { class: "hilt", d: "M178 90 L202 110", stroke: INK, "stroke-width": 11, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M178 90 L202 110", stroke: c.palette[2], "stroke-width": 6.5, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M176 92 L172 84 M204 108 L212 112", stroke: c.palette[2], "stroke-width": 4, "stroke-linecap": "round" }));
+    arm.append(svg("path", { d: "M176 92 L172 84 M204 108 L212 112", stroke: INK, "stroke-width": 1.2, "stroke-linecap": "round", opacity: 0.5 }));
+    arm.append(svg("circle", { cx: 190, cy: 100, r: 4.2, fill: "#FF6FB0", stroke: INK, "stroke-width": 2 }));
     root.append(arm);
   }
   // BRAAPTOR's kit: the jersey with its stripe, gloves, and THE BIKE, a rig
@@ -1334,7 +1364,7 @@ export const creatureSvg = (
     root.append(rig);
   }
 
-  // GRIMSHIELD's sweep: the greatsword raises and comes round, and a
+  // GRIMSWORD's sweep: the dark sword raises and comes round, and a
   // SHIMMER TRAIL follows the blade (the power of the sword, Andy): three
   // arcs drawing in behind it, each a beat later and fainter, and glints
   // that hang in the air after.

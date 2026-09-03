@@ -1130,6 +1130,16 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.6 - GRIMSWORD.** Andy: "Grim shield needs blocky armor. Rename
+      him to grim sword. And the sword should be more styled with a pointy
+      tip and a cooler hilt. A true dark sword." The id stays grimshield
+      so a bought one stays bought. Plate: a riveted chest plate with a
+      light strip, two rows of fauld plates at the waist, square
+      pauldrons, greaves on both legs, the crestless shield kept. The
+      sword: a dark steel blade tapered to a point with a magenta edge and
+      a fuller, a wide crossguard with turned tips and a gem, a wrapped
+      grip, a pommel; the sweep and shimmer trail unchanged. The shop
+      probe asserts blade, hilt and pommel and the new name.
 - [x] **0.20.5 - Every spot is a rail line; Call it pauses too; the dark sword.**
       Andy's phone: the half pipe behind the lap "doesn't make much
       sense since your character doesn't drop in ... he just moves
