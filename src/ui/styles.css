@@ -306,7 +306,12 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .sheet h2 { margin-bottom: 10px; }
 .sheet .row { display: flex; gap: 10px; margin-top: 16px; }
-.sheet .row .btn { flex: 1; }
+/* The sheet's buttons SHRINK: a flex item's default min-width is its content,
+   so "Take a breather" with its pause bars spilled past the sheet on a phone
+   (measured 2026-09-03: 376px in a sheet that ends at 370). */
+.sheet .row { flex-wrap: wrap; }
+.sheet .row .btn { flex: 1 1 140px; min-width: 0; padding-left: 14px; padding-right: 14px; }
+@media (max-width: 560px) { .sheet .row .btn { font-size: 17px; padding-left: 10px; padding-right: 10px; } }
 
 .stamp {
   position: fixed; left: calc(env(safe-area-inset-left, 0px) + 8px);
@@ -1735,8 +1740,19 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .facts-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 8px; }
 .facts-head .title { margin: 0; }
 
-/* ---------- the shop's wallet stays put ---------- */
-.shop-bar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0; margin-top: -6px; }
+/* ---------- the shop's wallet stays put ----------
+   The page scrolls, not the screen (#app grows with its content), so a
+   sticky bar inside an overflow:auto screen stuck to a box that scrolled
+   away with everything else (Andy's phone, 2026-09-03). The shop screen
+   gives up its own scrollport and the bar sticks to the viewport, covering
+   the safe area when it is up against the top. */
+.screen:has(.shop-bar) { overflow: visible; }
+.shop-bar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: calc(var(--pad-t) + 6px) 0 6px; margin-top: calc(-6px - var(--pad-t)); }
+.shop-bar::after { content: ""; position: absolute; left: -16px; right: -16px; top: 0; bottom: 0; background: var(--bg); z-index: -1; }
+
+/* ---------- the breather's pause bars ---------- */
+.btn .ico-pause { width: 14px; height: 14px; margin-right: 6px; flex: none; display: inline-block; vertical-align: -2px; }
+.btn.small .ico-pause { width: 12px; height: 12px; margin-right: 5px; }
 
 /* ---------- the corrective screen fits a phone: smaller keys, tighter groups ---------- */
 @media (max-width: 560px) {

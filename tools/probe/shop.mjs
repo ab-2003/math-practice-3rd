@@ -285,6 +285,33 @@ await step("tiles that scroll off stage pause their acts", async () => {
   await ctx2.close();
 });
 
+await step("Back and the wallet stay put while the shop scrolls, on a phone and a tablet", async () => {
+  // Andy's phone (2026-09-03): "the top row with Back and coin count needs
+  // to freeze and stay visible always even when scrolling the shop".
+  for (const vp of [{ width: 390, height: 664 }, { width: 1180, height: 740 }]) {
+    const ctxS = await browser.newContext({ viewport: vp, hasTouch: vp.width < 500 });
+    const ps = await ctxS.newPage();
+    await ps.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+    await ps.waitForSelector('[data-probe="collection"]');
+    await ps.evaluate(() => { const m = window.__app.meta(); m.doseDay = window.__app.day(); m.doseCount = m.dailyGoal; m.coins = 68; window.__app.go("collection"); });
+    await ps.waitForSelector(".roster");
+    await ps.evaluate(() => window.scrollTo(0, 1400));
+    await ps.waitForTimeout(250);
+    const r = await ps.evaluate(() => {
+      const bar = document.querySelector('[data-probe="shop-bar"]').getBoundingClientRect();
+      const back = document.querySelector('[data-probe="back"]');
+      const chip = document.querySelector('[data-probe="shop-bar"] .coins');
+      const hit = (e) => { const b = e.getBoundingClientRect(); const t = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return t !== null && e.contains(t); };
+      return { scrolled: window.scrollY, barTop: bar.top, barBottom: bar.bottom, backHit: hit(back), chipHit: hit(chip), chipText: chip.textContent };
+    });
+    must(r.scrolled > 600, `${vp.width}x${vp.height}: the shop did not scroll (${r.scrolled})`);
+    must(r.barTop >= -1 && r.barTop <= 2, `${vp.width}x${vp.height}: after a scroll the shop bar sits at ${Math.round(r.barTop)}, not the top`);
+    must(r.backHit, `${vp.width}x${vp.height}: Back is covered or gone after a scroll`);
+    must(r.chipHit && (r.chipText ?? "").includes("68"), `${vp.width}x${vp.height}: the wallet is covered or gone after a scroll`);
+    await ctxS.close();
+  }
+});
+
 await step("on an iPad on its side, the monster card and the level sheet fit without a scroll", async () => {
   // Andy's photo (2026-09-02): the card ran off both ends of a landscape
   // iPad. Worst case: a helmet on, a board owned, not the rider (Send out).

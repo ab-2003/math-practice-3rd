@@ -24,7 +24,7 @@ import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { canAffordAny, riderVoice } from "../core/creatures";
 import { awardDailyToken } from "../core/park";
 import { dayOver } from "./day-limit";
-import { tokenIcon } from "./icons";
+import { tokenIcon, icoPause } from "./icons";
 import { presentFact, type Presented } from "../core/present";
 import {
   coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued, recordResponse, sessionIsOver, startSession,
@@ -59,7 +59,9 @@ export const sessionScreen = (app: App): HTMLElement => {
   const chip = el("div", { class: "coins session-coins", "data-probe": "session-coins" },
     el("span", { text: "◆" }), el("span", { class: "chip-n", text: String(app.meta.coins) }));
   const strip = el("div", { class: "grow" });
-  const quit = el("button", { type: "button", class: "btn small ghost", "data-probe": "quit" }, el("span", { text: "Take a breather" }));
+  // The pause bars ride with the words everywhere a breather is offered
+  // (Andy, 2026-09-03), here and on the confirm sheet.
+  const quit = el("button", { type: "button", class: "btn small ghost", "data-probe": "quit" }, icoPause(), el("span", { text: "Take a breather" }));
   const isExtra = doseDone(app);
   // DISTANCE TO DONE: a count of today's answers against the dose, in the
   // topbar where he can see the end coming. A count, never a clock.
@@ -599,7 +601,7 @@ export const sessionScreen = (app: App): HTMLElement => {
     sheet({
       title: "Take a breather?",
       body: "Everything you landed is saved. You can drop back in whenever.",
-      cancel: "Keep rolling", confirm: "Take a breather",
+      cancel: "Keep rolling", confirm: "Take a breather", confirmIcon: icoPause,
       onConfirm: () => { reason = "breather"; void finish("endedEarly"); },
     });
   });

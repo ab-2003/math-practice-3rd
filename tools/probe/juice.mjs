@@ -28,8 +28,11 @@ await step("landing a full line raises the LINE LANDED banner", async () => {
 
 await step("the run's end offers the shop, and Later spends nothing", async () => {
   await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = []; });
+  // The pause bars ride with the words, on the button and on its sheet (Andy).
+  must(await page.$('[data-probe="quit"] svg.ico-pause') !== null, "the breather button has no pause icon");
   await page.click('[data-probe="quit"]');
   await page.waitForSelector(".sheet");
+  must(await page.$(".sheet .btn.go svg.ico-pause") !== null, "the breather sheet's confirm has no pause icon");
   await page.click(".sheet .btn.warm, .sheet .btn.go");
   await page.waitForSelector(".sheet .btn.go", { timeout: 5000 });
   await page.click(".sheet .btn.go");
@@ -241,6 +244,20 @@ await step("on a phone in extra practice, the five decks, the tag and the way ou
   // Nothing overlaps: the strip row sits below the controls row.
   const stripTop = await p2.evaluate(() => document.querySelector(".line-strip").getBoundingClientRect().top);
   must(stripTop >= geo.quit.bottom - 1, "the strip shares a row with the breather button on a phone");
+  // The breather sheet's two buttons stay inside the sheet on a phone (its
+  // confirm, with the pause bars, once spilled past the edge).
+  await p2.click('[data-probe="quit"]');
+  await p2.waitForSelector(".sheet");
+  const sh = await p2.evaluate(() => {
+    const s = document.querySelector(".sheet").getBoundingClientRect();
+    const row = document.querySelector(".sheet .row");
+    const over = [...row.querySelectorAll(".btn")].filter((b) => { const r = b.getBoundingClientRect(); return r.right > s.right + 1 || r.left < s.left - 1 || b.scrollWidth > b.clientWidth + 1; }).length;
+    return { over, rowOver: row.scrollWidth > row.clientWidth + 1, icon: !!row.querySelector(".btn.go svg.ico-pause") };
+  });
+  must(sh.over === 0 && !sh.rowOver, "the breather sheet's buttons spill past the sheet on a phone");
+  must(sh.icon, "the breather sheet's confirm has no pause icon on a phone");
+  await p2.keyboard.press("Escape");
+  await p2.waitForSelector(".sheet", { state: "detached" });
   await ctx2.close();
 });
 

@@ -1130,6 +1130,18 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.20.4 - The shop bar freezes, and the breather gets its pause bars.**
+      Andy's phone: the Back and wallet row scrolled away with the shop.
+      The page scrolls, not the screen (the app grows with its content),
+      so a sticky bar inside an overflow:auto screen stuck to a box that
+      left with everything else; the shop screen gives up its own
+      scrollport and the bar sticks to the viewport, covering the safe
+      area. The shop probe scrolls a phone and a tablet 1400px and
+      hit-tests Back and the wallet. And a pause icon before "Take a
+      breather" on the session bar and on its confirm sheet; the sheet's
+      buttons now shrink and stack on narrow phones (the confirm, with
+      its bars, had spilled past the sheet at 390 wide, and "BREATHER"
+      alone was wider than a half-width button at 360).
 - [x] **0.20.3 - BRAAPTOR, HOLESHOT, RONALDOHORN, and the Site Boss stripe.**
       Andy: a motocross monster whose act is hopping on a dirt bike and
       riding off kicking up dirt, a motocross board, the soccer striker

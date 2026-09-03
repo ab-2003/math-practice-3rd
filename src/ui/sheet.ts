@@ -4,6 +4,8 @@ export interface SheetOpts {
   title: string;
   body?: Node | string;
   confirm?: string;
+  /** An icon drawn before the confirm label (the breather's pause bars). */
+  confirmIcon?: () => SVGElement;
   cancel?: string;
   onConfirm?: () => void;
   onCancel?: () => void;
@@ -41,6 +43,7 @@ export const sheet = (opts: SheetOpts): { close: () => void } => {
   }
   if (opts.confirm !== undefined) {
     const b = el("button", { type: "button", class: `btn ${opts.danger === true ? "warm" : "go"}` }, el("span", { text: opts.confirm }));
+    if (opts.confirmIcon !== undefined) b.prepend(opts.confirmIcon());
     on(b, "click", () => { close(false); opts.onConfirm?.(); });
     row.append(b);
   }

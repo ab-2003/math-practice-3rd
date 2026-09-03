@@ -23,3 +23,11 @@ export const tokenIcon = (cls = "token-ico"): SVGElement => {
   g.append(svg("circle", { cx: 25, cy: 26, r: 2.2, fill: "#05070A" }));
   return g;
 };
+
+/** Two bars: the pause icon, for every "Take a breather" (Andy, 2026-09-03). */
+export const icoPause = (): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 24 24", class: "ico ico-pause", "aria-hidden": "true" });
+  g.append(svg("rect", { x: 4, y: 3, width: 6, height: 18, rx: 2 }));
+  g.append(svg("rect", { x: 14, y: 3, width: 6, height: 18, rx: 2 }));
+  return g;
+};
