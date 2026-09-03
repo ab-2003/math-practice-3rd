@@ -411,14 +411,13 @@ export const collectionScreen = (app: App): HTMLElement => {
   const rack = el("div", { class: `gear-rack${rackOpen ? "" : " rack-locked"}` });
   for (const h of HELMETS) {
     const has = app.meta.helmetsOwned.includes(h.id);
-    const t = el("button", {
-      type: "button", class: `helm-tile${has ? " owned" : ""}`, "data-helm": h.id,
-      ...(rackOpen ? {} : { disabled: true }),
-    });
+    // Shut to buying before the first monster, open to LOOK at any time
+    // (Andy's alpha, 2026-09-03: "it should let me open them up to see").
+    const t = el("button", { type: "button", class: `helm-tile${has ? " owned" : ""}`, "data-helm": h.id });
     t.append(helmetIcon(h));
     t.append(el("span", { class: "helm-name", text: h.name }));
     t.append(el("span", { class: "mon-sub", text: has ? "owned" : `◆ ${h.cost}` }));
-    on(t, "click", () => { if (app.meta.owned.length > 0) helmSheet(app, h); });
+    on(t, "click", () => helmSheet(app, h));
     rack.append(t);
   }
   root.append(rack);
@@ -433,15 +432,12 @@ export const collectionScreen = (app: App): HTMLElement => {
   const boards = el("div", { class: `board-rack${rackOpen ? "" : " rack-locked"}`, "data-probe": "board-rack" });
   for (const b of BOARDS) {
     const has = b.id === PLAIN_BOARD || app.meta.boardsOwned.includes(b.id);
-    const t = el("button", {
-      type: "button", class: `board-tile${has ? " owned" : ""}`, "data-board-tile": b.id,
-      ...(rackOpen ? {} : { disabled: true }),
-    });
+    const t = el("button", { type: "button", class: `board-tile${has ? " owned" : ""}`, "data-board-tile": b.id });
     const art = boardSvg(b, { cls: "board-mini" });
     t.append(art);
     t.append(el("span", { class: "helm-name", text: b.name }));
     t.append(el("span", { class: "mon-sub", text: b.id === PLAIN_BOARD ? "always yours" : has ? "owned" : `◆ ${b.cost}` }));
-    on(t, "click", () => { if (app.meta.owned.length > 0) boardSheet(app, b); });
+    on(t, "click", () => boardSheet(app, b));
     boards.append(t);
   }
   root.append(boards);
@@ -456,6 +452,13 @@ const boardSheet = (app: App, b: Board): void => {
   body.append(boardSvg(b, { cls: "board-big", riding: true }));
   body.append(el("p", { class: "mon-lore", text: b.lore }));
   if (has) {
+    sheet({ title: b.name, body, cancel: "Close" });
+    return;
+  }
+  // Before the first monster the rack is shut to buying, open to look: the
+  // deck rides on the sheet, trail and all, and the words say what opens it.
+  if (app.meta.owned.length === 0) {
+    body.append(el("p", { class: "note", "data-probe": "rack-shut", text: `${b.cost} coins, once the rack opens. Pick your first monster and it does.` }));
     sheet({ title: b.name, body, cancel: "Close" });
     return;
   }
@@ -494,6 +497,11 @@ const helmSheet = (app: App, h: Helmet): void => {
   body.append(helmetIcon(h));
   if (has) {
     sheet({ title: h.name, body: "Already in the locker. Put it on from any monster's card.", confirm: "OK" });
+    return;
+  }
+  if (app.meta.owned.length === 0) {
+    body.append(el("p", { class: "note", "data-probe": "rack-shut", text: `${h.cost} coins, once the rack opens. Pick your first monster and it does.` }));
+    sheet({ title: h.name, body, cancel: "Close" });
     return;
   }
   confirmSpend(app, {

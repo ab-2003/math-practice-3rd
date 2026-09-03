@@ -1,7 +1,7 @@
 /**
  * THE GEAR RACK, Andy 2026-09-01: "at least let them put on a cool helmet."
  *
- * Thirty-four helmets: seventeen SHAPES in two colourways each. A helmet is bought once
+ * Thirty-eight helmets: nineteen SHAPES in two colourways each. A helmet is bought once
  * and lives in the locker; any owned monster can wear any owned helmet, and
  * each monster remembers its own. Pure data here; the drawing lives in the
  * UI renderer, keyed by shape.
@@ -15,7 +15,9 @@ export type HelmetShape =
   // The sports lids and the hard hat (Andy, 2026-09-03).
   | "soccer" | "basketball" | "hockey" | "hardhat"
   // The ninja's headband and the dark knight's great helm (Andy, 2026-09-03).
-  | "headband" | "knight";
+  | "headband" | "knight"
+  // The ball cap and the football helmet (Andy, 2026-09-03).
+  | "ballcap" | "football";
 
 export interface Helmet {
   readonly id: string;
@@ -40,6 +42,10 @@ export const HELMETS: readonly Helmet[] = [
   { id: "basketball-purple", name: "PURPLE COURT", cost: 40, shape: "basketball", colors: ["#6B4BD6", "#F5C542"] },
   { id: "hockey-rink", name: "RINK HELMET", cost: 40, shape: "hockey", colors: ["#FFFFFF", "#D33A3A"] },
   { id: "hockey-stealth", name: "STEALTH RINK", cost: 40, shape: "hockey", colors: ["#22282F", "#35E6FF"] },
+  { id: "ballcap-home", name: "HOME CAP", cost: 40, shape: "ballcap", colors: ["#1B2A5A", "#FFFFFF"] },
+  { id: "ballcap-away", name: "AWAY CAP", cost: 40, shape: "ballcap", colors: ["#D33A3A", "#FFFFFF"] },
+  { id: "football-grid", name: "GRID HELMET", cost: 40, shape: "football", colors: ["#1B2A5A", "#F5C542"] },
+  { id: "football-away", name: "AWAY GRID", cost: 40, shape: "football", colors: ["#FFFFFF", "#D33A3A"] },
   { id: "goggle-sky", name: "SKY GOGGLES", cost: 50, shape: "goggle", colors: ["#2F7DFF", "#C8DDFF"] },
   { id: "goggle-night", name: "NIGHT GOGGLES", cost: 50, shape: "goggle", colors: ["#120826", "#6B4BD6"] },
   { id: "headband-red", name: "NINJA BAND", cost: 55, shape: "headband", colors: ["#E8483A", "#FFFFFF"] },

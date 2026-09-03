@@ -234,6 +234,28 @@ const PLANS: Record<Silhouette, Plan> = {
     tailAnchor: [56, 138],
     arms: ["M64 104 L36 118 L44 132 L74 118 Z"],
   },
+  // DINGER (0.20.0): the batter, square to the plate, both hands up. The
+  // bat is a rig of its own.
+  batter: {
+    body: "M58 150 L62 98 L84 66 L124 58 L150 78 L150 116 L140 150 Z",
+    head: "M118 46 L172 32 L184 56 L170 76 L122 80 Z",
+    face: { x: 130, y: 46, scale: 0.9 },
+    legs: ["M68 144 L58 190 L86 190 L92 144 Z", "M112 144 L108 190 L136 190 L134 144 Z"],
+    spine: [[60, 130], [72, 92], [104, 64], [136, 66]],
+    tailAnchor: [58, 136],
+    arms: ["M66 100 L104 88 L108 100 L72 114 Z", "M144 92 L112 86 L110 98 L140 106 Z"],
+  },
+  // GRIDJAW (0.20.0): the football player, wide at the shoulders, low in
+  // the stance. The throwing arm is a rig of its own.
+  lineman: {
+    body: "M50 150 L54 100 L74 72 L124 62 L160 80 L162 118 L150 150 Z",
+    head: "M126 52 L182 38 L196 62 L180 84 L130 88 Z",
+    face: { x: 140, y: 52, scale: 1 },
+    legs: ["M62 144 L52 190 L84 190 L88 144 Z", "M120 144 L116 190 L150 190 L146 144 Z"],
+    spine: [[54, 132], [64, 94], [100, 68], [144, 72]],
+    tailAnchor: [50, 136],
+    arms: ["M58 104 L30 124 L40 136 L70 118 Z"],
+  },
   // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
   // the tail curling behind.
   chameleon: {
@@ -577,6 +599,21 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       out.push(svg("path", { d: "M0 12 L0 24 M-10 16 L-10 22 M10 16 L10 22", stroke: INK, "stroke-width": 2.5, "stroke-linecap": "round" }));
       out.push(svg("path", { d: "M-4 -18 Q-2 -40 18 -34 Q6 -30 8 -20 Z", fill: accent, stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
       break;
+    case "ballcap":
+      // The ball cap: a rounder dome with panel seams, a button, a curved brim.
+      dome(19, 25);
+      out.push(svg("path", { d: "M0 -14 L0 8 M-14 -8 Q-8 2 -12 8 M14 -8 Q8 2 12 8", fill: "none", stroke: accent, "stroke-width": 1.8, opacity: 0.8 }));
+      out.push(svg("circle", { cx: 0, cy: -15, r: 3, fill: accent, stroke: INK, "stroke-width": 2 }));
+      out.push(svg("path", { d: "M14 4 Q34 -2 44 8 Q30 16 14 12 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-22 -2 L-14 -8 L-10 -2 Z", fill: accent }));
+      break;
+    case "football":
+      // The football helmet: a full shell, a stripe over the crown, the facemask bars.
+      out.push(svg("path", { d: "M-27 4 A 27 24 0 0 1 27 4 L 27 22 L -27 22 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M0 -20 L0 22", stroke: accent, "stroke-width": 4 }));
+      out.push(svg("path", { d: "M8 8 L40 6 M8 16 L42 14 M40 6 L42 14 M24 7 L25 15", fill: "none", stroke: accent, "stroke-width": 3.5, "stroke-linecap": "round" }));
+      out.push(svg("circle", { cx: -14, cy: 8, r: 3, fill: accent, opacity: 0.8 }));
+      break;
     case "pilot":
       // The flight helmet: a deep shell, a tinted visor dropped over the
       // eyes, the oxygen-mask clip at the cheek, a chin strap.
@@ -709,6 +746,29 @@ export const creatureSvg = (
     arm.append(svg("path", { d: "M170 104 L196 128", stroke: INK, "stroke-width": 9, "stroke-linecap": "round" }));
     arm.append(svg("path", { d: "M170 104 L196 128", stroke: c.palette[2], "stroke-width": 5, "stroke-linecap": "round" }));
     arm.append(svg("circle", { cx: 172, cy: 120, r: 5, fill: c.palette[2], stroke: INK, "stroke-width": 2.5 }));
+    root.append(arm);
+  }
+  // DINGER's kit: the pinstripe shirt, and the bat on its own rig, held up
+  // behind the shoulder until the pitch comes.
+  if (c.id === "dinger") {
+    root.append(poly("M78 82 L128 70 L144 98 L140 134 L84 138 L70 104 Z", "#FFFFFF", 4));
+    for (const x of [86, 98, 110, 122, 134]) root.append(svg("path", { d: `M${x} 84 L${x - 4} 134`, stroke: "#1B2A5A", "stroke-width": 2, opacity: 0.6 }));
+    const bat = svg("g", { class: "bat" });
+    bat.append(svg("path", { d: "M112 96 L150 8", stroke: INK, "stroke-width": 16, "stroke-linecap": "round" }));
+    bat.append(svg("path", { d: "M112 96 L150 8", stroke: "#C98A3A", "stroke-width": 10, "stroke-linecap": "round" }));
+    bat.append(svg("path", { d: "M112 96 L124 68", stroke: "#3A2A1A", "stroke-width": 10, "stroke-linecap": "round" }));
+    root.append(bat);
+  }
+  // GRIDJAW's kit: the shoulder pads, and the throwing arm with the ball on
+  // its own rig.
+  if (c.id === "gridjaw") {
+    root.append(poly("M62 76 L104 64 L110 86 L68 98 Z", "#3A4A7A", 4));
+    root.append(poly("M118 62 L160 76 L156 96 L118 84 Z", "#3A4A7A", 4));
+    root.append(svg("path", { d: "M70 84 L100 76 M124 72 L152 82", stroke: c.palette[2], "stroke-width": 3, "stroke-linecap": "round" }));
+    const arm = svg("g", { class: "throw-arm" });
+    arm.append(poly("M144 94 L184 74 L192 88 L150 110 Z", body, SW - 1));
+    arm.append(svg("ellipse", { class: "football-held", cx: 194, cy: 74, rx: 16, ry: 10, fill: "#8B5A2B", stroke: INK, "stroke-width": 3, transform: "rotate(-30 194 74)" }));
+    arm.append(svg("path", { d: "M186 70 L202 78 M190 71 L192 75 M194 69 L196 73 M198 67 L200 71", stroke: "#FFFFFF", "stroke-width": 2, transform: "rotate(-30 194 74)" }));
     root.append(arm);
   }
   // HATTRICK's kit: the number 7 shirt, the long socks, and a kicking leg
@@ -1234,6 +1294,33 @@ export const creatureSvg = (
     for (const [k, gx, gy, r] of [[1, 236, 44, 6], [2, 244, 96, 5], [3, 226, 138, 4]] as const) {
       rig.append(svg("path", { class: `glint glint-${k}`, d: `M${gx} ${gy - r} L${gx + r * 0.3} ${gy - r * 0.3} L${gx + r} ${gy} L${gx + r * 0.3} ${gy + r * 0.3} L${gx} ${gy + r} L${gx - r * 0.3} ${gy + r * 0.3} L${gx - r} ${gy} L${gx - r * 0.3} ${gy - r * 0.3} Z`, fill: "#FFFFFF", stroke: c.palette[2], "stroke-width": 1.2, opacity: 0 }));
     }
+    root.append(rig);
+  }
+
+  // DINGER's at-bat: the pitch comes in from the right, the bat comes
+  // round, the crack, and the ball goes out of the park.
+  if (opts.idle !== undefined && c.id === "dinger") {
+    const rig = svg("g", { class: "bat-rig" });
+    const ball = svg("g", { class: "pitch" });
+    ball.append(svg("circle", { cx: 236, cy: 100, r: 9, fill: "#FFFFFF", stroke: INK, "stroke-width": 2.5 }));
+    ball.append(svg("path", { d: "M231 94 Q236 100 231 106 M241 94 Q236 100 241 106", fill: "none", stroke: "#D33A3A", "stroke-width": 1.8 }));
+    rig.append(ball);
+    rig.append(svg("path", { class: "crack", d: "M176 92 l4 -12 l3 12 l11 -6 l-7 10 l11 4 l-12 2 l5 11 l-9 -8 l-3 12 l-3 -12 l-10 6 l6 -10 l-11 -4 l12 -2 z", fill: "#FFE14D", stroke: INK, "stroke-width": 2, opacity: 0 }));
+    root.append(rig);
+  }
+
+  // GRIDJAW's spiral: the arm winds back and throws; the ball spins off
+  // to the right and away between the uprights.
+  if (opts.idle !== undefined && c.id === "gridjaw") {
+    const rig = svg("g", { class: "throw-rig" });
+    const posts = svg("g", { class: "uprights" });
+    posts.append(svg("path", { d: "M224 190 L224 90 M206 90 L242 90 M206 90 L206 30 M242 90 L242 30", fill: "none", stroke: "#F5C542", "stroke-width": 5, "stroke-linecap": "round" }));
+    rig.append(posts);
+    const ball = svg("g", { class: "football" });
+    ball.append(svg("ellipse", { cx: 0, cy: 0, rx: 16, ry: 10, fill: "#8B5A2B", stroke: INK, "stroke-width": 3 }));
+    ball.append(svg("path", { d: "M-8 -2 L8 2 M-4 -4 L-2 0 M0 -3 L2 1 M4 -2 L6 2", stroke: "#FFFFFF", "stroke-width": 2 }));
+    ball.setAttribute("transform", "translate(194 74)");
+    rig.append(ball);
     root.append(rig);
   }
 

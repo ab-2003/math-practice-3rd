@@ -345,6 +345,22 @@ await step("the corrective screen is three labelled groups and fits a phone and 
   }
 });
 
+await step("on a phone the grown-ups tabs keep their labels inside their buttons", async () => {
+  // Andy's phone (2026-09-03): "the word Progress is escaping".
+  const ctxT = await page.context().browser().newContext({ viewport: { width: 390, height: 664 } });
+  const pt = await ctxT.newPage();
+  await pt.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+  await pt.waitForSelector('[data-probe="start"]');
+  await pt.click('[data-probe="grownups"]');
+  await pt.waitForSelector(".pinpad");
+  for (const d of ["1", "3", "5", "7"]) await pt.click(`.keypad .key[data-key="${d}"]`);
+  await pt.waitForSelector('[data-probe="tab-progress"]', { timeout: 8000 });
+  const tabs = await pt.$$eval(".dash-tabs .tab", (els) => els.map((e) => ({ label: e.textContent, over: e.scrollWidth > e.clientWidth + 1, size: parseFloat(getComputedStyle(e).fontSize) })));
+  must(tabs.length === 4, `${tabs.length} tabs on the phone`);
+  for (const t of tabs) { must(!t.over, `the tab "${t.label}" escapes its button on a phone`); must(t.size >= 13, `the tab "${t.label}" is under the 13px floor`); }
+  await ctxT.close();
+});
+
 await step("the home rider performs its shop act on arrival, then rests until the next beat", async () => {
   // Andy, 2026-09-03: "have your skater perform its shop animation on a slow loop".
   await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; window.__app.go("home"); });

@@ -1,5 +1,5 @@
 /**
- * THE BOARDS, DRAWN. One renderer, seventeen themes: a real deck silhouette with
+ * THE BOARDS, DRAWN. One renderer, nineteen themes: a real deck silhouette with
  * a kicked nose and tail, trucks, wheels with hub colour, a deck-top graphic
  * per theme, and a TRAIL that plays while the board rides (fixed duration,
  * decorative, stands down under reduced motion). The plain board is the old
@@ -116,6 +116,21 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       out.push(svg("path", { class: "shield", d: "M98 11 L108 11 L108 18 Q103 24 98 18 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
       out.push(svg("path", { d: "M100 13 L106 13 L106 17 Q103 20 100 17 Z", fill: glow, opacity: 0.85 }));
       break;
+    case "baseball":
+      // The diamond: the infield, four bases, a ball on the tail.
+      out.push(svg("path", { d: "M44 17 L58 10 L72 17 L58 24 Z", fill: "none", stroke: glow, "stroke-width": 1.6, opacity: 0.9 }));
+      for (const [bx, by] of [[44, 17], [58, 10], [72, 17], [58, 24]] as const) out.push(svg("rect", { x: bx - 2, y: by - 2, width: 4, height: 4, fill: glow }));
+      out.push(svg("path", { d: "M24 20 L38 20 M78 20 L92 20", stroke: glow, "stroke-width": 1.2, opacity: 0.5 }));
+      out.push(svg("circle", { class: "ball", cx: 100, cy: 16.5, r: 5, fill: "#FFFFFF", stroke: INK, "stroke-width": 1.5 }));
+      out.push(svg("path", { d: "M97 13 Q100 16.5 97 20 M103 13 Q100 16.5 103 20", fill: "none", stroke: "#D33A3A", "stroke-width": 1.2 }));
+      break;
+    case "football":
+      // The gridiron: yard lines, and a football on the tail.
+      for (const x of [30, 40, 50, 60, 70, 80, 90]) out.push(svg("path", { d: `M${x} 11 L${x} 23`, stroke: "#FFFFFF", "stroke-width": 1.2, opacity: 0.8 }));
+      out.push(svg("path", { d: "M22 17 L96 17", stroke: "#FFFFFF", "stroke-width": 0.8, opacity: 0.4 }));
+      out.push(svg("ellipse", { class: "ball", cx: 101, cy: 17, rx: 7, ry: 4.2, fill: glow, stroke: INK, "stroke-width": 1.5 }));
+      out.push(svg("path", { d: "M97 17 L105 17 M99 15.5 L99 18.5 M101 15.5 L101 18.5 M103 15.5 L103 18.5", stroke: "#FFFFFF", "stroke-width": 1 }));
+      break;
     case "tag":
       // The tag: TL in fat pink over a yellow outline, drips, a crown,
       // and a spray of dots. Skate culture started on a wall.
@@ -201,6 +216,15 @@ const trail = (theme: BoardTheme, [, accent, glow]: readonly [string, string, st
       for (const [x, y] of [[-8, 26], [-16, 20], [-24, 30], [-34, 22]] as const) {
         g.append(svg("path", { d: `M${x} ${y - 4} L${x + 1} ${y} L${x + 4} ${y + 1} L${x + 1} ${y + 2} L${x} ${y + 6} L${x - 1} ${y + 2} L${x - 4} ${y + 1} L${x - 1} ${y} Z`, fill: glow }));
       }
+      break;
+    case "baseball": // a slide's dust
+      for (const [x, y, r] of [[-8, 30, 3], [-16, 25, 4], [-26, 30, 3.5], [-36, 26, 3], [-44, 31, 2.5]] as const) {
+        g.append(svg("circle", { cx: x, cy: y, r, fill: "#C98A3A", opacity: 0.55 }));
+      }
+      break;
+    case "football": // the ball spiralling behind
+      g.append(svg("ellipse", { cx: -24, cy: 22, rx: 7, ry: 4.2, fill: glow, stroke: INK, "stroke-width": 1.4, transform: "rotate(-20 -24 22)" }));
+      g.append(svg("path", { d: "M-10 26 Q-18 18 -30 24 Q-40 30 -46 22", fill: "none", stroke: "#FFFFFF", "stroke-width": 1.6, "stroke-dasharray": "3 3", opacity: 0.7 }));
       break;
     case "tag": // spray mist
       for (const [x, y, r, col] of [[-8, 18, 2, accent], [-14, 26, 1.4, glow], [-20, 15, 1.7, accent], [-28, 24, 2.2, glow], [-36, 18, 1.5, "#35E6FF"], [-42, 28, 1.2, accent]] as const) {

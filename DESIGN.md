@@ -1119,7 +1119,13 @@ zero image requests.
       dark knight swings a GREATSWORD with a shimmer trail (three arcs a
       beat apart, glints that hang). Sports gear came down: the sports
       monsters all under 400, the sports decks 250 to 350, the sports
-      lids 40 each. And the
+      lids 40 each. DINGER (220, a batter in pinstripes; the pitch comes
+      in, the bat comes round, the crack, out of the park) and GRIDJAW
+      (230, shoulder pads and a spiral between the uprights), HOME/AWAY
+      CAP and GRID HELMET/AWAY GRID lids at 40, DIAMOND DECK and END ZONE
+      decks under 400. The shut racks open a lid or a deck to LOOK (the
+      deck rides on its sheet) before the first monster, with no buy. The
+      tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
 - [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth

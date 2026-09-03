@@ -672,11 +672,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .gear-pick .helm-mini { width: 46px; }
 .gear-pick.sel { border-color: var(--acid); box-shadow: 0 0 0 2px rgba(182, 255, 60, 0.35); color: var(--text); }
 
-/* The rack before the first monster: on display, but shut. */
-.gear-rack.rack-locked .helm-tile {
-  opacity: 0.4; filter: grayscale(0.7); cursor: default; box-shadow: none;
-}
-.gear-rack.rack-locked .helm-tile:active { transform: none; }
+/* The rack before the first monster: on display, shut to buying, open to look. */
+.gear-rack.rack-locked .helm-tile { opacity: 0.55; filter: grayscale(0.6); }
 
 /* ---------- the shop performs: in-character acts on one idle clock ---------
    The act lives in the first ~22% of the cycle, then the creature rests.
@@ -1259,6 +1256,44 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .slash-rig .glint-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.2s); }
 @keyframes glint-hang { 0%, 11% { opacity: 0; transform: scale(0.4); } 12.5% { opacity: 1; transform: scale(1.2); } 16% { opacity: 1; transform: scale(1); } 20%, 100% { opacity: 0; transform: scale(0.6); } }
 
+/* DINGER: the pitch comes in, the bat comes round, the crack, out of the park. */
+.creature.idle-batter { animation-name: idle-swing; }
+@keyframes idle-swing {
+  0%, 22%, 100% { transform: none; }
+  6% { transform: translateX(-4px) rotate(3deg); }
+  9.5% { transform: translateX(6px) rotate(-5deg); }
+  14% { transform: translateX(2px) rotate(-1deg); }
+}
+.bat { transform-box: fill-box; transform-origin: 0% 100%; animation: bat-swing var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes bat-swing { 0%, 6%, 18%, 100% { transform: rotate(0); } 8% { transform: rotate(-16deg); } 10% { transform: rotate(118deg); } 14% { transform: rotate(104deg); } }
+.bat-rig .pitch { opacity: 0; animation: pitch-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes pitch-in {
+  0%, 3.5% { opacity: 0; transform: translate(20px, 0); }
+  4% { opacity: 1; transform: translate(20px, 0); }
+  9.5% { opacity: 1; transform: translate(-58px, 0); }
+  10.5% { opacity: 1; transform: translate(-50px, -12px); }
+  16% { opacity: 1; transform: translate(60px, -140px); }
+  17%, 100% { opacity: 0; transform: translate(70px, -150px); }
+}
+.bat-rig .crack { animation: crack-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes crack-pop { 0%, 9.5%, 13%, 100% { opacity: 0; } 10% { opacity: 1; } 12% { opacity: 1; } }
+
+/* GRIDJAW: the arm winds back and throws; the spiral goes out between the uprights. */
+.creature.idle-lineman { animation-name: idle-stomp; }
+.throw-arm { transform-box: fill-box; transform-origin: 6% 60%; animation: throw-arm var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes throw-arm { 0%, 3%, 20%, 100% { transform: rotate(0); } 7% { transform: rotate(-70deg); } 9% { transform: rotate(-74deg); } 11% { transform: rotate(24deg); } 15% { transform: rotate(18deg); } }
+.throw-arm .football-held { animation: held-ball var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes held-ball { 0%, 9.5%, 20%, 100% { opacity: 1; } 10% { opacity: 0; } 19.5% { opacity: 0; } }
+.throw-rig .uprights { opacity: 0; animation: goal-show var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.throw-rig .football { opacity: 0; animation: spiral-out var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes spiral-out {
+  0%, 9.5% { opacity: 0; transform: translate(194px, 74px) rotate(0); }
+  10% { opacity: 1; transform: translate(190px, 66px) rotate(0); }
+  14% { opacity: 1; transform: translate(224px, 40px) rotate(360deg); }
+  18% { opacity: 1; transform: translate(262px, 60px) rotate(720deg); }
+  19%, 100% { opacity: 0; transform: translate(270px, 70px) rotate(760deg); }
+}
+
 /* KOMODUSTER: a low lunge, the forked tongue flicks twice, dust at the feet. */
 .creature.idle-komodo { animation-name: idle-lunge; }
 @keyframes idle-lunge {
@@ -1281,8 +1316,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes dust-kick { 0%, 6.5% { opacity: 0; transform: none; } 8% { opacity: 1; } 14% { opacity: 0; transform: translate(-10px, -8px) scale(1.4); } 100% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig, .bat-rig, .throw-rig { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm, .bat, .throw-arm, .football-held { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */
@@ -1323,6 +1358,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .tab.on { background: var(--acid); color: var(--ink); }
 .tab { min-width: 0; padding: 0 6px; }
+/* Four tabs on a phone (Andy, 2026-09-03: "Progress is escaping"): smaller, tighter, no overflow. */
+@media (max-width: 480px) { .tab { font-size: 13px; letter-spacing: 0; padding: 0 1px; overflow: hidden; } .dash-tabs { gap: 4px; } }
 .pending { border-left: 4px solid var(--warm); padding-left: 10px; }
 .pending.ok { border-left-color: var(--acid); }
 .tab:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
@@ -1470,8 +1507,7 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 .board-tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .board-tile.owned { border-color: var(--acid); }
-.board-rack.rack-locked .board-tile { opacity: 0.4; filter: grayscale(0.7); cursor: default; box-shadow: none; }
-.board-rack.rack-locked .board-tile:active { transform: none; }
+.board-rack.rack-locked .board-tile { opacity: 0.55; filter: grayscale(0.6); }
 .board-mini { width: 112px; height: auto; }
 .board-big { width: min(70vw, 300px); height: auto; margin: 6px auto 4px; }
 .card-board { width: 150px; height: auto; margin: -8px auto 4px; }

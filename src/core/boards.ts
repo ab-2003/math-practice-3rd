@@ -17,7 +17,9 @@ export type BoardTheme =
   // 0.18.2 (Andy): a fighter jet, a rink, a court, and a wall of tags.
   | "jet" | "hockey" | "hoops" | "tag"
   // 0.20.0 (Andy): a pitch, a building site, a shuriken, a dark knight.
-  | "soccer" | "hazard" | "ninja" | "knight";
+  | "soccer" | "hazard" | "ninja" | "knight"
+  // 0.20.0 (Andy): a diamond, and a gridiron.
+  | "baseball" | "football";
 
 export interface Board {
   readonly id: string;
@@ -42,9 +44,15 @@ export const BOARDS: readonly Board[] = [
   { id: "soccer", name: "PITCH DECK", cost: 250, theme: "soccer",
     lore: "A whole pitch, nose to tail, and a ball on the tail. Grass flies.",
     palette: ["#3FBF6F", "#0E3A1E", "#FFFFFF"] },
+  { id: "baseball", name: "DIAMOND DECK", cost: 280, theme: "baseball",
+    lore: "Infield dirt, four bases, and a ball on the tail. It slides in a cloud of dust.",
+    palette: ["#C98A3A", "#3A2A1A", "#FFFFFF"] },
   { id: "hockey", name: "SLAPSHOT", cost: 300, theme: "hockey",
     lore: "Rink lines on the deck and a puck on the tail. Ice shavings on every stop.",
     palette: ["#E4F2FC", "#D33A3A", "#2F7DFF"] },
+  { id: "football", name: "END ZONE", cost: 320, theme: "football",
+    lore: "Yard lines down the deck and a football on the tail. The ball spirals behind.",
+    palette: ["#2E8B3F", "#0E3A1E", "#8B5A2B"] },
   { id: "hoops", name: "BUZZER BEATER", cost: 350, theme: "hoops",
     lore: "Hardwood, court lines, and a ball that bounces along behind.",
     palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },

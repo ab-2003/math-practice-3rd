@@ -1,5 +1,5 @@
 /**
- * PROBE: SHOP. Thirty-four monsters, their forms and acts, the rack, the
+ * PROBE: SHOP. Thirty-six monsters, their forms and acts, the rack, the
  * confirms, the peek, gear, send out, the level gate, and the off-stage pause.
  */
 import { answerOf, closeSheets, goHome, suite, typeAnswer } from "./_shared.mjs";
@@ -12,11 +12,11 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all thirty-four monsters by name, no mysteries", async () => {
+await step("the shop shows all thirty-six monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 34, "the roster is not thirty-four");
+  must((await page.$$(".mon")).length === 36, "the roster is not thirty-six");
   must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "HATTRICK is not 190 coins");
   must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
@@ -25,8 +25,8 @@ await step("the shop shows all thirty-four monsters by name, no mysteries", asyn
   must(await page.evaluate(() => document.querySelector(".roster")?.lastElementChild?.getAttribute("data-mon")) === "voidwyrm",
     "VOIDWYRM is not the final monster in the shop");
   must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
-  must((await page.$$(".helm-tile")).length === 34, "the gear rack is not thirty-four helmets");
-  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site", "headband-red", "knight-dark"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
+  must((await page.$$(".helm-tile")).length === 38, "the gear rack is not thirty-eight helmets");
+  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site", "headband-red", "knight-dark", "ballcap-home", "football-grid"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
   // The ninja's eyes are slits under the mask; the headband is a lid, not part of him.
   must((await page.$$('[data-mon="ninjaw"] .head path[stroke="#D8DEE8"]')).length === 2, "NINJAW's eyes are not the ninja's slits");
   must(await page.$('[data-mon="ninjaw"] .helm') === null, "NINJAW wears a lid he has not bought");
@@ -49,6 +49,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["hattrick", ".kick-leg"], ["hattrick", ".goal-rig .goal-net"], ["hattrick", ".goal-rig .ball"],
     ["scoopjaw", ".boom .bucket"], ["scoopjaw", ".dig-rig .dirt-pile"], ["scoopjaw", ".dirt-fall-3"],
     ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
+    ["dinger", ".bat"], ["dinger", ".bat-rig .pitch"], ["dinger", ".bat-rig .crack"], ["gridjaw", ".throw-arm"], ["gridjaw", ".throw-rig .uprights"], ["gridjaw", ".throw-rig .football"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
@@ -78,7 +79,13 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     fly: getComputedStyle(document.querySelector('[data-mon="ninjaw"] .creature')).animationName,
     ninjaKick: getComputedStyle(document.querySelector('[data-mon="ninjaw"] .ninja-leg')).animationName,
     sword: getComputedStyle(document.querySelector('[data-mon="grimshield"] .sword-arm')).animationName,
+    bat: getComputedStyle(document.querySelector('[data-mon="dinger"] .bat')).animationName,
+    pitch: getComputedStyle(document.querySelector('[data-mon="dinger"] .pitch')).animationName,
+    throwArm: getComputedStyle(document.querySelector('[data-mon="gridjaw"] .throw-arm')).animationName,
+    spiral: getComputedStyle(document.querySelector('[data-mon="gridjaw"] .football')).animationName,
   }));
+  must(names.bat === "bat-swing" && names.pitch === "pitch-in", `DINGER's act reads ${names.bat}/${names.pitch}`);
+  must(names.throwArm === "throw-arm" && names.spiral === "spiral-out", `GRIDJAW's act reads ${names.throwArm}/${names.spiral}`);
   must(names.fly === "idle-flykick" && names.ninjaKick === "ninja-kick", `NINJAW's act reads ${names.fly}/${names.ninjaKick}`);
   must(names.sword === "sword-sweep", `GRIMSHIELD's act reads ${names.sword}`);
   must(names.kick === "kick-swing" && names.shot === "ball-shot", `HATTRICK's act reads ${names.kick}/${names.shot}`);
@@ -98,7 +105,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 34, `${delays.length} idle monsters, wanted 34`);
+  must(delays.length === 36, `${delays.length} idle monsters, wanted 36`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -146,13 +153,13 @@ await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of th
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 34.
+  // colours at tile size. Body plus wings must be unique across all 36.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 34, "could not read the forms");
+  must(forms.length === 36, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
@@ -212,29 +219,38 @@ await step("a HELD tap on Close does not open the monster underneath (the ghost 
   await page.waitForTimeout(250);
 });
 
-await step("with no monsters yet, the racks are on display but shut", async () => {
+await step("with no monsters yet, the racks are shut to buying but open to look", async () => {
   must(await page.evaluate(() => window.__app.meta().owned.length) === 0, "the fresh profile owns something");
   must(await page.$(".gear-rack.rack-locked") !== null, "the rack is open before the first monster");
-  must((await page.$$(".helm-tile[disabled]")).length === 34, "a helmet is tappable before the first monster");
   const note = (await page.textContent('[data-probe="rack-note"]')) ?? "";
   must(note.includes("Helmets need heads"), "the locked rack does not explain itself");
-  // THE BOARD RACK: thirteen decks, plain always owned, shut until the first monster.
+  // Andy's alpha (2026-09-03): a shut rack still opens a lid or a deck to LOOK, no buy button.
+  await page.click('[data-helm="knight-dark"]');
+  await page.waitForSelector(".sheet .helm-mini", { timeout: 4000 });
+  must(await page.$('[data-probe="rack-shut"]') !== null && (await page.$(".sheet .row .btn.go")) === null, "a shut rack offers a buy, or no look");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  await page.click('[data-board-tile="knight"]');
+  await page.waitForSelector(".sheet .board-big", { timeout: 4000 });
+  must(await page.$(".sheet .board-big .board-trail") !== null, "the deck on the sheet does not ride (no trail)");
+  must(await page.$('[data-probe="rack-shut"]') !== null && (await page.$(".sheet .row .btn.go")) === null, "a shut board rack offers a buy, or no look");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
   must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
-  must((await page.$$(".board-tile")).length === 17, "the board rack is not seventeen boards");
-  must((await page.$$(".board-tile[disabled]")).length === 17, "a board is tappable before the first monster");
+  must((await page.$$(".board-tile")).length === 19, "the board rack is not nineteen boards");
   must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
   must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
   const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
-  must(prices.includes("◆ 100") && prices.includes("◆ 250") && prices.includes("◆ 300") && prices.includes("◆ 350") && prices.includes("◆ 500") && prices.includes("◆ 1900"), `the prices read ${JSON.stringify(prices)}`);
+  must(prices.includes("◆ 100") && prices.includes("◆ 250") && prices.includes("◆ 280") && prices.includes("◆ 320") && prices.includes("◆ 350") && prices.includes("◆ 500") && prices.includes("◆ 1900"), `the prices read ${JSON.stringify(prices)}`);
   // The sports lids are 40, every one (Andy).
-  const lidPrices = await page.$$eval('[data-helm^="soccer-"] .mon-sub, [data-helm^="basketball-"] .mon-sub, [data-helm^="hockey-"] .mon-sub', (els) => els.map((e) => e.textContent));
-  must(lidPrices.length === 6 && lidPrices.every((t) => t === "◆ 40"), `the sports lids read ${JSON.stringify(lidPrices)}`);
+  const lidPrices = await page.$$eval('[data-helm^="soccer-"] .mon-sub, [data-helm^="basketball-"] .mon-sub, [data-helm^="hockey-"] .mon-sub, [data-helm^="ballcap-"] .mon-sub, [data-helm^="football-"] .mon-sub', (els) => els.map((e) => e.textContent));
+  must(lidPrices.length === 10 && lidPrices.every((t) => t === "◆ 40"), `the sports lids read ${JSON.stringify(lidPrices)}`);
   // Thirteen forms, not one deck in thirteen colours: the graphics differ, and Void has its stars.
   const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
-  must(new Set(marks).size >= 16, "the boards are palette swaps");
+  must(new Set(marks).size >= 18, "the boards are palette swaps");
   must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
   // THE THEMED FOUR (0.18.2): cockpit and wings, a puck, a ball, a crowned tag.
-  for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"], ["ninja", ".shuriken"], ["knight", ".shield"]]) {
+  for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"], ["ninja", ".shuriken"], ["knight", ".shield"], ["baseball", ".ball"], ["football", ".ball"]]) {
     must(await page.$(`[data-board-tile="${id}"] ${prop}`) !== null, `the ${id} board lost its ${prop}`);
   }
   must(await page.$eval('[data-board-tile="hoops"] .ball', (e) => e.getAttribute("fill")) === "#EE6730", "the court ball is not basketball orange");
@@ -451,7 +467,6 @@ await step("the rider buys the dragon they WANT, not the cheapest, and the confi
   must(!m.owned.includes("grindjaw"), "the shop bought the cheapest instead of the pick");
   must(m.coins === 5000 - 350, `coins went to ${m.coins}, wanted 4650`);
   must(await page.$(".gear-rack.rack-locked") === null, "the rack stayed locked after the first monster");
-  must((await page.$$(".helm-tile[disabled]")).length === 0, "helmets still disabled after the first monster");
 });
 
 await step("a board is bought once, ridden by the monster it is put under, and shows in the trick", async () => {

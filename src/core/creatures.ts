@@ -20,7 +20,9 @@ export type Silhouette =
   // 0.18.6: a Komodo dragon.
   | "komodo"
   // 0.20.0: a striker in a number 7 shirt, an excavator, a ninja, a dark knight.
-  | "striker" | "digger" | "ninja" | "knight";
+  | "striker" | "digger" | "ninja" | "knight"
+  // 0.20.0: a batter, and a football player.
+  | "batter" | "lineman";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -84,6 +86,22 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "striker", crest: "none", tail: "whip", eyes: 2, horns: 0,
     palette: ["#3FBF6F", "#0E3A1E", "#E9FFF0"] ,
     voice: ["Top corner. Top rail. Same thing.", "Hat trick means three. I landed five."] },
+  // DINGER (Andy, 2026-09-03): the batter. A bat on its own rig, a pitch
+  // coming in, and a crack that sends it out of the park. The cap is a
+  // lid to buy.
+  { id: "dinger", name: "DINGER", cost: 220,
+    lore: "Swings at everything. Connects with most of it. The ball is still going.",
+    silhouette: "batter", crest: "none", tail: "club", eyes: 2, horns: 0,
+    palette: ["#E8E4D8", "#3A2A1A", "#D33A3A"] ,
+    voice: ["That one is still going.", "Swung at the rail. Hit the landing."] },
+  // GRIDJAW (Andy, 2026-09-03): the football player. Shoulder pads, a
+  // throwing arm on its own rig, and a spiral for an act. The helmet is a
+  // lid to buy.
+  { id: "gridjaw", name: "GRIDJAW", cost: 230,
+    lore: "Shoulders like a truck. Throws a spiral you could set a watch by.",
+    silhouette: "lineman", crest: "none", tail: "spike", eyes: 2, horns: 0,
+    palette: ["#1B2A5A", "#0A1030", "#F5C542"] ,
+    voice: ["Spiral, landing, touchdown.", "The pads took the hit. The line stayed clean."] },
   { id: "tidewreck", name: "TIDEWRECK", cost: 240,
     lore: "Drags shipwrecks up the beach and arranges them by size.",
     silhouette: "serpent", crest: "sail", tail: "blade", eyes: 3, horns: 2,

@@ -2,20 +2,19 @@ import { describe, expect, it } from "vitest";
 import { boardById, boardFor, BOARDS, ownedBoards, PLAIN_BOARD } from "./boards";
 
 describe("the board rack", () => {
-  it("holds seventeen boards: plain and sixteen to buy, with unique ids, names and themes", () => {
-    expect(BOARDS.length).toBe(17);
-    expect(new Set(BOARDS.map((b) => b.id)).size).toBe(17);
-    expect(new Set(BOARDS.map((b) => b.name)).size).toBe(17);
-    expect(new Set(BOARDS.map((b) => b.theme)).size).toBe(17);
+  it("holds nineteen boards: plain and eighteen to buy, with unique ids, names and themes", () => {
+    expect(BOARDS.length).toBe(19);
+    expect(new Set(BOARDS.map((b) => b.id)).size).toBe(19);
+    expect(new Set(BOARDS.map((b) => b.name)).size).toBe(19);
+    expect(new Set(BOARDS.map((b) => b.theme)).size).toBe(19);
   });
 
   it("keeps the plain board first and free, and prices the rest as a real save", () => {
     expect(BOARDS[0]!.id).toBe(PLAIN_BOARD);
     expect(BOARDS[0]!.cost).toBe(0);
-    expect(BOARDS.slice(1).map((b) => b.cost)).toEqual([100, 250, 300, 350, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 1700, 1800, 1900]);
+    expect(BOARDS.slice(1).map((b) => b.cost)).toEqual([100, 250, 280, 300, 320, 350, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 1700, 1800, 1900]);
     // The sports decks are a short save (Andy): every one under 400.
-    for (const b of BOARDS.filter((x) => ["soccer", "hockey", "hoops"].includes(x.theme))) expect(b.cost, b.id).toBeLessThan(400);
-    expect(BOARDS.slice(-4).map((b) => b.theme)).toEqual(["hazard", "ninja", "knight"].length === 3 ? BOARDS.slice(-4).map((b) => b.theme) : []);
+    for (const b of BOARDS.filter((x) => ["soccer", "hockey", "hoops", "baseball", "football"].includes(x.theme))) expect(b.cost, b.id).toBeLessThan(400);
     expect(BOARDS.slice(-3).map((b) => b.theme)).toEqual(["hazard", "ninja", "knight"]);
     expect(boardById("void")!.cost).toBe(500);
   });
