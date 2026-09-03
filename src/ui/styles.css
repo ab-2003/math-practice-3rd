@@ -1186,6 +1186,46 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .slash-spark { animation: spark-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes spark-pop { 0%, 8.5%, 12%, 100% { opacity: 0; } 9.5% { opacity: 1; } }
 
+/* HATTRICK: plant, wind the leg back, strike; the ball flies into the
+   top corner and the net bulges. */
+.creature.idle-striker { animation-name: idle-strike; }
+@keyframes idle-strike {
+  0%, 22%, 100% { transform: none; }
+  5% { transform: translateX(-6px) rotate(2deg); }
+  9% { transform: translateX(6px) rotate(-6deg); }
+  14% { transform: translateX(2px) rotate(-2deg); }
+}
+.kick-leg { transform-box: fill-box; transform-origin: 50% 0%; animation: kick-swing var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes kick-swing { 0%, 4%, 18%, 100% { transform: rotate(0); } 7% { transform: rotate(38deg); } 9.5% { transform: rotate(-52deg); } 13% { transform: rotate(-24deg); } }
+.goal-rig .goal-net { opacity: 0; animation: goal-show var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes goal-show { 0%, 2%, 24%, 100% { opacity: 0; } 5% { opacity: 1; } 21% { opacity: 1; } }
+.goal-rig .net-mesh { transform-box: fill-box; transform-origin: 100% 50%; animation: net-bulge var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes net-bulge { 0%, 12%, 18%, 100% { transform: none; } 13.5% { transform: scaleX(1.12) skewY(-4deg); } 15.5% { transform: scaleX(0.96); } }
+.goal-rig .ball { opacity: 0; animation: ball-shot var(--idle-cycle, 4.8s) ease-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes ball-shot {
+  0%, 3% { opacity: 0; transform: none; }
+  4% { opacity: 1; transform: none; }
+  9.5% { opacity: 1; transform: none; }
+  13% { opacity: 1; transform: translate(60px, -78px) rotate(200deg); }
+  15% { opacity: 1; transform: translate(70px, -60px) rotate(300deg); }
+  19% { opacity: 1; transform: translate(66px, 0) rotate(360deg); }
+  21%, 100% { opacity: 0; transform: translate(66px, 0) rotate(360deg); }
+}
+
+/* SCOOPJAW: the boom drops, the bucket scoops the pile, lifts, swings up
+   and over, dumps; dirt falls. */
+.creature.idle-digger { animation-name: idle-stomp; }
+.boom { transform-box: fill-box; transform-origin: 0% 100%; animation: boom-dig var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes boom-dig { 0%, 3%, 22%, 100% { transform: rotate(0); } 7% { transform: rotate(36deg); } 10% { transform: rotate(36deg); } 14% { transform: rotate(-8deg); } 18% { transform: rotate(-38deg); } }
+.bucket { transform-box: fill-box; transform-origin: 0% 0%; animation: bucket-curl var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes bucket-curl { 0%, 5%, 21%, 100% { transform: rotate(0); } 8.5% { transform: rotate(28deg); } 14% { transform: rotate(28deg); } 17.5% { transform: rotate(-62deg); } }
+.dirt-load { animation: dirt-in var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes dirt-in { 0%, 8%, 18%, 100% { opacity: 0; } 9% { opacity: 1; } 17% { opacity: 1; } }
+.dirt-fall { animation: dirt-drop var(--idle-cycle, 4.8s) ease-in infinite; animation-delay: var(--idle-delay, 0s); }
+.dirt-fall-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.1s); }
+.dirt-fall-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.2s); }
+@keyframes dirt-drop { 0%, 17% { opacity: 0; transform: none; } 18% { opacity: 1; } 22%, 100% { opacity: 0; transform: translateY(150px); } }
+
 /* KOMODUSTER: a low lunge, the forked tongue flicks twice, dust at the feet. */
 .creature.idle-komodo { animation-name: idle-lunge; }
 @keyframes idle-lunge {
@@ -1208,8 +1248,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes dust-kick { 0%, 6.5% { opacity: 0; transform: none; } 8% { opacity: 1; } 14% { opacity: 0; transform: translate(-10px, -8px) scale(1.4); } 100% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load { animation: none !important; }
 }
 
 /* ---------- speed run ---------- */

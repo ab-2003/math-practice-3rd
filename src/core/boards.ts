@@ -15,7 +15,9 @@
 export type BoardTheme =
   | "plain" | "ember" | "void" | "frost" | "storm" | "tide" | "gilded" | "magma" | "neon"
   // 0.18.2 (Andy): a fighter jet, a rink, a court, and a wall of tags.
-  | "jet" | "hockey" | "hoops" | "tag";
+  | "jet" | "hockey" | "hoops" | "tag"
+  // 0.20.0 (Andy): a pitch, and a building site.
+  | "soccer" | "hazard";
 
 export interface Board {
   readonly id: string;
@@ -70,6 +72,12 @@ export const BOARDS: readonly Board[] = [
   { id: "tag", name: "STREET TAG", cost: 1500, theme: "tag",
     lore: "Tagged, dripped and crowned. The wall started it.",
     palette: ["#1E242C", "#FF3D8B", "#FFE14D"] },
+  { id: "soccer", name: "PITCH DECK", cost: 1600, theme: "soccer",
+    lore: "A whole pitch, nose to tail, and a ball on the tail. Grass flies.",
+    palette: ["#3FBF6F", "#0E3A1E", "#FFFFFF"] },
+  { id: "hazard", name: "SITE DECK", cost: 1700, theme: "hazard",
+    lore: "Hazard stripes and a hard hat sticker. Gravel sprays behind it.",
+    palette: ["#F5B400", "#05070A", "#FF8A1F"] },
 ];
 
 export const boardById = (id: string): Board | undefined => BOARDS.find((b) => b.id === id);

@@ -191,6 +191,27 @@ const PLANS: Record<Silhouette, Plan> = {
     spine: [[30, 128], [64, 108], [118, 102], [150, 112]],
     tailAnchor: [22, 140],
   },
+  // HATTRICK (0.20.0): the striker. A stocky biped with arms out for
+  // balance, the back leg planted; the kicking leg is a rig of its own.
+  striker: {
+    body: "M60 150 L64 96 L84 64 L124 56 L150 74 L152 112 L142 150 Z",
+    head: "M118 44 L172 30 L184 54 L170 74 L122 78 Z",
+    face: { x: 130, y: 44, scale: 0.9 },
+    legs: ["M70 144 L58 190 L86 190 L92 144 Z"],
+    spine: [[62, 130], [72, 90], [104, 62], [136, 64]],
+    tailAnchor: [60, 136],
+    arms: ["M64 96 L34 116 L42 128 L74 110 Z", "M146 88 L178 100 L172 112 L142 102 Z"],
+  },
+  // SCOOPJAW (0.20.0): the excavator. A cab of a body on treads instead
+  // of legs; the boom and bucket are a rig of their own.
+  digger: {
+    body: "M60 146 L60 90 L84 70 L140 66 L156 84 L156 146 Z",
+    head: "M130 60 L192 50 L200 74 L184 92 L136 92 Z",
+    face: { x: 144, y: 58, scale: 0.95 },
+    legs: [],
+    spine: [[62, 120], [70, 84], [112, 68], [146, 78]],
+    tailAnchor: [58, 128],
+  },
   // CHROMALEON: a long low lizard on wide-set legs, a casque on the head,
   // the tail curling behind.
   chameleon: {
@@ -494,6 +515,32 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       out.push(svg("path", { d: "M-8 -30 L8 -30 L20 12 L-20 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
       out.push(svg("rect", { x: -14, y: -12, width: 28, height: 8, fill: accent, stroke: INK, "stroke-width": 3 }));
       break;
+    case "soccer":
+      // The ball as a lid: a dome with the pentagons on it.
+      dome(21, 27);
+      for (const [px, py, sc] of [[0, -8, 1], [-16, 2, 0.8], [16, 2, 0.8]] as const) {
+        out.push(svg("path", { d: `M${px} ${py - 6 * sc} L${px + 6 * sc} ${py - 2 * sc} L${px + 4 * sc} ${py + 5 * sc} L${px - 4 * sc} ${py + 5 * sc} L${px - 6 * sc} ${py - 2 * sc} Z`, fill: accent }));
+      }
+      break;
+    case "basketball":
+      // The ball as a lid: the seams over the dome.
+      dome(21, 27);
+      out.push(svg("path", { d: "M-27 6 A 27 21 0 0 1 27 6 M0 -15 L0 12 M-20 -6 Q0 2 20 -6", fill: "none", stroke: accent, "stroke-width": 2.6 }));
+      break;
+    case "hockey":
+      // The rink lid: a dome with the cage over the face.
+      dome(21, 27);
+      out.push(svg("path", { d: "M-24 10 L-22 30 L22 30 L24 10", fill: "none", stroke: accent, "stroke-width": 3, "stroke-linejoin": "round" }));
+      for (const y of [16, 22]) out.push(svg("path", { d: `M-23 ${y} L23 ${y}`, stroke: accent, "stroke-width": 2 }));
+      for (const x of [-12, 0, 12]) out.push(svg("path", { d: `M${x} 10 L${x} 30`, stroke: accent, "stroke-width": 2 }));
+      break;
+    case "hardhat":
+      // The site lid: a high dome, a ridge on top, and the brim.
+      out.push(svg("path", { d: "M-24 8 A 24 24 0 0 1 24 8 L 24 12 L -24 12 Z", fill: shell, stroke: INK, "stroke-width": 5, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-6 -14 L6 -14 L6 6 L-6 6 Z", fill: shell, stroke: INK, "stroke-width": 3 }));
+      out.push(svg("path", { d: "M-34 12 L34 12 L36 18 L-36 18 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-30 15 L30 15", stroke: accent, "stroke-width": 2, opacity: 0.8 }));
+      break;
     case "pilot":
       // The flight helmet: a deep shell, a tinted visor dropped over the
       // eyes, the oxygen-mask clip at the cheek, a chin strap.
@@ -592,6 +639,41 @@ export const creatureSvg = (
     for (const [sx, sy, r] of [[58, 124, 3], [78, 134, 2.4], [96, 118, 3], [114, 132, 2.6], [132, 120, 2.8], [148, 134, 2.2], [88, 142, 2]] as const) {
       root.append(svg("circle", { cx: sx, cy: sy, r, fill: c.palette[1], opacity: 0.55 }));
     }
+  }
+  // HATTRICK's kit: the number 7 shirt, the long socks, and a kicking leg
+  // on its own rig so the act can swing it.
+  if (c.id === "hattrick") {
+    root.append(poly("M80 78 L126 70 L142 96 L138 136 L84 140 L70 104 Z", "#FFFFFF", 4));
+    root.append(svg("text", { x: 110, y: 122, "text-anchor": "middle", "font-size": 40, "font-weight": 900, fill: "#E8483A", stroke: INK, "stroke-width": 1.5 }, "7"));
+    const sock = (x0: number, x1: number, x2: number, x3: number): void => {
+      root.append(poly(`M${x0} 166 L${x1} 190 L${x2} 190 L${x3} 166 Z`, "#FFFFFF", 3));
+      root.append(svg("path", { d: `M${x0 + 1} 172 L${x3 - 1} 172 M${x0 + 2} 179 L${x3 - 2} 179`, stroke: "#E8483A", "stroke-width": 3 }));
+    };
+    sock(64, 58, 86, 88);
+    const leg = svg("g", { class: "kick-leg" });
+    leg.append(poly("M112 144 L108 190 L136 190 L134 144 Z", body, SW - 1));
+    leg.append(poly("M110 166 L108 190 L136 190 L134 166 Z", "#FFFFFF", 3));
+    leg.append(svg("path", { d: "M111 172 L133 172 M110 179 L134 179", stroke: "#E8483A", "stroke-width": 3 }));
+    leg.append(poly("M106 184 L140 184 L144 196 L104 196 Z", INK, 2));
+    root.append(leg);
+  }
+  // SCOOPJAW's treads, and its boom and bucket on a rig of their own.
+  if (c.id === "scoopjaw") {
+    root.append(poly("M40 150 L176 150 L184 170 L176 190 L40 190 L32 170 Z", "#3A4656", SW - 1));
+    for (const wx of [52, 80, 108, 136, 164]) root.append(svg("circle", { cx: wx, cy: 170, r: 9, fill: "#8A97A6", stroke: INK, "stroke-width": 3 }));
+    root.append(svg("path", { d: "M40 156 L176 156 M40 184 L176 184", stroke: INK, "stroke-width": 2.5, "stroke-dasharray": "6 5" }));
+    root.append(svg("path", { d: "M84 78 L134 74 L134 92 L86 96 Z", fill: "#9EE8FF", stroke: INK, "stroke-width": 3, opacity: 0.85 }));
+    const boom = svg("g", { class: "boom" });
+    boom.append(poly("M150 74 L214 30 L224 42 L160 92 Z", body, SW - 1));
+    const bucket = svg("g", { class: "bucket" });
+    bucket.append(svg("path", { d: "M218 36 L236 84", stroke: INK, "stroke-width": 12, "stroke-linecap": "round" }));
+    bucket.append(svg("path", { d: "M218 36 L236 84", stroke: body, "stroke-width": 6, "stroke-linecap": "round" }));
+    bucket.append(poly("M226 84 L252 78 L252 104 L234 110 L224 98 Z", "#8A97A6", 4));
+    bucket.append(svg("path", { d: "M236 108 l0 6 M244 106 l0 6 M251 103 l0 6", stroke: INK, "stroke-width": 3, "stroke-linecap": "round" }));
+    bucket.append(svg("path", { class: "dirt-load", d: "M228 90 Q238 78 250 86 L250 100 L232 104 Z", fill: "#8B5A2B", stroke: INK, "stroke-width": 2, opacity: 0 }));
+    boom.append(bucket);
+    root.append(boom);
+    root.append(svg("circle", { cx: 152, cy: 82, r: 7, fill: INK }));
   }
   // WRECKARM's fist: its own rig, so the act can wind it up and swing it.
   if (c.id === "wreckarm") {
@@ -1048,6 +1130,36 @@ export const creatureSvg = (
     const dust = svg("g", { class: "dust-k" });
     for (const [dx, r] of [[24, 5], [44, 6], [160, 5], [182, 6]] as const) dust.append(svg("circle", { cx: dx, cy: 186, r, fill: "#B8B28A", opacity: 0.8 }));
     rig.append(dust);
+    root.append(rig);
+  }
+
+  // HATTRICK scores: the goal fades in at the right, the leg swings, the
+  // ball flies into the top corner and the net bulges.
+  if (opts.idle !== undefined && c.id === "hattrick") {
+    const rig = svg("g", { class: "goal-rig" });
+    const goal = svg("g", { class: "goal-net" });
+    goal.append(svg("path", { d: "M196 190 L196 96 L246 96 L246 190", fill: "none", stroke: "#FFFFFF", "stroke-width": 5, "stroke-linecap": "round" }));
+    const net = svg("g", { class: "net-mesh" });
+    for (let y = 104; y < 190; y += 12) net.append(svg("path", { d: `M198 ${y} L246 ${y}`, stroke: "#E4F2FC", "stroke-width": 1.4, opacity: 0.7 }));
+    for (let x = 206; x < 246; x += 10) net.append(svg("path", { d: `M${x} 98 L${x} 188`, stroke: "#E4F2FC", "stroke-width": 1.4, opacity: 0.7 }));
+    goal.append(net);
+    rig.append(goal);
+    const ball = svg("g", { class: "ball" });
+    ball.append(svg("circle", { cx: 156, cy: 184, r: 11, fill: "#FFFFFF", stroke: INK, "stroke-width": 3 }));
+    ball.append(svg("path", { d: "M156 177 L162 181 L160 188 L152 188 L150 181 Z", fill: INK }));
+    ball.append(svg("path", { d: "M147 180 L150 181 M165 180 L162 181 M152 194 L152 188 M160 194 L160 188", stroke: INK, "stroke-width": 2 }));
+    rig.append(ball);
+    root.append(rig);
+  }
+
+  // SCOOPJAW digs: the boom drops the bucket into the pile, scoops, lifts,
+  // swings over and dumps; dirt falls.
+  if (opts.idle !== undefined && c.id === "scoopjaw") {
+    const rig = svg("g", { class: "dig-rig" });
+    rig.append(svg("path", { class: "dirt-pile", d: "M212 190 Q232 160 252 172 Q262 180 258 190 Z", fill: "#8B5A2B", stroke: INK, "stroke-width": 3, "stroke-linejoin": "round" }));
+    for (const [k, x, y] of [[1, 120, 40], [2, 132, 30], [3, 110, 52]] as const) {
+      rig.append(svg("circle", { class: `dirt-fall dirt-fall-${k}`, cx: x, cy: y, r: 4, fill: "#8B5A2B", stroke: INK, "stroke-width": 1.5, opacity: 0 }));
+    }
     root.append(rig);
   }
 

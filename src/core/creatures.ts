@@ -18,7 +18,9 @@ export type Silhouette =
   // 0.18.3: a wolf-dragon on two legs, and a panther.
   | "wrecker" | "panther"
   // 0.18.6: a Komodo dragon.
-  | "komodo";
+  | "komodo"
+  // 0.20.0: a striker in a number 7 shirt, and an excavator.
+  | "striker" | "digger";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -75,6 +77,13 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "plated", crest: "plates", tail: "spike", eyes: 2, horns: 0,
     palette: ["#FF3D3D", "#3A0000", "#FFD2C2"] ,
     voice: ["Warm landings. Every one of them.", "The ground is steaming again. Good sign."] },
+  // HATTRICK (Andy, 2026-09-03): the striker. Number 7 shirt, the long
+  // socks, and a shot into the top corner for an act.
+  { id: "hattrick", name: "HATTRICK", cost: 190,
+    lore: "Wears the number 7. Puts everything in the top corner, tricks included.",
+    silhouette: "striker", crest: "none", tail: "whip", eyes: 2, horns: 0,
+    palette: ["#3FBF6F", "#0E3A1E", "#E9FFF0"] ,
+    voice: ["Top corner. Top rail. Same thing.", "Hat trick means three. I landed five."] },
   { id: "tidewreck", name: "TIDEWRECK", cost: 240,
     lore: "Drags shipwrecks up the beach and arranges them by size.",
     silhouette: "serpent", crest: "sail", tail: "blade", eyes: 3, horns: 2,
@@ -85,6 +94,13 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "brute", crest: "spikes", tail: "club", eyes: 2, horns: 4,
     palette: ["#9EE8FF", "#0C2B3A", "#FFFFFF"] ,
     voice: ["Breathed once. Instant ramp.", "Cold hands, clean landings."] },
+  // SCOOPJAW (Andy, 2026-09-03): half monster, half excavator. Treads for
+  // feet, a boom for an arm, and a bucket that digs and dumps for an act.
+  { id: "scoopjaw", name: "SCOOPJAW", cost: 380,
+    lore: "Half monster, half excavator. Digs the bowl a little deeper every visit.",
+    silhouette: "digger", crest: "none", tail: "club", eyes: 2, horns: 0,
+    palette: ["#F5B400", "#3A2A00", "#FFF0B0"] ,
+    voice: ["Dug it. Dumped it. Landed it.", "The bucket does the talking."] },
   { id: "rustfang", name: "RUSTFANG", cost: 420,
     lore: "Built itself out of the scrap yard, one bad idea at a time.",
     silhouette: "raptor", crest: "plates", tail: "blade", eyes: 3, horns: 2,

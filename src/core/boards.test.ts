@@ -2,18 +2,18 @@ import { describe, expect, it } from "vitest";
 import { boardById, boardFor, BOARDS, ownedBoards, PLAIN_BOARD } from "./boards";
 
 describe("the board rack", () => {
-  it("holds thirteen boards: plain and twelve to buy, with unique ids, names and themes", () => {
-    expect(BOARDS.length).toBe(13);
-    expect(new Set(BOARDS.map((b) => b.id)).size).toBe(13);
-    expect(new Set(BOARDS.map((b) => b.name)).size).toBe(13);
-    expect(new Set(BOARDS.map((b) => b.theme)).size).toBe(13);
+  it("holds fifteen boards: plain and fourteen to buy, with unique ids, names and themes", () => {
+    expect(BOARDS.length).toBe(15);
+    expect(new Set(BOARDS.map((b) => b.id)).size).toBe(15);
+    expect(new Set(BOARDS.map((b) => b.name)).size).toBe(15);
+    expect(new Set(BOARDS.map((b) => b.theme)).size).toBe(15);
   });
 
   it("keeps the plain board first and free, and prices the rest as a real save", () => {
     expect(BOARDS[0]!.id).toBe(PLAIN_BOARD);
     expect(BOARDS[0]!.cost).toBe(0);
-    expect(BOARDS.slice(1).map((b) => b.cost)).toEqual([100, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500]);
-    expect(BOARDS.slice(-4).map((b) => b.theme)).toEqual(["jet", "hockey", "hoops", "tag"]);
+    expect(BOARDS.slice(1).map((b) => b.cost)).toEqual([100, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700]);
+    expect(BOARDS.slice(-6).map((b) => b.theme)).toEqual(["jet", "hockey", "hoops", "tag", "soccer", "hazard"]);
     expect(boardById("void")!.cost).toBe(500);
   });
 

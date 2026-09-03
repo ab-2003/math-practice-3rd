@@ -1108,6 +1108,11 @@ zero image requests.
       wallet stays put as the shop scrolls. Addition as dots (a parent
       dial, off by default; green plus blue, rows of five, addition only).
       The corrective screen in three labelled groups, fitting a phone.
+      And the shop grows: HATTRICK (190, a striker in a number 7 shirt
+      and long socks, who kicks a ball into the net), SCOOPJAW (380, an
+      excavator on treads whose boom digs and dumps), PITCH DECK and SITE
+      DECK, and soccer, basketball, hockey and hard-hat lids in two
+      colourways each.
 - [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth
       rail in height, sometimes a half pipe to drop into, ride across and
       up, and launch out of for a big air trick; after a third, sometimes

@@ -1,7 +1,7 @@
 /**
  * THE GEAR RACK, Andy 2026-09-01: "at least let them put on a cool helmet."
  *
- * Twenty-two helmets: eleven SHAPES in two colourways each. A helmet is bought once
+ * Thirty helmets: fifteen SHAPES in two colourways each. A helmet is bought once
  * and lives in the locker; any owned monster can wear any owned helmet, and
  * each monster remembers its own. Pure data here; the drawing lives in the
  * UI renderer, keyed by shape.
@@ -11,7 +11,9 @@ export type HelmetShape =
   | "half" | "cap" | "full" | "mohawk" | "viking"
   | "crown" | "beanie" | "samurai" | "goggle" | "cone"
   // The fighter-jet pilot's lid (Andy, 2026-09-02), with MACHFANG's jet.
-  | "pilot";
+  | "pilot"
+  // The sports lids and the hard hat (Andy, 2026-09-03).
+  | "soccer" | "basketball" | "hockey" | "hardhat";
 
 export interface Helmet {
   readonly id: string;
@@ -31,14 +33,22 @@ export const HELMETS: readonly Helmet[] = [
   { id: "beanie-mag", name: "MAGMA BEANIE", cost: 35, shape: "beanie", colors: ["#FF8A1F", "#3A0E00"] },
   { id: "goggle-sky", name: "SKY GOGGLES", cost: 50, shape: "goggle", colors: ["#2F7DFF", "#C8DDFF"] },
   { id: "goggle-night", name: "NIGHT GOGGLES", cost: 50, shape: "goggle", colors: ["#120826", "#6B4BD6"] },
+  { id: "hardhat-site", name: "HARD HAT", cost: 70, shape: "hardhat", colors: ["#F5B400", "#05070A"] },
+  { id: "hardhat-boss", name: "SITE BOSS", cost: 70, shape: "hardhat", colors: ["#FF8A1F", "#FFFFFF"] },
   { id: "cone-classic", name: "THE CONE", cost: 60, shape: "cone", colors: ["#FF8A1F", "#FFFFFF"] },
   { id: "cone-void", name: "VOID CONE", cost: 60, shape: "cone", colors: ["#2A0016", "#FF3D8B"] },
   { id: "mohawk-punk", name: "PUNK HAWK", cost: 80, shape: "mohawk", colors: ["#1E242C", "#FF3D8B"] },
   { id: "mohawk-toxic", name: "TOXIC HAWK", cost: 80, shape: "mohawk", colors: ["#0C2E0C", "#B6FF3C"] },
+  { id: "soccer-pitch", name: "PITCH DOME", cost: 90, shape: "soccer", colors: ["#FFFFFF", "#05070A"] },
+  { id: "soccer-neon", name: "NEON PITCH", cost: 90, shape: "soccer", colors: ["#B6FF3C", "#05070A"] },
   { id: "full-moto", name: "MOTO DOME", cost: 110, shape: "full", colors: ["#C9D3DC", "#22282F"] },
   { id: "full-stealth", name: "STEALTH DOME", cost: 110, shape: "full", colors: ["#10151B", "#35E6FF"] },
+  { id: "basketball-court", name: "COURT DOME", cost: 120, shape: "basketball", colors: ["#EE6730", "#05070A"] },
+  { id: "basketball-purple", name: "PURPLE COURT", cost: 120, shape: "basketball", colors: ["#6B4BD6", "#F5C542"] },
   { id: "pilot-jet", name: "JET ACE", cost: 130, shape: "pilot", colors: ["#EDF2F7", "#2F7DFF"] },
   { id: "pilot-night", name: "NIGHT ACE", cost: 130, shape: "pilot", colors: ["#22282F", "#FF8A1F"] },
+  { id: "hockey-rink", name: "RINK HELMET", cost: 140, shape: "hockey", colors: ["#FFFFFF", "#D33A3A"] },
+  { id: "hockey-stealth", name: "STEALTH RINK", cost: 140, shape: "hockey", colors: ["#22282F", "#35E6FF"] },
   { id: "viking-raid", name: "RAID HORNS", cost: 150, shape: "viking", colors: ["#8FB7D6", "#E4F2FC"] },
   { id: "viking-ember", name: "EMBER HORNS", cost: 150, shape: "viking", colors: ["#3A0E00", "#FF5A2A"] },
   { id: "samurai-storm", name: "STORM KABUTO", cost: 200, shape: "samurai", colors: ["#22282F", "#FFE14D"] },

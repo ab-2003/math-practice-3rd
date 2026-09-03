@@ -3,8 +3,8 @@ import { canAffordAny, canLevelUp, cheapestLocked, levelBrings, levelCost, MAX_L
 import { HELMETS, helmetById } from "./gear";
 
 describe("the open shop", () => {
-  it("holds exactly thirty monsters, seven of them dragons, eight of them kaiju", () => {
-    expect(ROSTER.length).toBe(30);
+  it("holds exactly thirty-two monsters, seven of them dragons, eight of them kaiju", () => {
+    expect(ROSTER.length).toBe(32);
     expect(ROSTER.filter((c) => c.silhouette === "dragon").length).toBe(7);
     expect(ROSTER.filter((c) => c.kaiju === true).length).toBe(8);
   });
@@ -29,8 +29,10 @@ describe("the open shop", () => {
   });
 
   it("keeps every id and name unique, and every price positive", () => {
-    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(30);
-    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(30);
+    expect(new Set(ROSTER.map((c) => c.id)).size).toBe(32);
+    expect(new Set(ROSTER.map((c) => c.name)).size).toBe(32);
+    expect(ROSTER.find((c) => c.id === "hattrick")!.cost).toBe(190);
+    expect(ROSTER.find((c) => c.id === "scoopjaw")!.silhouette).toBe("digger");
     for (const c of ROSTER) expect(c.cost).toBeGreaterThan(0);
   });
 
@@ -41,8 +43,8 @@ describe("the open shop", () => {
 
   it("gives every monster two lines of its own, with no em-dashes", () => {
     const all = ROSTER.flatMap((c) => c.voice);
-    expect(all.length).toBe(60);
-    expect(new Set(all).size).toBe(60);
+    expect(all.length).toBe(64);
+    expect(new Set(all).size).toBe(64);
     for (const line of all) expect(line).not.toContain("—");
     expect(riderVoice(ROSTER[0]!, 0)).toBe(ROSTER[0]!.voice[0]);
     expect(riderVoice(ROSTER[0]!, 1)).toBe(ROSTER[0]!.voice[1]);
@@ -84,11 +86,11 @@ describe("levelling", () => {
 });
 
 describe("the gear rack", () => {
-  it("holds exactly twenty-two helmets with unique ids and names, the pilot's among them", () => {
-    expect(HELMETS.length).toBe(22);
-    expect(new Set(HELMETS.map((h) => h.id)).size).toBe(22);
-    expect(new Set(HELMETS.map((h) => h.name)).size).toBe(22);
-    expect(HELMETS.filter((h) => h.shape === "pilot").length).toBe(2);
+  it("holds exactly thirty helmets with unique ids and names, the sports lids and the hard hat among them", () => {
+    expect(HELMETS.length).toBe(30);
+    expect(new Set(HELMETS.map((h) => h.id)).size).toBe(30);
+    expect(new Set(HELMETS.map((h) => h.name)).size).toBe(30);
+    for (const shape of ["pilot", "soccer", "basketball", "hockey", "hardhat"]) expect(HELMETS.filter((h) => h.shape === shape).length, shape).toBe(2);
   });
 
   it("prices every helmet and resolves lookups", () => {
@@ -99,10 +101,10 @@ describe("the gear rack", () => {
     expect(helmetById("nope")).toBeUndefined();
   });
 
-  it("covers eleven shapes twice each, so the rack has real variety", () => {
+  it("covers fifteen shapes twice each, so the rack has real variety", () => {
     const byShape = new Map();
     for (const h of HELMETS) byShape.set(h.shape, (byShape.get(h.shape) ?? 0) + 1);
-    expect(byShape.size).toBe(11);
+    expect(byShape.size).toBe(15);
     for (const n of byShape.values()) expect(n).toBe(2);
   });
 });
