@@ -16,6 +16,8 @@ import { flushToast } from "./toast";
 import { cloudAutoPush, cloudRole, connectedCode, setCloudRole } from "./cloud";
 import { offerRestore, startSync } from "./sync";
 import { applySetting } from "./settings-apply";
+import { advancePlay, dayOver, leftWords, routeCounts } from "./day-limit";
+import { toast } from "./toast";
 import type { SyncedSettings, SyncKey } from "../core/sync";
 import {
   getFacts, getMeta, loadRegistry, putFacts, putMeta, freshMeta, saveRegistry, useProfile, type Meta,
@@ -68,7 +70,13 @@ export const boot = async (root: HTMLElement): Promise<void> => {
 
   const app: App = {
     deck, states, meta, day: today(), profile, registry,
-    go: (r) => { route = r; render(); },
+    // A closed day admits nothing but home and the grown-ups' screen.
+    go: (r) => { route = dayOver(app) && routeCounts(r) && r !== "home" ? "home" : r; render(); },
+    dayDone: () => {
+      route = "home";
+      render();
+      sheet({ title: "Time's up for today!", body: "That is all the game time for today. Nice riding. Come back tomorrow!", confirm: "OK" });
+    },
     save: async () => {
       await putMeta(app.meta);
       await putFacts(app.states);
@@ -110,6 +118,26 @@ export const boot = async (root: HTMLElement): Promise<void> => {
   render();
   flushToast();
 
+  /**
+   * THE DAY'S GAME TIME. One tick a second while the page is visible and
+   * the screen counts; the warnings are toasts; the end of the day sends
+   * every screen home except a session, which finishes its line first
+   * (it asks dayOver at the line break). The tally is saved on its own
+   * slow beat so a closed tab does not lose more than a few seconds.
+   */
+  let saveBeat = 0;
+  const onPlay = (ev: ReturnType<typeof advancePlay>): void => {
+    if (ev === "warn3" || ev === "warn1") { toast(leftWords(app)); void app.save(); }
+    else if (ev === "over") { void app.save(); if (route !== "session") app.dayDone(); }
+  };
+  const playTick = (ms: number): void => {
+    if (!routeCounts(route)) return;
+    onPlay(advancePlay(app, ms));
+    saveBeat += ms;
+    if (saveBeat >= 15_000) { saveBeat = 0; void app.save(); }
+  };
+  window.setInterval(() => { if (document.visibilityState === "visible") playTick(1000); }, 1000);
+
   // Before the ownership rule, a linked device with practice was the writer
   // by default. Keep that true for it, once, so Kallen's iPad keeps mirroring.
   if (connectedCode() !== null && cloudRole() === null && [...states.values()].some((s) => s.introduced)) setCloudRole("owner");
@@ -146,5 +174,8 @@ export const boot = async (root: HTMLElement): Promise<void> => {
     save: () => app.save(),
     // A synced setting, through the one real path (revives, stamp, push).
     set: <K extends SyncKey>(key: K, value: SyncedSettings[K]) => { const changed = applySetting(app, key, value); return app.save().then(() => changed); },
+    // The day's clock, driven by hand: the same path the ticker takes.
+    playAdvance: (ms: number) => { playTick(ms); return app.save(); },
+    route: () => route,
   };
 };

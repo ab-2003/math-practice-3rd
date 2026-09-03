@@ -10,6 +10,7 @@ import { el, on, svg } from "./dom";
 import { doseDone, speedAttemptsToday, speedKey } from "./day";
 import { tokenIcon } from "./icons";
 import { parkGate, spentToday } from "../core/park";
+import { dayOver, limitOn, remainingMs } from "./day-limit";
 export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
@@ -189,8 +190,19 @@ export const homeScreen = (app: App): HTMLElement => {
   // big stamp beside the hero: after the dose, everything is EXTRA PRACTICE.
   const done = doseDone(app);
   if (done) hero.append(dailyBadge());
-  const go = el("button", { type: "button", class: "btn go big", "data-probe": "start" },
-    iconSkate(), el("span", { text: done ? "Extra Practice" : "Drop In" }));
+  // THE DAY'S GAME TIME is up: the doors close, the words say why, and
+  // the grown-ups' gear stays open above.
+  const closed = dayOver(app);
+  if (closed) {
+    panel.append(el("div", { class: "card closed-card", "data-probe": "day-closed" },
+      el("b", { text: "Time's up for today" }),
+      el("span", { class: "mon-sub", text: "That is all the game time for today. Come back tomorrow!" })));
+  } else if (limitOn(app)) {
+    const left = Math.ceil(remainingMs(app) / 60_000);
+    panel.append(el("div", { class: "mon-sub left-line", "data-probe": "time-left", text: `${left} ${left === 1 ? "minute" : "minutes"} of game time left today` }));
+  }
+  const go = el("button", { type: "button", class: "btn go big", "data-probe": "start", ...(closed ? { disabled: true } : {}) },
+    iconSkate(), el("span", { text: closed ? "Come back tomorrow" : done ? "Extra Practice" : "Drop In" }));
   on(go, "click", () => app.go("session"));
   panel.append(go);
   if (!done) {
@@ -209,7 +221,7 @@ export const homeScreen = (app: App): HTMLElement => {
   // SPEED RUN rides the stats row: a distinct door, no new vertical space.
   const bestNow = app.meta.speedBest[speedKey(app)] ?? 0;
   const used = speedAttemptsToday(app);
-  const speed = el("button", { type: "button", class: "card stat speed-cell", "data-probe": "speed-open" },
+  const speed = el("button", { type: "button", class: "card stat speed-cell", "data-probe": "speed-open", ...(closed ? { disabled: true } : {}) },
     el("b", { text: "⚡ SPEED RUN" }),
     el("span", { text: `${bestNow > 0 ? `best ${bestNow} · ` : ""}${used}/${app.meta.speedLimit} today` }));
   on(speed, "click", () => app.go("speed"));
@@ -221,8 +233,8 @@ export const homeScreen = (app: App): HTMLElement => {
   const parkOpen = app.meta.parkUnlocked;
   const gate = parkGate(app.meta, app.day);
   const park = el("button", {
-    type: "button", class: `btn big park-btn${parkOpen ? " alt" : " ghost dim"}${parkOpen && gate.ok && !app.meta.parkSeen ? " park-new" : ""}`,
-    "data-probe": "park-open",
+    type: "button", class: `btn big park-btn${parkOpen ? " alt" : " ghost dim"}${parkOpen && gate.ok && !app.meta.parkSeen && !closed ? " park-new" : ""}`,
+    "data-probe": "park-open", ...(closed ? { disabled: true } : {}),
   }, tokenIcon("btn-ico token-btn"), el("span", { text: parkOpen
     ? `Skate Park · ${app.meta.tokens} ${app.meta.tokens === 1 ? "token" : "tokens"}`
     : "Skate Park" }));
@@ -256,7 +268,7 @@ export const homeScreen = (app: App): HTMLElement => {
     panel.append(prog);
   }
 
-  const coll = el("button", { type: "button", class: "btn alt big", "data-probe": "collection" },
+  const coll = el("button", { type: "button", class: "btn alt big", "data-probe": "collection", ...(closed ? { disabled: true } : {}) },
     iconMonster(), el("span", { text: `Monster Shop ${app.meta.owned.length}/${ROSTER.length}` }));
   on(coll, "click", () => app.go("collection"));
   panel.append(coll);
@@ -271,7 +283,9 @@ export const HOME_ACT_EVERY_MS = 15_000;
 
 export const collectionScreen = (app: App): HTMLElement => {
   const root = el("div", { class: "screen" });
-  const bar = el("div", { class: "topbar" });
+  // The wallet rides along as the shop scrolls (Andy, 2026-09-03): the
+  // balance is the whole question in a shop.
+  const bar = el("div", { class: "topbar shop-bar", "data-probe": "shop-bar" });
   const back = el("button", { type: "button", class: "btn small ghost", "data-probe": "back" }, el("span", { text: "← Back" }));
   // Walking out of a peek ends it; the handler below is set once we know.
   let onLeave: (() => void) | null = null;

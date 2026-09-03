@@ -176,6 +176,12 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
         () => model.set("missing", { ...missing, pct: Math.max(5, missing.pct - 5) }),
         () => model.set("missing", { ...missing, pct: Math.min(80, missing.pct + 5) }))));
   }
+  // ADDITION AS DOTS (Andy, 2026-09-03): for a rider still counting, an
+  // addition shows two groups of coloured dots either side of the plus.
+  // Only addition; only the standard form.
+  const dots = model.get("addDots");
+  focus.append(setRow("Addition as dots", dots ? "green dots plus blue dots, counted" : "numbers, as usual",
+    knob(dots, "add-dots", "Addition as dots", () => model.set("addDots", !dots))));
   const strands = model.get("strands");
   if (strands.div && !strands.mul) {
     focus.append(el("p", { class: "note warn", text:
@@ -197,6 +203,21 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
     stepper(String(limit), "speed-limit",
       () => model.set("speedLimit", Math.max(1, limit - 1)),
       () => model.set("speedLimit", Math.min(30, limit + 1)))));
+  // THE DAY'S GAME TIME (Andy, 2026-09-03): an overall cap on minutes of
+  // game a day, off by default, never under 15 when on. Warns at three
+  // minutes and one, then closes the game until tomorrow after the current
+  // line. The grown-ups' screen is neither counted nor closed.
+  const dayLimit = model.get("dayLimitMinutes");
+  dayCard.append(setRow("Daily time limit", dayLimit === 0
+    ? "off: no cap on game time"
+    : "every screen but this one counts; warns at 3 and 1 minutes, then closes until tomorrow",
+    knob(dayLimit > 0, "day-limit", "Daily time limit", () => model.set("dayLimitMinutes", dayLimit > 0 ? 0 : 30))));
+  if (dayLimit > 0) {
+    dayCard.append(setRow("Minutes a day", "15 at the least",
+      stepper(String(dayLimit), "day-limit-minutes",
+        () => model.set("dayLimitMinutes", Math.max(15, dayLimit - 5)),
+        () => model.set("dayLimitMinutes", Math.min(180, dayLimit + 5)))));
+  }
   cards.push(dayCard);
 
   // THE SKATE PARK (0.19.0): a token a day for the day's work; the dials

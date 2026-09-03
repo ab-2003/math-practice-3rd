@@ -318,6 +318,30 @@ await step("the grown-ups screen has a Facts tab: four full grids, one cell per 
   await page.waitForSelector('[data-probe="start"]');
 });
 
+await step("the corrective screen is three labelled groups and fits a phone and a landscape tablet", async () => {
+  // Andy, 2026-09-03: "separate into groups more clearly ... fit on one screen without scroll".
+  for (const vp of [{ width: 390, height: 664 }, { width: 1180, height: 740 }]) {
+    const ctxS = await page.context().browser().newContext({ viewport: vp });
+    const ps = await ctxS.newPage();
+    await ps.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+    await ps.waitForSelector('[data-probe="start"]');
+    await ps.evaluate(() => { const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: true, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 }; });
+    await ps.click('[data-probe="start"]');
+    await ps.waitForSelector('[data-probe="problem"]');
+    const correct = await ps.evaluate(() => window.__probe.correctAnswer());
+    await ps.evaluate((c) => window.__probe.answer(c === 1 ? 2 : 1), correct);
+    await ps.waitForSelector('[data-probe="retype"]', { timeout: 5000 });
+    await ps.waitForTimeout(1500); // the steps animate in
+    const r = await ps.evaluate(() => ({
+      panels: [...document.querySelectorAll('[data-probe="scaffold"] .scaf-panel')].map((e) => e.getAttribute("data-label")),
+      keypad: document.querySelector(".keypad").getBoundingClientRect().bottom, vh: innerHeight,
+    }));
+    must(r.panels.join("|") === "the picture|step by step|your turn", `the groups read ${r.panels.join("|")} at ${vp.width}x${vp.height}`);
+    must(r.keypad <= r.vh, `the keypad ends at ${Math.round(r.keypad)} on a ${vp.width}x${vp.height} screen`);
+    await ctxS.close();
+  }
+});
+
 await step("the home rider performs its shop act on arrival, then rests until the next beat", async () => {
   // Andy, 2026-09-03: "have your skater perform its shop animation on a slow loop".
   await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; m.levels = { grindjaw: 1 }; window.__app.go("home"); });

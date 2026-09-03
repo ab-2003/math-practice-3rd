@@ -22,4 +22,7 @@ export interface App {
   /** Make another rider the active one. Reloads: every screen assumes one
    *  profile for the life of the page. */
   switchProfile: (id: string) => void;
+  /** The day's game time is up: home, with the word. A session calls it
+   *  at the end of its line; every other screen is sent straight away. */
+  dayDone: () => void;
 }

@@ -74,9 +74,22 @@ const dotArray = (rows: number, cols: number): SVGElement => {
   return g;
 };
 
+/**
+ * Three GROUPS (Andy, 2026-09-03: "separate into groups more clearly"):
+ * the picture with its heading, the steps, and, from the session, the
+ * answer. Each is a panel with its own small label.
+ */
 export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement => {
   const box = el("div", { class: "scaffold" });
+  const picture = el("div", { class: "scaf-panel scaf-picture", "data-label": "the picture" });
+  const stepsPanel = el("div", { class: "scaf-panel scaf-stepbox", "data-label": "step by step" });
   const steps = el("ol", { class: "steps" });
+  box.append(picture, stepsPanel);
+  // Everything appended to `box` below lands in the picture panel; the
+  // steps go in their own.
+  const append = box.append.bind(box);
+  box.append = (...nodes: (string | Node)[]): void => { for (const n of nodes) picture.append(n); };
+  void append;
 
   if (f.kind === "sub" && f.bridge) {
     const m = f.a;
@@ -124,6 +137,6 @@ export const scaffold = (f: Fact, shownA: number, shownB: number): HTMLElement =
     steps.append(step(2, `That is ${f.answer}.`));
   }
 
-  box.append(steps);
+  stepsPanel.append(steps);
   return box;
 };

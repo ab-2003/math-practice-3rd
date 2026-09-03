@@ -11,7 +11,7 @@
  */
 
 import { reviveStrand } from "../core/scheduler";
-import { sameValue, SYNCED_KEYS, type Field, type SyncedSettings, type SyncKey, settingsOf } from "../core/sync";
+import { sameValue, SYNCED_KEYS, type Field, type SyncedSettings, type SyncKey, settingsOf, validValue } from "../core/sync";
 import type { Caps, FactKind, Strands } from "../core/types";
 import type { App } from "./appstate";
 import { connectedCode, deviceId, putSettings } from "./cloud";
@@ -30,6 +30,9 @@ export const applySetting = <K extends SyncKey>(
 ): boolean => {
   const before = currentSettings(app)[key];
   if (sameValue(before, value)) return false;
+  // A value outside its shape is refused here too, not only by the worker:
+  // a daily limit under fifteen, a goal over eighty, never land.
+  if (!validValue(key, value)) return false;
 
   if (key === "strands") {
     const next = value as Strands;
@@ -50,6 +53,8 @@ export const applySetting = <K extends SyncKey>(
     }
   } else if (key === "missing") {
     app.meta.missing = { ...(value as SyncedSettings["missing"]) };
+  } else if (key === "addDots") {
+    app.meta.addDots = value as boolean;
   } else if (key === "dailyGoal") {
     app.meta.dailyGoal = value as number;
   } else if (key === "speedLimit") {
@@ -64,6 +69,8 @@ export const applySetting = <K extends SyncKey>(
     app.meta.parkMinutes = value as number;
   } else if (key === "parkTokensPerDay") {
     app.meta.parkTokensPerDay = value as number;
+  } else if (key === "dayLimitMinutes") {
+    app.meta.dayLimitMinutes = value as number;
   }
 
   const stamp = from.remote ? { at: from.remote.at, by: from.remote.by } : { at: Date.now(), by: deviceId() };

@@ -219,6 +219,42 @@ await step("the bonus round can be switched off altogether; a finished run then 
   await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-1"]')?.scrollIntoView({ block: "center" }));
 });
 
+await step("addition as dots: off by default, on shows green plus blue groups in place of the numbers", async () => {
+  // Andy, 2026-09-03: "show addition problems as groups of different colored dots ... only addition".
+  await goHome(page);
+  await openSettings(page);
+  must(await page.$('[data-probe="add-dots"][aria-pressed="false"]') !== null, "dots are on by default");
+  await page.click('[data-probe="add-dots"]');
+  await page.waitForTimeout(300);
+  must(await page.evaluate(() => window.__app.meta().addDots) === true, "the switch did not persist");
+  await page.evaluate(() => { const m = window.__app.meta(); m.animations = false; m.strands = { add: true, sub: false, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 20 }; });
+  await page.evaluate(() => window.__app.save());
+  await goHome(page);
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"].dots', { timeout: 6000 });
+  const d = await page.evaluate(() => {
+    const groups = [...document.querySelectorAll('[data-probe="dot-group"]')];
+    return { n: groups.length, counts: groups.map((g) => [Number(g.dataset.n), g.querySelectorAll("i").length]), fact: document.querySelector('[data-probe="problem"]').dataset.fact, digits: /\d/.test(document.querySelector('[data-probe="problem"]').textContent ?? "") };
+  });
+  must(d.n === 2, `${d.n} dot groups, wanted 2`);
+  must(d.counts.every(([n, dots]) => n === dots), `the dots do not count the operands: ${JSON.stringify(d.counts)}`);
+  const [a, b] = d.fact.replace("add:", "").split("+").map(Number);
+  must(d.counts[0][0] + d.counts[1][0] === a + b, `the groups (${d.counts}) do not sum to the fact ${d.fact}`);
+  must(!d.digits || (a === 0 || b === 0), "numerals show alongside the dots");
+  // The answer still grades the same through the keypad.
+  await answerN(page, 1);
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await closeSheets(page);
+  must(await page.evaluate(() => window.__app.set("addDots", false)) === true, "the switch did not go back off");
+  await goHome(page);
+  await openSettings(page);
+  await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-1"]')?.scrollIntoView({ block: "center" }));
+});
+
 await step("the elapsed levels are one segmented control, and picking one persists", async () => {
   await goHome(page);
   await openSettings(page);

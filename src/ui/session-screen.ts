@@ -23,6 +23,7 @@ import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { canAffordAny, riderVoice } from "../core/creatures";
 import { awardDailyToken } from "../core/park";
+import { dayOver } from "./day-limit";
 import { tokenIcon } from "./icons";
 import { presentFact, type Presented } from "../core/present";
 import {
@@ -117,6 +118,7 @@ export const sessionScreen = (app: App): HTMLElement => {
   let reason: EndReason | undefined;
   let tiredOffered = false;
   let tokenDropped = false;
+  let endedByLimit = false;
 
   const showDailyDone = (): Promise<void> =>
     new Promise((resolve) => {
@@ -242,7 +244,21 @@ export const sessionScreen = (app: App): HTMLElement => {
         return el("span", { text: String(which === "a" ? cur!.a : cur!.b) });
       };
       mslot = null;
-      prob.append(operand("a"), el("span", { class: "op", text: ` ${cur.op} ` }), operand("b"));
+      // ADDITION AS DOTS: two groups of coloured dots either side of the
+      // plus, green then blue, in rows of five so a count reads at a glance.
+      const dots = app.meta.addDots && f.kind === "add" && cur.format === "standard";
+      const group = (n: number, cls: string): HTMLElement => {
+        const g = el("span", { class: `dot-group ${cls}`, "data-probe": "dot-group", "data-n": String(n), "aria-label": String(n) });
+        for (let i = 0; i < n; i++) g.append(el("i", {}));
+        if (n === 0) g.append(el("b", { text: "0" }));
+        return g;
+      };
+      if (dots) {
+        prob.classList.add("dots");
+        prob.append(group(cur.a, "dots-a"), el("span", { class: "op", text: " + " }), group(cur.b, "dots-b"));
+      } else {
+        prob.append(operand("a"), el("span", { class: "op", text: ` ${cur.op} ` }), operand("b"));
+      }
       if (cur.format === "missing") {
         prob.append(el("span", { class: "op", text: " = " }), el("span", { text: String(cur.result) }));
       }
@@ -388,8 +404,8 @@ export const sessionScreen = (app: App): HTMLElement => {
   const showScaffold = (f: Fact, _cls: string): void => {
     phase = "bailed";
     const p = cur ?? presentFact(f, itemsDone, app.meta.missing);
-    const box = el("div", {});
-    box.append(el("p", { class: "scaf-head", text: "No worries. Roll it back." }));
+    const box = el("div", { class: "scaf-wrap", "data-probe": "scaffold" });
+    box.append(el("p", { class: "scaf-note", text: "No worries. Roll it back." }));
     if (p.format === "missing") {
       // Reveal the whole fact first, so the blank stops being a mystery
       // before the picture explains why it is true.
@@ -398,7 +414,9 @@ export const sessionScreen = (app: App): HTMLElement => {
       box.append(el("p", { class: "scaf-eq", text: `${a} ${p.op} ${b} = ${p.result}` }));
     }
     box.append(scaffold(f, p.a === 0 && p.blank === "a" ? p.expected : p.a, p.b));
-    box.append(el("p", { class: "retype", text: `Type ${p.expected} to roll on`, "data-probe": "retype" }));
+    // The third group: the answer. Its label sits on the retype line; the
+    // slot and the keypad below it belong to it.
+    box.append(el("p", { class: "retype scaf-panel scaf-answer", "data-label": "your turn", text: `Type ${p.expected} to roll on`, "data-probe": "retype" }));
     eq.hidden = false;
     mount(stage, box);
     // pad.reset() rather than clearing the slot text by hand: the keypad holds
@@ -438,6 +456,14 @@ export const sessionScreen = (app: App): HTMLElement => {
    *  speed anywhere on the glass. */
   const lineBreak = (): Promise<void> =>
     new Promise((resolve) => {
+      // THE DAY'S GAME TIME ran out mid-line: the line was finished, the
+      // run ends here, and home says the rest.
+      if (dayOver(app)) {
+        reason = "limit";
+        endedByLimit = true;
+        void finish("endedEarly");
+        return;
+      }
       const tired = isFatigued(session);
       const threshold = tired ? OFFER_EXIT_WHEN_TIRED_AFTER : OFFER_EXIT_AFTER_ITEMS;
       if (itemsDone < threshold || sessionIsOver(session)) { resolve(); return; }
@@ -530,6 +556,9 @@ export const sessionScreen = (app: App): HTMLElement => {
       body,
       confirm: "Done",
       onConfirm: () => {
+        // The day's game time ended this run: home says the rest, and the
+        // shop is closed, so no offer to see the crew.
+        if (endedByLimit) { app.dayDone(); return; }
         app.go("home");
         // The shop is HIS: no auto-purchase, no picking for him. Just the
         // news that the crew has someone he can afford, whichever he wants.

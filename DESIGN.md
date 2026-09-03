@@ -1100,6 +1100,14 @@ zero image requests.
       the home screen fits a phone without a scroll: the DONE stamp beside
       the hero at every width, three stats across, one-line doors, the
       progress card's label and count on one row.
+- [ ] **0.20.0-alpha.3 - Andy's list.** The day's game time (a parent
+      dial, off by default, never under 15 on; every screen but the
+      grown-ups' counts; toasts at three minutes and one; then home with
+      "come back tomorrow" after the current line, straight away from the
+      shop or the park; every door on home closed but the gear). The
+      wallet stays put as the shop scrolls. Addition as dots (a parent
+      dial, off by default; green plus blue, rows of five, addition only).
+      The corrective screen in three labelled groups, fitting a phone.
 - [ ] **0.20.0 - The half pipe and the handrail.** Andy: after a fourth
       rail in height, sometimes a half pipe to drop into, ride across and
       up, and launch out of for a big air trick; after a third, sometimes

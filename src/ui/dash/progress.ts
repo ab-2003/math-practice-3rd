@@ -16,7 +16,7 @@ import { el, on } from "../dom";
 const secs = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 const REASON: Record<EndReason, string> = {
-  struggle: "the app called it", tired: "tiring, offered the exit", choice: "their call at a line", breather: "took a breather",
+  struggle: "the app called it", tired: "tiring, offered the exit", choice: "their call at a line", breather: "took a breather", limit: "the day's game time ran out",
 };
 
 const section = (text: string): HTMLElement => el("div", { class: "dash-h", text });

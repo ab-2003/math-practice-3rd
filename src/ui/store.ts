@@ -197,6 +197,16 @@ export interface Meta {
   /** Missing-number presentation: per-operation switches and the mix percent.
    *  All four OFF by default, per Andy 2026-09-01. */
   missing: MissingCfg;
+  /** THE DAY'S GAME TIME: the parent dial (0 off), and the day's tally:
+   *  which day, how many ms of game so far, and the last warning given
+   *  (3 or 1 minute, so a reload never repeats one). */
+  dayLimitMinutes: number;
+  playDay: number | null;
+  playMs: number;
+  playWarned: number;
+  /** Addition problems drawn as two groups of coloured dots, for a rider
+   *  still counting (Andy, 2026-09-03). Off by default; addition only. */
+  addDots: boolean;
   /** The bonus round at all. Default on; a grown-up can switch it off for a
    *  younger rider who is not reading clocks yet (Andy, 2026-09-03). */
   elapsedOn: boolean;
@@ -237,6 +247,8 @@ export const freshMeta = (): Meta => ({
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
   caps: { add: null, sub: null, mul: null, div: null },
+  addDots: false,
+  dayLimitMinutes: 0, playDay: null, playMs: 0, playWarned: 0,
   elapsedOn: true,
   elapsedLevel: 1,
   elapsedAnalog: false,
@@ -270,6 +282,10 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   speedBest: raw.speedBest ?? {},
   // A save from the brief elapsedHard era maps onto the ladder it became.
   elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
+  addDots: raw.addDots ?? false,
+  dayLimitMinutes: (() => { const v = raw.dayLimitMinutes ?? 0; return v === 0 ? 0 : Math.max(15, Math.min(180, v)); })(),
+  playMs: Math.max(0, raw.playMs ?? 0),
+  playWarned: raw.playWarned ?? 0,
   elapsedOn: raw.elapsedOn ?? true,
   elapsedAnalog: raw.elapsedAnalog ?? false,
   lastColdDay: raw.lastColdDay ?? null,

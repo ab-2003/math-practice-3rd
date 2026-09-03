@@ -85,7 +85,7 @@ export interface SessionState {
 }
 
 /** Why a session ended early, for the dashboard's stamina log. */
-export type EndReason = "struggle" | "tired" | "choice" | "breather";
+export type EndReason = "struggle" | "tired" | "choice" | "breather" | "limit";
 
 export interface SessionRecord {
   id: string;
