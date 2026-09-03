@@ -19,7 +19,10 @@ import type { Caps, Strands } from "./types";
 
 /** The dials a grown-up may set from anywhere. Never the PIN (device-level),
  *  never the kid's own controls (mute, animations), never progress. */
-export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedOn", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay"] as const;
+// elapsedOn sits AFTER the level and the clock faces on purpose: the door's
+// controls for those step aside when the round is off, and loop-eye walks
+// the door's controls in this order.
+export const SYNCED_KEYS = ["strands", "caps", "missing", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "elapsedOn", "parkMinutes", "parkTokensPerDay"] as const;
 export type SyncKey = typeof SYNCED_KEYS[number];
 
 export interface MissingLike { add: boolean; sub: boolean; mul: boolean; div: boolean; pct: number }
