@@ -1130,6 +1130,19 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.21.2 - PRINCESSHORN, the tiara and the princess deck.** Andy:
+      "More monster! Princesshorn (pink dress), gold tiara headgear,
+      princess pink themed board." A new silhouette, `royal`: the gown IS
+      the body, a bell from the shoulders to the floor, so she reads as
+      herself at tile size with no legs showing; a bodice, a sash with a
+      gold brooch, puffed sleeves, a scalloped hem, one horn, a curled
+      tail. Her act is a twirl: up on her toes, round once with the gown
+      flaring, sparkles left hanging where she was. 210 coins. GOLD TIARA
+      and ROSE TIARA at 90, a twentieth helmet shape that sits on the brow
+      rather than over it, hers to wear but anyone's to buy. PRINCESS DECK
+      at 400: pink nose to tail, a gold crown at the middle, jewels down
+      the rails, a heart on the tail, sparkles for a trail. Roster 38,
+      helmets 40, boards 21.
 - [x] **0.21.1 - The token pocket on the home bar.** Andy: show the Daily
       Token count beside the coin balance, upper left, for the kid. A cyan
       hexagon chip next to the warm coin diamond, so the two currencies

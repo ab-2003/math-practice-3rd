@@ -202,6 +202,18 @@ const PLANS: Record<Silhouette, Plan> = {
     tailAnchor: [60, 136],
     arms: ["M64 96 L34 116 L42 128 L74 110 Z", "M146 88 L178 100 L172 112 L142 102 Z"],
   },
+  // PRINCESSHORN (0.21.2): the princess. The GOWN is the body: a bell from
+  // the shoulders to the floor, so she reads as herself at tile size with
+  // no legs showing. Arms out, one for a wave and one holding the skirt.
+  royal: {
+    body: "M40 190 L66 112 L88 76 L124 66 L152 92 L162 128 L176 190 Z",
+    head: "M120 46 L176 32 L188 56 L172 78 L124 82 Z",
+    face: { x: 134, y: 46, scale: 0.92 },
+    legs: [],
+    spine: [[48, 150], [70, 104], [104, 72], [142, 70]],
+    tailAnchor: [40, 150],
+    arms: ["M78 104 L40 122 L48 136 L86 118 Z", "M148 94 L186 106 L180 120 L144 108 Z"],
+  },
   // BRAAPTOR (0.20.3): the motocross rider. Stands to the LEFT of the
   // stage, one arm reaching for the bar, so the parked bike (a rig of its
   // own, drawn behind him) has the right half to itself.
@@ -627,6 +639,15 @@ export const helmetPaths = (shape: HelmetShape, shell: string, accent: string): 
       out.push(svg("path", { d: "M8 8 L40 6 M8 16 L42 14 M40 6 L42 14 M24 7 L25 15", fill: "none", stroke: accent, "stroke-width": 3.5, "stroke-linecap": "round" }));
       out.push(svg("circle", { cx: -14, cy: 8, r: 3, fill: accent, opacity: 0.8 }));
       break;
+    case "tiara":
+      // The tiara: a band with three points and a jewel at the centre. It
+      // sits ON the brow, so it is shallower than any helmet shell.
+      out.push(svg("path", { d: "M-24 8 L-18 -10 L-9 2 L0 -20 L9 2 L18 -10 L24 8 Z", fill: shell, stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }));
+      out.push(svg("path", { d: "M-26 6 L26 6 L26 13 L-26 13 Z", fill: shell, stroke: INK, "stroke-width": 3.5, "stroke-linejoin": "round" }));
+      out.push(svg("circle", { cx: 0, cy: -6, r: 4, fill: accent, stroke: INK, "stroke-width": 2 }));
+      out.push(svg("circle", { cx: -15, cy: 1, r: 2.4, fill: accent }));
+      out.push(svg("circle", { cx: 15, cy: 1, r: 2.4, fill: accent }));
+      break;
     case "pilot":
       // The flight helmet: a deep shell, a tinted visor dropped over the
       // eyes, the oxygen-mask clip at the cheek, a chin strap.
@@ -790,6 +811,22 @@ export const creatureSvg = (
     arm.append(svg("path", { d: "M176 92 L172 84 M204 108 L212 112", stroke: INK, "stroke-width": 1.2, "stroke-linecap": "round", opacity: 0.5 }));
     arm.append(svg("circle", { cx: 190, cy: 100, r: 4.2, fill: "#FF6FB0", stroke: INK, "stroke-width": 2 }));
     root.append(arm);
+  }
+  // PRINCESSHORN's dress: a bodice over the gown, a sash at the waist, puffed
+  // sleeves, and a hem along the floor. The gown is its own group so the
+  // twirl can flare it (styles.css). The tiara is a lid, bought separately.
+  if (c.id === "princesshorn") {
+    const gown = svg("g", { class: "gown" });
+    gown.append(poly("M56 190 L82 118 L146 112 L164 190 Z", "#FF3D8B", 4));
+    gown.append(svg("path", { d: "M62 168 L160 162", stroke: c.palette[2], "stroke-width": 4, "stroke-linecap": "round", opacity: 0.9 }));
+    gown.append(svg("path", { d: "M50 190 Q72 178 96 190 Q120 178 144 190 Q160 182 176 190", fill: "none", stroke: c.palette[2], "stroke-width": 4, "stroke-linecap": "round" }));
+    root.append(gown);
+    root.append(poly("M84 74 L134 68 L146 108 L82 114 Z", "#FF3D8B", 4));
+    root.append(poly("M80 108 L148 104 L150 122 L82 126 Z", c.palette[2], 3));
+    root.append(svg("circle", { cx: 116, cy: 114, r: 7, fill: "#F5C542", stroke: INK, "stroke-width": 3 }));
+    for (const [sx, sy] of [[70, 100], [156, 96]] as const) {
+      root.append(svg("circle", { cx: sx, cy: sy, r: 13, fill: "#FF3D8B", stroke: INK, "stroke-width": 4 }));
+    }
   }
   // BRAAPTOR's kit: the jersey with its stripe, gloves, and THE BIKE, a rig
   // of its own PREPENDED so it sits behind him: he hops onto it and the two
@@ -1375,6 +1412,20 @@ export const creatureSvg = (
     rig.append(svg("path", { class: "slash-arc slash-3", d: "M172 24 Q230 64 214 124", fill: "none", stroke: "#FFFFFF", "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0 }));
     for (const [k, gx, gy, r] of [[1, 236, 44, 6], [2, 244, 96, 5], [3, 226, 138, 4]] as const) {
       rig.append(svg("path", { class: `glint glint-${k}`, d: `M${gx} ${gy - r} L${gx + r * 0.3} ${gy - r * 0.3} L${gx + r} ${gy} L${gx + r * 0.3} ${gy + r * 0.3} L${gx} ${gy + r} L${gx - r * 0.3} ${gy + r * 0.3} L${gx - r} ${gy} L${gx - r * 0.3} ${gy - r * 0.3} Z`, fill: "#FFFFFF", stroke: c.palette[2], "stroke-width": 1.2, opacity: 0 }));
+    }
+    root.append(rig);
+  }
+
+  // PRINCESSHORN twirls: up on her toes, round once, the gown flaring, and
+  // sparkles hanging in the air where she was.
+  if (opts.idle !== undefined && c.id === "princesshorn") {
+    const rig = svg("g", { class: "twirl-rig" });
+    for (const [k, sx, sy, r] of [[1, 44, 70, 8], [2, 196, 60, 7], [3, 30, 132, 6], [4, 200, 130, 6], [5, 116, 24, 9]] as const) {
+      rig.append(svg("path", {
+        class: `spark spark-${k}`,
+        d: `M${sx} ${sy - r} L${sx + r * 0.28} ${sy - r * 0.28} L${sx + r} ${sy} L${sx + r * 0.28} ${sy + r * 0.28} L${sx} ${sy + r} L${sx - r * 0.28} ${sy + r * 0.28} L${sx - r} ${sy} L${sx - r * 0.28} ${sy - r * 0.28} Z`,
+        fill: "#FFE6F5", stroke: "#FF3D8B", "stroke-width": 1.6, opacity: 0,
+      }));
     }
     root.append(rig);
   }

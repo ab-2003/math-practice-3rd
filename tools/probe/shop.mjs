@@ -12,15 +12,16 @@ const escapeAll = async (p) => {
   for (let i = 0; i < 6 && (await p.$(".scrim")) !== null; i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(220); }
 };
 
-await step("the shop shows all thirty-seven monsters by name, no mysteries", async () => {
+await step("the shop shows all thirty-eight monsters by name, no mysteries", async () => {
   await page.waitForSelector('[data-probe="start"]');
   await page.click('[data-probe="collection"]');
   await page.waitForSelector(".roster");
-  must((await page.$$(".mon")).length === 37, "the roster is not thirty-seven");
+  must((await page.$$(".mon")).length === 38, "the roster is not thirty-eight");
   must(((await page.textContent('[data-mon="hattrick"]')) ?? "").includes("190"), "RONALDOHORN is not 190 coins");
   must(((await page.textContent('[data-mon="hattrick"] .mon-name')) ?? "") === "RONALDOHORN", "the striker is not RONALDOHORN");
   must(((await page.textContent('[data-mon="grimshield"] .mon-name')) ?? "") === "GRIMSWORD", "the dark knight is not GRIMSWORD");
   must(((await page.textContent('[data-mon="braaptor"]')) ?? "").includes("270"), "BRAAPTOR is not 270 coins");
+  must(((await page.textContent('[data-mon="princesshorn"]')) ?? "").includes("210"), "PRINCESSHORN is not 210 coins");
   must(((await page.textContent('[data-mon="komoduster"]')) ?? "").includes("125"), "KOMODUSTER is not 125 coins");
   const text = (await page.textContent(".roster")) ?? "";
   must(!text.includes("???"), "a monster is still a mystery");
@@ -28,8 +29,8 @@ await step("the shop shows all thirty-seven monsters by name, no mysteries", asy
   must(await page.evaluate(() => document.querySelector(".roster")?.lastElementChild?.getAttribute("data-mon")) === "voidwyrm",
     "VOIDWYRM is not the final monster in the shop");
   must(await page.$('[data-mon="voidwyrm"] .cosmos') !== null, "VOIDWYRM has no cosmos");
-  must((await page.$$(".helm-tile")).length === 38, "the gear rack is not thirty-eight helmets");
-  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site", "headband-red", "knight-dark", "ballcap-home", "football-grid"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
+  must((await page.$$(".helm-tile")).length === 40, "the gear rack is not forty helmets");
+  for (const id of ["soccer-pitch", "basketball-court", "hockey-rink", "hardhat-site", "headband-red", "knight-dark", "ballcap-home", "football-grid", "tiara-gold"]) must(await page.$(`[data-helm="${id}"] .helm-mini`) !== null, `${id} is not on the rack`);
   // The ninja's eyes are slits under the mask; the headband is a lid, not part of him.
   must((await page.$$('[data-mon="ninjaw"] .head path[stroke="#D8DEE8"]')).length === 2, "NINJAW's eyes are not the ninja's slits");
   must(await page.$('[data-mon="ninjaw"] .helm') === null, "NINJAW wears a lid he has not bought");
@@ -54,6 +55,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     ["ninjaw", ".ninja-leg"], ["ninjaw", ".kick-rig .kick-pow"], ["grimshield", ".sword-arm .blade"], ["grimshield", ".sword-arm .hilt"], ["grimshield", ".sword-arm .pommel"], ["grimshield", ".slash-rig .slash-3"], ["grimshield", ".slash-rig .glint-3"],
     ["dinger", ".bat"], ["dinger", ".bat-rig .pitch"], ["dinger", ".bat-rig .crack"], ["gridjaw", ".throw-arm"], ["gridjaw", ".throw-rig .uprights"], ["gridjaw", ".throw-rig .football"],
     ["braaptor", ".bike"], ["braaptor", ".bike .wheel"], ["braaptor", ".bike .roost-3"],
+    ["princesshorn", ".gown"], ["princesshorn", ".twirl-rig .spark-3"],
   ]) {
     must(await page.$(`[data-mon="${mon}"] ${prop}`) !== null, `${mon} lost its ${prop}`);
   }
@@ -90,8 +92,11 @@ await step("the kaiju six each perform their own act, and the ball is basketball
     moto: getComputedStyle(document.querySelector('[data-mon="braaptor"] .creature')).animationName,
     bike: getComputedStyle(document.querySelector('[data-mon="braaptor"] .bike')).animationName,
     spin: getComputedStyle(document.querySelector('[data-mon="braaptor"] .bike .wheel')).animationName,
+    twirl: getComputedStyle(document.querySelector('[data-mon="princesshorn"] .creature')).animationName,
+    gown: getComputedStyle(document.querySelector('[data-mon="princesshorn"] .gown')).animationName,
   }));
   must(names.moto === "idle-moto" && names.bike === "bike-hop" && names.spin === "wheel-spin", `BRAAPTOR's act reads ${names.moto}/${names.bike}/${names.spin}`);
+  must(names.twirl === "idle-twirl" && names.gown === "gown-flare", `PRINCESSHORN's act reads ${names.twirl}/${names.gown}`);
   // The bike sits BEHIND him, so he lands on it rather than under it.
   must(await page.evaluate(() => document.querySelector('[data-mon="braaptor"] .creature').firstElementChild.classList.contains("bike")), "BRAAPTOR's bike is not drawn behind him");
   must(names.bat === "bat-swing" && names.pitch === "pitch-in", `DINGER's act reads ${names.bat}/${names.pitch}`);
@@ -115,7 +120,7 @@ await step("the kaiju six each perform their own act, and the ball is basketball
 await step("the shop breathes, staggered, and every bespoke act is present", async () => {
   const delays = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .creature.idle")].map((e) => e.style.getPropertyValue("--idle-delay")));
-  must(delays.length === 37, `${delays.length} idle monsters, wanted 37`);
+  must(delays.length === 38, `${delays.length} idle monsters, wanted 38`);
   must(new Set(delays).size >= 6, "the idles all fire in lockstep");
   must((await page.$$(".roster .flame")).length === 7, "the seven dragons are not breathing");
   for (const [mon, prop] of [
@@ -163,13 +168,13 @@ await step("GRINDJAW's log appears, snaps, falls, and is GONE for the rest of th
 
 await step("no two monsters share a body: every one is its own form", async () => {
   // GRINDJAW, PUCKJAW and GLACIODON once read as the same animal in three
-  // colours at tile size. Body plus wings must be unique across all 37.
+  // colours at tile size. Body plus wings must be unique across all 38.
   const forms = await page.evaluate(() =>
     [...document.querySelectorAll(".roster .mon")].map((m) => ({
       id: m.getAttribute("data-mon"),
       form: (m.querySelector(".creature .body")?.getAttribute("d") ?? "") + "|" + (m.querySelector(".creature .wings")?.getAttribute("d") ?? ""),
     })));
-  must(forms.length === 37, "could not read the forms");
+  must(forms.length === 38, "could not read the forms");
   const seen = new Map();
   for (const f of forms) {
     must(f.form.length > 10, `${f.id} has no body path`);
@@ -247,7 +252,7 @@ await step("with no monsters yet, the racks are shut to buying but open to look"
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   must(await page.$('[data-probe="board-rack"].rack-locked') !== null, "the board rack is open before the first monster");
-  must((await page.$$(".board-tile")).length === 20, "the board rack is not twenty boards");
+  must((await page.$$(".board-tile")).length === 21, "the board rack is not twenty-one boards");
   must(((await page.textContent('[data-probe="board-note"]')) ?? "").includes("Boards need riders"), "the locked board rack does not explain itself");
   must(await page.$('[data-board-tile="plain"].owned') !== null, "the plain board is not marked as always owned");
   const prices = await page.$$eval(".board-tile .mon-sub", (els) => els.map((e) => e.textContent));
@@ -257,7 +262,7 @@ await step("with no monsters yet, the racks are shut to buying but open to look"
   must(lidPrices.length === 10 && lidPrices.every((t) => t === "◆ 40"), `the sports lids read ${JSON.stringify(lidPrices)}`);
   // Thirteen forms, not one deck in thirteen colours: the graphics differ, and Void has its stars.
   const marks = await page.$$eval(".board-tile .board", (els) => els.map((e) => e.innerHTML.length));
-  must(new Set(marks).size >= 19, "the boards are palette swaps");
+  must(new Set(marks).size >= 20, "the boards are palette swaps");
   must((await page.$$('[data-board-tile="void"] .board-void circle')).length >= 6, "the void board has no stars");
   // THE THEMED FOUR (0.18.2): cockpit and wings, a puck, a ball, a crowned tag.
   for (const [id, prop] of [["jet", ".jet-nose"], ["jet", ".jet-wing"], ["jet", ".jet-canopy"], ["hockey", ".puck"], ["hockey", ".stick"], ["hoops", ".ball"], ["tag", ".tag-letters"], ["tag", ".tag-crown"], ["soccer", ".ball"], ["hazard", ".hat"], ["ninja", ".shuriken"], ["knight", ".shield"], ["baseball", ".ball"], ["football", ".ball"]]) {

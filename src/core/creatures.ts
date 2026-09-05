@@ -24,7 +24,9 @@ export type Silhouette =
   // 0.20.0: a batter, and a football player.
   | "batter" | "lineman"
   // 0.20.3: a motocross rider, the bike parked beside him.
-  | "moto";
+  | "moto"
+  // 0.21.2: a monster in a gown, who twirls.
+  | "royal";
 export type Crest = "spikes" | "sail" | "plates" | "frill" | "none";
 export type Tail = "club" | "blade" | "whip" | "spike" | "bush" | "ring" | "curl";
 
@@ -89,6 +91,14 @@ export const ROSTER: readonly Creature[] = [
     silhouette: "striker", crest: "none", tail: "whip", eyes: 2, horns: 1,
     palette: ["#3FBF6F", "#0E3A1E", "#E9FFF0"] ,
     voice: ["Top corner. Top rail. Same thing.", "Number 7. One horn. Zero misses."] },
+  // PRINCESSHORN (Andy, 2026-09-05): the princess. A pink gown, one horn,
+  // and a twirl for an act. The tiara is a lid in the rack, not part of
+  // her, the way the ninja's headband is not part of NINJAW.
+  { id: "princesshorn", name: "PRINCESSHORN", cost: 210,
+    lore: "Rules the whole park from a pink gown. Curtsies, twirls, lands it.",
+    silhouette: "royal", crest: "none", tail: "curl", eyes: 2, horns: 1,
+    palette: ["#FF7AC8", "#7A1050", "#FFE6F5"] ,
+    voice: ["A twirl is a trick. Look it up.", "Crown or no crown, that rail is mine."] },
   // DINGER (Andy, 2026-09-03): the batter. A bat on its own rig, a pitch
   // coming in, and a crack that sends it out of the park. The cap is a
   // lid to buy.

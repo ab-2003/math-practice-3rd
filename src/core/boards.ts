@@ -21,7 +21,9 @@ export type BoardTheme =
   // 0.20.0 (Andy): a diamond, and a gridiron.
   | "baseball" | "football"
   // 0.20.3 (Andy): a dirt track.
-  | "moto";
+  | "moto"
+  // 0.21.2 (Andy): a princess deck, pink with a crown.
+  | "royal";
 
 export interface Board {
   readonly id: string;
@@ -61,6 +63,9 @@ export const BOARDS: readonly Board[] = [
   { id: "hoops", name: "BUZZER BEATER", cost: 350, theme: "hoops",
     lore: "Hardwood, court lines, and a ball that bounces along behind.",
     palette: ["#D19A4A", "#7A4A1A", "#EE6730"] },
+  { id: "royal", name: "PRINCESS DECK", cost: 400, theme: "royal",
+    lore: "Pink from nose to tail, a gold crown at the middle, and a trail of sparkles.",
+    palette: ["#FF7AC8", "#F5C542", "#FFE6F5"] },
   { id: "void", name: "VOID BOARD", cost: 500, theme: "void",
     lore: "Cut from the same dark as VOIDWYRM. It trails a comet.",
     palette: ["#251C4A", "#0A0620", "#9DB8FF"] },

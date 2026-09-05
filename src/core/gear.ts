@@ -1,7 +1,7 @@
 /**
  * THE GEAR RACK, Andy 2026-09-01: "at least let them put on a cool helmet."
  *
- * Thirty-eight helmets: nineteen SHAPES in two colourways each. A helmet is bought once
+ * Forty helmets: twenty SHAPES in two colourways each. A helmet is bought once
  * and lives in the locker; any owned monster can wear any owned helmet, and
  * each monster remembers its own. Pure data here; the drawing lives in the
  * UI renderer, keyed by shape.
@@ -17,7 +17,9 @@ export type HelmetShape =
   // The ninja's headband and the dark knight's great helm (Andy, 2026-09-03).
   | "headband" | "knight"
   // The ball cap and the football helmet (Andy, 2026-09-03).
-  | "ballcap" | "football";
+  | "ballcap" | "football"
+  // The princess's tiara (Andy, 2026-09-05).
+  | "tiara";
 
 export interface Helmet {
   readonly id: string;
@@ -66,6 +68,8 @@ export const HELMETS: readonly Helmet[] = [
   { id: "knight-steel", name: "STEEL HELM", cost: 180, shape: "knight", colors: ["#8FA0B4", "#6B4BD6"] },
   { id: "samurai-storm", name: "STORM KABUTO", cost: 200, shape: "samurai", colors: ["#22282F", "#FFE14D"] },
   { id: "samurai-tide", name: "TIDE KABUTO", cost: 200, shape: "samurai", colors: ["#001A45", "#2F7DFF"] },
+  { id: "tiara-gold", name: "GOLD TIARA", cost: 90, shape: "tiara", colors: ["#F5C542", "#FF3D8B"] },
+  { id: "tiara-rose", name: "ROSE TIARA", cost: 90, shape: "tiara", colors: ["#FFB3D9", "#7A1050"] },
   { id: "crown-gold", name: "GOLD CROWN", cost: 320, shape: "crown", colors: ["#F5C542", "#FFF3C4"] },
   { id: "crown-void", name: "VOID CROWN", cost: 320, shape: "crown", colors: ["#2A0016", "#FF3D8B"] },
 ];

@@ -1361,6 +1361,31 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .bat-rig .crack { animation: crack-pop var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
 @keyframes crack-pop { 0%, 9.5%, 13%, 100% { opacity: 0; } 10% { opacity: 1; } 12% { opacity: 1; } }
 
+/* PRINCESSHORN: up on her toes, round once with the gown flaring, and
+   sparkles left hanging where she was. */
+.creature.idle-royal { animation-name: idle-twirl; }
+@keyframes idle-twirl {
+  0%, 4%, 26%, 100% { transform: none; }
+  7% { transform: translateY(-8px) scaleX(0.62); }
+  10% { transform: translateY(-12px) scaleX(0.16); }
+  13% { transform: translateY(-12px) scaleX(0.62); }
+  16% { transform: translateY(-6px) scaleX(1); }
+  20% { transform: translateY(0) scaleX(1.05) scaleY(0.96); }
+}
+.gown { transform-box: fill-box; transform-origin: 50% 0%; animation: gown-flare var(--idle-cycle, 4.8s) ease-in-out infinite; animation-delay: var(--idle-delay, 0s); }
+@keyframes gown-flare { 0%, 5%, 24%, 100% { transform: none; } 10% { transform: scaleX(1.16) scaleY(0.97); } 16% { transform: scaleX(1.08); } 20% { transform: scaleX(0.98); } }
+.twirl-rig .spark { animation: spark-hang var(--idle-cycle, 4.8s) linear infinite; animation-delay: var(--idle-delay, 0s); }
+.twirl-rig .spark-2 { animation-delay: calc(var(--idle-delay, 0s) + 0.09s); }
+.twirl-rig .spark-3 { animation-delay: calc(var(--idle-delay, 0s) + 0.18s); }
+.twirl-rig .spark-4 { animation-delay: calc(var(--idle-delay, 0s) + 0.27s); }
+.twirl-rig .spark-5 { animation-delay: calc(var(--idle-delay, 0s) + 0.36s); }
+@keyframes spark-hang {
+  0%, 8% { opacity: 0; transform: scale(0.3); }
+  11% { opacity: 1; transform: scale(1.2); }
+  17% { opacity: 1; transform: scale(1); }
+  24%, 100% { opacity: 0; transform: scale(0.6); }
+}
+
 /* BRAAPTOR: hop onto the parked bike, a squish of suspension, then ride
    off to the right and away, roost flying. The bike is a child of the
    creature, so bike-hop COUNTERS the creature's hop (view-box percentages
@@ -1438,8 +1463,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @keyframes dust-kick { 0%, 6.5% { opacity: 0; transform: none; } 8% { opacity: 1; } 14% { opacity: 0; transform: translate(-10px, -8px) scale(1.4); } 100% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig, .bat-rig, .throw-rig { opacity: 0 !important; animation: none !important; }
-  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm, .bat, .throw-arm, .football-held, .bike, .bike .wheel { animation: none !important; }
+  .hoops-rig, .jet, .moonrig, .tonguerig, .chomp, .ringtail .spin-blur, .wreckrig, .clawrig, .komodo-rig, .goal-rig, .dig-rig .dirt-fall, .kick-rig, .slash-rig, .bat-rig, .throw-rig, .twirl-rig { opacity: 0 !important; animation: none !important; }
+  .ringtail, .idle-id-triomaw .head, .lvl-ready, .fist-arm, .tongue-fork, .kick-leg, .boom, .bucket, .dirt-load, .ninja-leg, .sword-arm, .bat, .throw-arm, .football-held, .bike, .bike .wheel, .gown { animation: none !important; }
   .bike .roost, .bike .roost-cloud { opacity: 0 !important; animation: none !important; }
 }
 

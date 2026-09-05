@@ -1,5 +1,5 @@
 /**
- * THE BOARDS, DRAWN. One renderer, twenty themes: a real deck silhouette with
+ * THE BOARDS, DRAWN. One renderer, twenty-one themes: a real deck silhouette with
  * a kicked nose and tail, trucks, wheels with hub colour, a deck-top graphic
  * per theme, and a TRAIL that plays while the board rides (fixed duration,
  * decorative, stands down under reduced motion). The plain board is the old
@@ -148,6 +148,15 @@ const graphic = (theme: BoardTheme, [deck, accent, glow]: readonly [string, stri
       // 13px legibility floor, and it is a sticker, not something to read.
       out.push(svg("path", { d: "M100.5 14.5 L102.5 13 L102.5 21", fill: "none", stroke: INK, "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round" }));
       break;
+    case "royal":
+      // The princess deck: pink from nose to tail, a gold crown at the
+      // middle, jewels down the rails.
+      out.push(svg("path", { d: "M22 12 L96 12 M22 22 L96 22", stroke: glow, "stroke-width": 1.6, opacity: 0.75 }));
+      out.push(svg("path", { class: "crown", d: "M48 21 L50 12 L55 17 L59 10 L63 17 L68 12 L70 21 Z", fill: accent, stroke: INK, "stroke-width": 1.4, "stroke-linejoin": "round" }));
+      out.push(svg("circle", { cx: 59, cy: 14, r: 1.5, fill: glow }));
+      for (const x of [30, 84]) out.push(svg("path", { d: `M${x} 14 L${x + 2} 17 L${x} 20 L${x - 2} 17 Z`, fill: glow, stroke: INK, "stroke-width": 1 }));
+      out.push(svg("path", { class: "heart", d: "M100 14 q3 -3 5 0 q2 -3 5 0 q0 4 -5 7 q-5 -3 -5 -7 Z", fill: glow, stroke: INK, "stroke-width": 1.2, "stroke-linejoin": "round" }));
+      break;
     case "tag":
       // The tag: TL in fat pink over a yellow outline, drips, a crown,
       // and a spray of dots. Skate culture started on a wall.
@@ -248,6 +257,11 @@ const trail = (theme: BoardTheme, [, accent, glow]: readonly [string, string, st
         g.append(svg("circle", { cx: x, cy: y, r, fill: "#6B4A2B", stroke: INK, "stroke-width": 1 }));
       }
       g.append(svg("path", { d: "M-4 32 Q-20 18 -44 30", fill: "none", stroke: "#8B5A2B", "stroke-width": 1.6, opacity: 0.5 }));
+      break;
+    case "royal": // sparkles trailing off the tail
+      for (const [x, y, r] of [[-8, 22, 3], [-17, 28, 2.4], [-26, 20, 3.2], [-35, 27, 2], [-44, 22, 2.6]] as const) {
+        g.append(svg("path", { d: `M${x} ${y - r} L${x + r * 0.3} ${y - r * 0.3} L${x + r} ${y} L${x + r * 0.3} ${y + r * 0.3} L${x} ${y + r} L${x - r * 0.3} ${y + r * 0.3} L${x - r} ${y} L${x - r * 0.3} ${y - r * 0.3} Z`, fill: glow, stroke: accent, "stroke-width": 0.8 }));
+      }
       break;
     case "tag": // spray mist
       for (const [x, y, r, col] of [[-8, 18, 2, accent], [-14, 26, 1.4, glow], [-20, 15, 1.7, accent], [-28, 24, 2.2, glow], [-36, 18, 1.5, "#35E6FF"], [-42, 28, 1.2, accent]] as const) {
