@@ -22,7 +22,7 @@ import type { Caps, Strands } from "./types";
 // elapsedOn sits AFTER the level and the clock faces on purpose: the door's
 // controls for those step aside when the round is off, and loop-eye walks
 // the door's controls in this order.
-export const SYNCED_KEYS = ["strands", "caps", "missing", "addDots", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "elapsedOn", "parkMinutes", "parkTokensPerDay", "extraTokenMax", "extraTokenEvery", "extraTokensOn", "dayLimitMinutes"] as const;
+export const SYNCED_KEYS = ["strands", "caps", "missing", "addDots", "subDots", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "elapsedOn", "parkMinutes", "parkTokensPerDay", "extraTokenMax", "extraTokenEvery", "extraTokensOn", "dayLimitMinutes"] as const;
 export type SyncKey = typeof SYNCED_KEYS[number];
 
 export interface MissingLike { add: boolean; sub: boolean; mul: boolean; div: boolean; pct: number }
@@ -33,6 +33,8 @@ export interface SyncedSettings {
   missing: MissingLike;
   /** Addition shown as two groups of coloured dots (Andy, 2026-09-03). */
   addDots: boolean;
+  /** Subtraction the same way, the taken ones crossed out (2026-09-05). */
+  subDots: boolean;
   dailyGoal: number;
   speedLimit: number;
   /** The bonus round at all (Andy, 2026-09-03: off for the younger kids). */
@@ -123,6 +125,7 @@ export const validValue = (k: SyncKey, v: unknown): boolean => {
       && ops.every((o) => { const c = (v as Record<string, unknown>)[o]; return c === null || (typeof c === "number" && c >= 1 && c <= 100); });
     case "missing": return isBoolRecord(v, ops) && typeof (v as MissingLike).pct === "number" && (v as MissingLike).pct >= 5 && (v as MissingLike).pct <= 80;
     case "addDots": return typeof v === "boolean";
+    case "subDots": return typeof v === "boolean";
     case "dailyGoal": return typeof v === "number" && v >= 10 && v <= 80;
     case "speedLimit": return typeof v === "number" && v >= 1 && v <= 30;
     case "elapsedOn": return typeof v === "boolean";
@@ -159,7 +162,7 @@ export const fieldsToApply = (
 
 /** The dials the record says the device is actually running, from its meta. */
 export const settingsOf = (meta: SyncedSettings): SyncedSettings => ({
-  strands: meta.strands, caps: meta.caps, missing: meta.missing, addDots: meta.addDots, dailyGoal: meta.dailyGoal,
+  strands: meta.strands, caps: meta.caps, missing: meta.missing, addDots: meta.addDots, subDots: meta.subDots, dailyGoal: meta.dailyGoal,
   speedLimit: meta.speedLimit, elapsedOn: meta.elapsedOn, elapsedLevel: meta.elapsedLevel, elapsedAnalog: meta.elapsedAnalog,
   parkMinutes: meta.parkMinutes, parkTokensPerDay: meta.parkTokensPerDay,
   extraTokenMax: meta.extraTokenMax, extraTokenEvery: meta.extraTokenEvery, extraTokensOn: meta.extraTokensOn,
@@ -191,6 +194,7 @@ export const describeField = (k: SyncKey, v: unknown): string => {
       return on.length === 0 ? "missing number off" : `missing number on ${on.join(", ")} at ${m.pct}%`;
     }
     case "addDots": return (v as boolean) ? "addition shown as dots" : "addition shown as numbers";
+    case "subDots": return (v as boolean) ? "subtraction shown as dots" : "subtraction shown as numbers";
     case "dailyGoal": return `${v as number} problems a day`;
     case "speedLimit": return `${v as number} speed runs a day`;
     case "elapsedOn": return (v as boolean) ? "bonus round on" : "bonus round off";

@@ -44,7 +44,7 @@ export const appModel = (app: App, rerender: () => void): SettingsModel => ({
   states: app.states,
   who: app.profile.name, // never a pronoun: the rider by name, as the door does
   get: (key) => ({
-    strands: app.meta.strands, caps: app.meta.caps, missing: app.meta.missing, addDots: app.meta.addDots, dailyGoal: app.meta.dailyGoal,
+    strands: app.meta.strands, caps: app.meta.caps, missing: app.meta.missing, addDots: app.meta.addDots, subDots: app.meta.subDots, dailyGoal: app.meta.dailyGoal,
     speedLimit: app.meta.speedLimit, elapsedOn: app.meta.elapsedOn, elapsedLevel: app.meta.elapsedLevel, elapsedAnalog: app.meta.elapsedAnalog,
     parkMinutes: app.meta.parkMinutes, parkTokensPerDay: app.meta.parkTokensPerDay,
     extraTokenMax: app.meta.extraTokenMax, extraTokenEvery: app.meta.extraTokenEvery, extraTokensOn: app.meta.extraTokensOn,

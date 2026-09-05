@@ -74,7 +74,10 @@ export const trickFor = (swipe: Swipe): ParkTrick => PARK_TRICKS.find((t) => t.s
  *  four rail set, sometimes a half pipe to drop into, ride through and
  *  launch out of, big; after a three rail set, sometimes a staircase
  *  with a handrail slanting down it to slide. */
-export type ObstacleKind = "rail" | "box" | "gap" | "kicker" | "pipe" | "stairs";
+export type ObstacleKind = "rail" | "box" | "gap" | "kicker" | "pipe" | "stairs" | "steps";
+/** The two that are RIDDEN DOWN: the handrail slanting over a staircase,
+ *  and (0.21.3, Andy) the staircase itself, stepped, with no rail at all. */
+const ridesDown = (k: ObstacleKind): boolean => k === "stairs" || k === "steps";
 /** Out of the pipe's far lip: bigger air than any ollie or kicker. */
 export const PIPE_VY = 900;
 export interface Obstacle {
@@ -203,6 +206,12 @@ const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Pie
   // Sometimes the top of the three leads onto a STAIRCASE with a handrail
   // slanting down it, to slide to the bottom.
   { min: 0.3, make: () => [{ kind: "rail", dx: 0, w: 170, h: 34 }, { kind: "rail", dx: 230, w: 170, h: 62 }, { kind: "rail", dx: 460, w: 190, h: 90 }, { kind: "stairs", dx: 650, w: 300, h: 90 }] },
+  // And sometimes there is no handrail at all: the STEPS themselves, ridden
+  // down (Andy, 2026-09-05: "sometimes the 3rd or 4th height rail leads to
+  // stairs down instead of half pipe or diagonal rail"). Off the third, and
+  // off the fourth for a longer drop.
+  { min: 0.3, make: () => [{ kind: "rail", dx: 0, w: 170, h: 34 }, { kind: "rail", dx: 230, w: 170, h: 62 }, { kind: "rail", dx: 460, w: 190, h: 90 }, { kind: "steps", dx: 650, w: 300, h: 90 }] },
+  { min: 0.45, make: () => [{ kind: "rail", dx: 0, w: 150, h: 34 }, { kind: "rail", dx: 210, w: 150, h: 64 }, { kind: "rail", dx: 420, w: 150, h: 94 }, { kind: "rail", dx: 630, w: 200, h: 124 }, { kind: "steps", dx: 830, w: 360, h: 124 }] },
 ];
 
 const spawn = (s: ParkState): void => {
@@ -231,6 +240,9 @@ export const surfaceY = (o: Obstacle, x: number): number => {
   const t = Math.max(0, Math.min(1, (x - o.x) / o.w));
   if (o.kind === "pipe") return o.h * Math.cos(Math.PI * t) ** 2;
   if (o.kind === "stairs") return o.h * (1 - t);
+  // The bare staircase drops in six real steps, so the ride down is felt
+  // as steps rather than a slope.
+  if (o.kind === "steps") { const N = 6; return o.h * (1 - Math.min(1, Math.floor(t * N) / (N - 1))); }
   return o.h;
 };
 
@@ -314,7 +326,7 @@ const endGrind = (s: ParkState, ev: ParkEvent[]): void => {
   const r = s.rider;
   if (r.grindOn === null) return;
   const points = Math.round(GRIND_BASE + GRIND_PER_S * r.grindT);
-  s.chain.push({ name: r.grindOn.kind === "stairs" ? "RAIL SLIDE" : "GRIND", points });
+  s.chain.push({ name: r.grindOn.kind === "stairs" ? "RAIL SLIDE" : r.grindOn.kind === "steps" ? "STAIR RIDE" : "GRIND", points });
   r.grindOn = null;
   ev.push({ kind: "grindEnd", points });
 };
@@ -407,7 +419,7 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
     // The pipe catches anything that comes down into it; the handrail
     // catches a landing near its line and throws one that comes in under.
     for (const o of s.obstacles) {
-      if ((o.kind !== "pipe" && o.kind !== "stairs") || r.vy > 0) continue;
+      if ((o.kind !== "pipe" && !ridesDown(o.kind)) || r.vy > 0) continue;
       if (!o.used && riderX(s) - RIDER_W / 2 < o.x + 18 && riderX(s) + RIDER_W / 2 > o.x && r.y < o.h - 18) { o.used = true; bail(s, "rail", ev); return ev; }
       if (!over(s, o)) continue;
       const sy = surfaceY(o, riderX(s));
@@ -417,13 +429,13 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
         ev.push({ kind: "pipeIn" });
         return ev;
       }
-      if (o.kind === "stairs" && r.y <= sy + 10 && r.y >= sy - 18) {
+      if (ridesDown(o.kind) && r.y <= sy + 10 && r.y >= sy - 18) {
         if (!settleTrick(s, ev)) return ev;
         r.mode = "slide"; r.grindOn = o; r.grindT = 0; r.y = sy; r.vy = 0;
         ev.push({ kind: "slide" });
         return ev;
       }
-      if (o.kind === "stairs" && !o.used && r.y < sy - 18) { o.used = true; bail(s, "box", ev); return ev; }
+      if (ridesDown(o.kind) && !o.used && r.y < sy - 18) { o.used = true; bail(s, "box", ev); return ev; }
     }
     if (r.y <= 0) {
       r.y = 0;
@@ -490,7 +502,7 @@ export const update = (s: ParkState, dt: number): ParkEvent[] => {
       return ev;
     }
     if (o.kind === "gap" && overlaps(s, o, 14)) { bail(s, "gap", ev); return ev; }
-    if ((o.kind === "rail" || o.kind === "box" || o.kind === "pipe" || o.kind === "stairs") && !o.used && x + RIDER_W / 2 > o.x && x - RIDER_W / 2 < o.x + 18) {
+    if ((o.kind === "rail" || o.kind === "box" || o.kind === "pipe" || ridesDown(o.kind)) && !o.used && x + RIDER_W / 2 > o.x && x - RIDER_W / 2 < o.x + 18) {
       o.used = true; bail(s, o.kind === "box" ? "box" : "rail", ev); return ev;
     }
   }

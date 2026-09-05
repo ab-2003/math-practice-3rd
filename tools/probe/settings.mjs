@@ -219,7 +219,7 @@ await step("the bonus round can be switched off altogether; a finished run then 
   await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-1"]')?.scrollIntoView({ block: "center" }));
 });
 
-await step("addition as dots: off by default, on shows green plus blue groups in place of the numbers", async () => {
+await step("addition as dots: off by default, on shows the numbers over green and blue groups", async () => {
   // Andy, 2026-09-03: "show addition problems as groups of different colored dots ... only addition".
   await goHome(page);
   await openSettings(page);
@@ -234,13 +234,16 @@ await step("addition as dots: off by default, on shows green plus blue groups in
   await page.waitForSelector('[data-probe="problem"].dots', { timeout: 6000 });
   const d = await page.evaluate(() => {
     const groups = [...document.querySelectorAll('[data-probe="dot-group"]')];
-    return { n: groups.length, counts: groups.map((g) => [Number(g.dataset.n), g.querySelectorAll("i").length]), fact: document.querySelector('[data-probe="problem"]').dataset.fact, digits: /\d/.test(document.querySelector('[data-probe="problem"]').textContent ?? "") };
+    return { n: groups.length, counts: groups.map((g) => [Number(g.dataset.n), g.querySelectorAll("i").length]),
+      numerals: groups.map((g) => g.querySelector(".dot-n")?.textContent ?? ""),
+      fact: document.querySelector('[data-probe="problem"]').dataset.fact };
   });
   must(d.n === 2, `${d.n} dot groups, wanted 2`);
   must(d.counts.every(([n, dots]) => n === dots), `the dots do not count the operands: ${JSON.stringify(d.counts)}`);
   const [a, b] = d.fact.replace("add:", "").split("+").map(Number);
   must(d.counts[0][0] + d.counts[1][0] === a + b, `the groups (${d.counts}) do not sum to the fact ${d.fact}`);
-  must(!d.digits || (a === 0 || b === 0), "numerals show alongside the dots");
+  // The NUMBERS stay on the screen with the dots (Andy, 2026-09-05).
+  must(d.numerals.join(",") === `${d.counts[0][0]},${d.counts[1][0]}`, `the numerals read ${d.numerals.join(",")} beside ${JSON.stringify(d.counts)}`);
   // The answer still grades the same through the keypad.
   await answerN(page, 1);
   await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
@@ -253,6 +256,47 @@ await step("addition as dots: off by default, on shows green plus blue groups in
   await goHome(page);
   await openSettings(page);
   await page.evaluate(() => document.querySelector('[data-probe="elapsed-level-1"]')?.scrollIntoView({ block: "center" }));
+});
+
+await step("subtraction as dots shows the numbers and crosses out what is taken", async () => {
+  // Andy, 2026-09-05: "Subtraction as dots, let's add that option (show
+  // digits as well, x out the take aways)".
+  await goHome(page);
+  await openSettings(page);
+  must(await page.$('[data-probe="sub-dots"]') !== null, "no subtraction-as-dots switch");
+  await page.click('[data-probe="sub-dots"]');
+  await page.waitForTimeout(300);
+  must(await page.evaluate(() => window.__app.meta().subDots) === true, "the subtraction switch did not persist");
+  await page.evaluate(() => { const m = window.__app.meta(); m.animations = false; m.addDots = false; m.strands = { add: false, sub: true, mul: false, div: false }; m.missing = { add: false, sub: false, mul: false, div: false, pct: 0 }; });
+  await page.evaluate(() => window.__app.save());
+  await goHome(page);
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"].dots', { timeout: 6000 });
+  const d = await page.evaluate(() => {
+    const g = document.querySelector('[data-probe="dot-group"]');
+    const prob = document.querySelector('[data-probe="problem"]');
+    return {
+      groups: document.querySelectorAll('[data-probe="dot-group"]').length,
+      n: Number(g.dataset.n), taken: Number(g.dataset.taken),
+      dots: g.querySelectorAll("i").length, gone: g.querySelectorAll("i.gone").length,
+      numeral: g.querySelector(".dot-n").textContent,
+      text: prob.textContent, fact: prob.dataset.fact,
+    };
+  });
+  const [m0, s0] = d.fact.replace("sub:", "").split("-").map(Number);
+  must(d.groups === 1, `${d.groups} dot groups on a subtraction, wanted the minuend's`);
+  must(d.n === m0 && d.dots === m0, `the group draws ${d.dots} dots for ${m0}`);
+  must(d.taken === s0 && d.gone === s0, `${d.gone} dots crossed out for a take-away of ${s0}`);
+  must(d.numeral === String(m0) && d.text.includes(String(s0)), `the numbers are missing: "${d.text}"`);
+  // It still grades the same, and the screen still fits a phone.
+  await answerN(page, 1);
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await closeSheets(page);
+  must(await page.evaluate(() => window.__app.set("subDots", false)) === true, "the subtraction switch did not go back off");
 });
 
 await step("the elapsed levels are one segmented control, and picking one persists", async () => {

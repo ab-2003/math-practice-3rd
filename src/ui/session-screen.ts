@@ -277,16 +277,30 @@ export const sessionScreen = (app: App): HTMLElement => {
       mslot = null;
       // ADDITION AS DOTS: two groups of coloured dots either side of the
       // plus, green then blue, in rows of five so a count reads at a glance.
+      // THE NUMBERS STAY (Andy, 2026-09-05): the dots are under the numeral,
+      // never instead of it, or the reading practice goes with them.
       const dots = app.meta.addDots && f.kind === "add" && cur.format === "standard";
-      const group = (n: number, cls: string): HTMLElement => {
+      // SUBTRACTION AS DOTS (Andy, 2026-09-05): one group, the minuend, with
+      // the taken ones crossed out, so the answer is what is left standing.
+      const takeDots = app.meta.subDots && f.kind === "sub" && cur.format === "standard";
+      const group = (n: number, cls: string, taken = 0): HTMLElement => {
         const g = el("span", { class: `dot-group ${cls}`, "data-probe": "dot-group", "data-n": String(n), "aria-label": String(n) });
-        for (let i = 0; i < n; i++) g.append(el("i", {}));
-        if (n === 0) g.append(el("b", { text: "0" }));
+        // The numeral goes UNDER its dots (Andy, 2026-09-05), and the row is
+        // bottom-aligned, so the numbers always read along one line however
+        // many dots stand above them.
+        const grid = el("span", { class: "dot-grid" });
+        for (let i = 0; i < n; i++) grid.append(el("i", i >= n - taken ? { class: "gone" } : {}));
+        g.append(grid);
+        g.append(el("b", { class: "dot-n", text: String(n) }));
+        if (taken > 0) g.dataset["taken"] = String(taken);
         return g;
       };
       if (dots) {
         prob.classList.add("dots");
         prob.append(group(cur.a, "dots-a"), el("span", { class: "op", text: " + " }), group(cur.b, "dots-b"));
+      } else if (takeDots) {
+        prob.classList.add("dots");
+        prob.append(group(cur.a, "dots-a", cur.b), el("span", { class: "op", text: " - " }), el("span", { class: "dot-n bare", text: String(cur.b) }));
       } else {
         prob.append(operand("a"), el("span", { class: "op", text: ` ${cur.op} ` }), operand("b"));
       }

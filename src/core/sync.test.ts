@@ -8,7 +8,7 @@ const base: SyncedSettings = {
   strands: { add: true, sub: true, mul: false, div: false },
   caps: { add: null, sub: null, mul: null, div: null },
   missing: { add: false, sub: false, mul: false, div: false, pct: 20 },
-  addDots: false, dailyGoal: 40, speedLimit: 10, elapsedOn: true, elapsedLevel: 1, elapsedAnalog: false, parkMinutes: 7, parkTokensPerDay: 3,
+  addDots: false, subDots: false, dailyGoal: 40, speedLimit: 10, elapsedOn: true, elapsedLevel: 1, elapsedAnalog: false, parkMinutes: 7, parkTokensPerDay: 3,
   extraTokenMax: 1, extraTokenEvery: 40, extraTokensOn: true, dayLimitMinutes: 0,
 };
 
@@ -90,11 +90,11 @@ describe("merge, under fire", () => {
   const randomFields = (): Fields => {
     const out: Fields = {};
     const values: Record<string, unknown[]> = {
-      addDots: [true, false], dailyGoal: [10, 30, 50, 80], speedLimit: [1, 5, 10, 30], elapsedOn: [true, false], elapsedLevel: [1, 2, 3], elapsedAnalog: [true, false],
+      addDots: [true, false], subDots: [true, false], dailyGoal: [10, 30, 50, 80], speedLimit: [1, 5, 10, 30], elapsedOn: [true, false], elapsedLevel: [1, 2, 3], elapsedAnalog: [true, false],
       parkMinutes: [2, 7, 20], parkTokensPerDay: [1, 3, 8], dayLimitMinutes: [0, 15, 60, 180],
       extraTokenMax: [1, 3, 5], extraTokenEvery: [5, 40, 80], extraTokensOn: [true, false],
     };
-    for (const k of ["addDots", "dailyGoal", "speedLimit", "elapsedOn", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay", "extraTokenMax", "extraTokenEvery", "extraTokensOn", "dayLimitMinutes"] as const) {
+    for (const k of ["addDots", "subDots", "dailyGoal", "speedLimit", "elapsedOn", "elapsedLevel", "elapsedAnalog", "parkMinutes", "parkTokensPerDay", "extraTokenMax", "extraTokenEvery", "extraTokensOn", "dayLimitMinutes"] as const) {
       if (rnd() < 0.6) out[k] = { v: values[k]![Math.floor(rnd() * values[k]!.length)], at: Math.floor(rnd() * 10), by: rnd() < 0.5 ? "a" : "b" };
     }
     return out;

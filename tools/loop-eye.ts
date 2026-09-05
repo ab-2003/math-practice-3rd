@@ -87,7 +87,7 @@ const hooks = (page: Page) => ({
   pushNow: () => page.evaluate(() => (window as unknown as Hooks).__cloud.pushNow()),
   running: () => page.evaluate(() => {
     const m = (window as unknown as Hooks).__app.meta();
-    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], addDots: m["addDots"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedOn: m["elapsedOn"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"], parkMinutes: m["parkMinutes"], parkTokensPerDay: m["parkTokensPerDay"], extraTokenMax: m["extraTokenMax"], extraTokenEvery: m["extraTokenEvery"], extraTokensOn: m["extraTokensOn"], dayLimitMinutes: m["dayLimitMinutes"] } as Record<SyncKey, unknown>;
+    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], addDots: m["addDots"], subDots: m["subDots"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedOn: m["elapsedOn"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"], parkMinutes: m["parkMinutes"], parkTokensPerDay: m["parkTokensPerDay"], extraTokenMax: m["extraTokenMax"], extraTokenEvery: m["extraTokenEvery"], extraTokensOn: m["extraTokensOn"], dayLimitMinutes: m["dayLimitMinutes"] } as Record<SyncKey, unknown>;
   }),
   deviceId: () => page.evaluate(() => localStorage.getItem("tl-device-id")),
 });
@@ -156,6 +156,7 @@ const doorSet = async (d: Device, key: SyncKey): Promise<void> => {
     case "missing": await p.click('[data-missing="add"]'); break;
     case "caps": await p.click('[data-probe="cap-add"]'); await p.waitForSelector('[data-cap-chip="10"]'); await p.click('[data-cap-chip="10"]'); await p.waitForTimeout(150); await p.click(".sheet .btn.go"); break;
     case "addDots": await p.click('[data-probe="add-dots"]'); break;
+    case "subDots": await p.click('[data-probe="sub-dots"]'); break;
     case "dailyGoal": await p.click('[data-probe="dose-goal-minus"]'); break;
     case "speedLimit": await p.click('[data-probe="speed-limit-minus"]'); break;
     case "elapsedOn": await p.click('[data-probe="elapsed-on"]'); break;
@@ -175,7 +176,7 @@ const doorExpect: Record<SyncKey, unknown> = {
   strands: { add: true, sub: true, mul: true, div: false },
   missing: { add: true, sub: false, mul: false, div: false, pct: 20 },
   caps: { add: 10, sub: null, mul: null, div: null },
-  addDots: true, dailyGoal: 35, speedLimit: 9, elapsedOn: false, elapsedLevel: 2, elapsedAnalog: true, parkMinutes: 8, parkTokensPerDay: 2,
+  addDots: true, subDots: true, dailyGoal: 35, speedLimit: 9, elapsedOn: false, elapsedLevel: 2, elapsedAnalog: true, parkMinutes: 8, parkTokensPerDay: 2,
   extraTokenMax: 2, extraTokenEvery: 35, extraTokensOn: false, dayLimitMinutes: 30,
 };
 /** A second, different value per field, for the rider's own changes. */
@@ -183,7 +184,7 @@ const riderValues: Record<SyncKey, unknown> = {
   strands: { add: true, sub: false, mul: true, div: false },
   missing: { add: true, sub: true, mul: false, div: false, pct: 30 },
   caps: { add: 12, sub: 10, mul: null, div: null },
-  addDots: false, dailyGoal: 55, speedLimit: 4, elapsedOn: true, elapsedLevel: 3, elapsedAnalog: false, parkMinutes: 12, parkTokensPerDay: 5,
+  addDots: false, subDots: false, dailyGoal: 55, speedLimit: 4, elapsedOn: true, elapsedLevel: 3, elapsedAnalog: false, parkMinutes: 12, parkTokensPerDay: 5,
   extraTokenMax: 4, extraTokenEvery: 20, extraTokensOn: true, dayLimitMinutes: 45,
 };
 

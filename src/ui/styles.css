@@ -1729,8 +1729,8 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .park-rail .rail-leg.l { left: 6%; } .park-rail .rail-leg.r { right: 6%; }
 .park-box { background: var(--orange); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
 .park-box .box-stripe { position: absolute; inset: 40% 0 auto 0; height: 22%; background: var(--ink); opacity: 0.55; }
-.park-pipe, .park-stairs { overflow: visible; }
-.park-pipe .pipe-art, .park-stairs .stairs-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.park-pipe, .park-stairs, .park-steps { overflow: visible; }
+.park-pipe .pipe-art, .park-stairs .stairs-art, .park-steps .stairs-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .park-pipe .coping { position: absolute; top: -4px; width: 10px; height: 8px; border-radius: 4px; background: var(--dim); border: 2px solid var(--ink); }
 .park-pipe .coping.l { left: -5px; } .park-pipe .coping.r { right: -5px; }
 .park-kicker .kicker-face { position: absolute; inset: 0; background: var(--cyan); clip-path: polygon(0 100%, 100% 0, 100% 100%); }
@@ -1883,13 +1883,34 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 }
 
 /* ---------- addition as dots ---------- */
-.problem.dots { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.dot-group { display: inline-grid; grid-template-columns: repeat(5, auto); gap: 6px; padding: 8px; border: 3px solid var(--line); border-radius: 14px; background: var(--panel); }
-.dot-group i { display: block; width: clamp(18px, 4.2vw, 30px); height: clamp(18px, 4.2vw, 30px); border-radius: 50%; border: 3px solid var(--ink); }
+.problem.dots { display: flex; align-items: flex-end; justify-content: center; gap: 14px; }
+/* The numeral rides ON TOP of its dots: the number is the thing being
+   learned, the dots are how to count it (Andy, 2026-09-05). */
+.dot-group { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 8px 6px; border: 3px solid var(--line); border-radius: 14px; background: var(--panel); }
+.dot-grid { display: inline-grid; grid-template-columns: repeat(5, auto); gap: 5px; }
+.dot-group i { display: block; width: clamp(15px, 3.4vw, 26px); height: clamp(15px, 3.4vw, 26px); border-radius: 50%; border: 3px solid var(--ink); }
 .dot-group.dots-a i { background: #4FC24F; }
 .dot-group.dots-b i { background: #2F7DFF; }
-.dot-group b { font-size: clamp(28px, 6vw, 44px); color: var(--dim); }
-.problem.dots .op { font-size: clamp(44px, 9vw, 80px); }
+/* Taken away: orange, crossed through, still countable. */
+.dot-group i.gone {
+  background:
+    linear-gradient(45deg, transparent 40%, var(--ink) 40%, var(--ink) 60%, transparent 60%),
+    linear-gradient(-45deg, transparent 40%, var(--ink) 40%, var(--ink) 60%, transparent 60%),
+    #FF8A1F;
+}
+.dot-n { font-size: clamp(30px, 6.4vw, 52px); font-weight: 900; color: var(--text); line-height: 1; text-shadow: 0 4px 0 var(--ink); }
+.dot-n.bare { padding-bottom: 6px; }
+.problem.dots .op { font-size: clamp(44px, 9vw, 80px); padding-bottom: 2px; }
+/* On a phone the dots and their numerals have to leave the keypad room:
+   the screen may never scroll (Andy's law). */
+@media (max-width: 560px) {
+  .problem.dots { gap: 8px; }
+  .problem.dots .dot-group { padding: 5px 6px 3px; gap: 2px; border-width: 2px; }
+  .problem.dots .dot-grid { gap: 4px; }
+  .problem.dots .dot-group i { width: 13px; height: 13px; border-width: 2px; }
+  .problem.dots .dot-n { font-size: 30px; text-shadow: 0 3px 0 var(--ink); }
+  .problem.dots .op { font-size: 34px; }
+}
 
 /* ---------- the day's game time ---------- */
 .closed-card { text-align: center; display: grid; gap: 4px; padding: 10px 14px; border-color: var(--orange); }

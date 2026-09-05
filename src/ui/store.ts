@@ -214,6 +214,8 @@ export interface Meta {
   /** Addition problems drawn as two groups of coloured dots, for a rider
    *  still counting (Andy, 2026-09-03). Off by default; addition only. */
   addDots: boolean;
+  /** The same for subtraction, with the taken ones crossed out. */
+  subDots: boolean;
   /** The bonus round at all. Default on; a grown-up can switch it off for a
    *  younger rider who is not reading clocks yet (Andy, 2026-09-03). */
   elapsedOn: boolean;
@@ -260,7 +262,7 @@ export const freshMeta = (): Meta => ({
   strands: { ...DEFAULT_STRANDS },
   missing: { ...DEFAULT_MISSING },
   caps: { add: null, sub: null, mul: null, div: null },
-  addDots: false,
+  addDots: false, subDots: false,
   dayLimitMinutes: 0, playDay: null, playMs: 0, playWarned: 0,
   elapsedOn: true,
   elapsedLevel: 1,
@@ -297,6 +299,7 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   // A save from the brief elapsedHard era maps onto the ladder it became.
   elapsedLevel: raw.elapsedLevel ?? ((raw as { elapsedHard?: boolean }).elapsedHard === true ? 3 : 1),
   addDots: raw.addDots ?? false,
+  subDots: raw.subDots ?? false,
   dayLimitMinutes: (() => { const v = raw.dayLimitMinutes ?? 0; return v === 0 ? 0 : Math.max(15, Math.min(180, v)); })(),
   playMs: Math.max(0, raw.playMs ?? 0),
   playWarned: raw.playWarned ?? 0,

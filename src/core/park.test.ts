@@ -302,6 +302,30 @@ describe("the line", () => {
     expect(s.rider.mode).toBe("ground");
   });
 
+  it("rides the bare staircase down in real steps, and banks at the bottom", () => {
+    // Andy, 2026-09-05: "sometimes the 3rd or 4th height rail leads to
+    // stairs down instead of half pipe or diagonal rail".
+    const s = flat();
+    const top = plant(s, "rail", -100, 130, 90);
+    const steps = plant(s, "steps", 30, 300, 90);
+    s.rider.mode = "grind"; s.rider.y = 90; s.rider.grindOn = top; s.rider.grindT = 0.3;
+    const all = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 6);
+    expect(kinds(all)).toContain("slide");
+    expect(kinds(all)).not.toContain("bail");
+    expect(kinds(all)).toContain("land");
+    // Six steps, not a slope: the surface holds each level then drops.
+    expect(surfaceY(steps, steps.x)).toBeCloseTo(90, 5);
+    expect(surfaceY(steps, steps.x + steps.w * 0.1)).toBeCloseTo(90, 5);
+    expect(surfaceY(steps, steps.x + steps.w * 0.2)).toBeCloseTo(72, 5);
+    expect(surfaceY(steps, steps.x + steps.w * 0.9)).toBeCloseTo(0, 5);
+    const levels = new Set<number>();
+    for (let t = 0; t < 1; t += 0.02) levels.add(Math.round(surfaceY(steps, steps.x + steps.w * t)));
+    expect(levels.size).toBe(6);
+    const banked = all.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.chain.map((c) => c.name)).toEqual(["GRIND", "STAIR RIDE"]);
+    expect(s.rider.mode).toBe("ground");
+  });
+
   it("hops off the handrail mid-slide with a trick, and the slide counts", () => {
     const s = flat();
     const top = plant(s, "rail", -100, 130, 90);
@@ -320,7 +344,7 @@ describe("the line", () => {
   });
 
   it("running into the pipe's or the staircase's wall on the ground is a bail", () => {
-    for (const kind of ["pipe", "stairs"] as const) {
+    for (const kind of ["pipe", "stairs", "steps"] as const) {
       const s = flat();
       plant(s, kind, 40, 300, 124);
       const all = runUntil(s, (e) => e.some((x) => x.kind === "bail"), 3);

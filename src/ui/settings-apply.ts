@@ -55,6 +55,8 @@ export const applySetting = <K extends SyncKey>(
     app.meta.missing = { ...(value as SyncedSettings["missing"]) };
   } else if (key === "addDots") {
     app.meta.addDots = value as boolean;
+  } else if (key === "subDots") {
+    app.meta.subDots = value as boolean;
   } else if (key === "dailyGoal") {
     app.meta.dailyGoal = value as number;
   } else if (key === "speedLimit") {

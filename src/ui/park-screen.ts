@@ -211,6 +211,20 @@ export const parkScreen = (app: App): HTMLElement => {
       g.append(svg("path", { d: `M${pts.join(" L")}`, fill: "none", stroke: "#8A97A6", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
       n.append(g);
       n.append(el("i", { class: "coping l" }), el("i", { class: "coping r" }));
+    } else if (o.kind === "steps") {
+      // The bare staircase: the same six steps, no handrail, and a light
+      // nose on each edge so the drop reads while it goes past.
+      const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "stairs-art" });
+      const N = 6;
+      const pts: string[] = ["0 0"];
+      for (let i = 0; i < N; i++) {
+        const x1 = ((i + 1) * o.w) / N;
+        pts.push(`${x1.toFixed(1)} ${((i * o.h) / (N - 1)).toFixed(1)}`);
+        if (i < N - 1) pts.push(`${x1.toFixed(1)} ${(((i + 1) * o.h) / (N - 1)).toFixed(1)}`);
+      }
+      g.append(svg("path", { d: `M${pts.join(" L")} L${o.w} ${o.h} L0 ${o.h} Z`, fill: "#232C3B", stroke: "#05070A", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      g.append(svg("path", { d: `M${pts.join(" L")}`, fill: "none", stroke: "#8A97A6", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      n.append(g);
     } else if (o.kind === "stairs") {
       // Six steps down, and the handrail slanting over them.
       const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "stairs-art" });

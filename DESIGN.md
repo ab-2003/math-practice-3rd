@@ -1130,6 +1130,18 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.21.3 - Stairs to ride down, and the numbers stay with the dots.**
+      Three of Andy's. THE STEPS: a rail set that climbs now sometimes ends
+      in a bare staircase with no handrail, ridden down in six real steps
+      and banked at the bottom as a STAIR RIDE, off the third rail or off
+      the fourth for a longer drop; the half pipe and the slanting handrail
+      keep their own endings. THE NUMBERS STAY: addition as dots showed the
+      dots INSTEAD of the numerals, which cost the reading; the numeral now
+      sits under its dots, and the row is bottom-aligned so the numbers
+      read along one line however many dots stand above them. SUBTRACTION
+      AS DOTS: a new parent switch beside the addition one, off by default,
+      drawing the minuend's dots with the taken ones crossed out in orange
+      and the numbers alongside.
 - [x] **0.21.2 - PRINCESSHORN, the tiara and the princess deck.** Andy:
       "More monster! Princesshorn (pink dress), gold tiara headgear,
       princess pink themed board." A new silhouette, `royal`: the gown IS

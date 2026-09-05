@@ -180,8 +180,13 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
   // addition shows two groups of coloured dots either side of the plus.
   // Only addition; only the standard form.
   const dots = model.get("addDots");
-  focus.append(setRow("Addition as dots", dots ? "green dots plus blue dots, counted" : "numbers, as usual",
+  focus.append(setRow("Addition as dots", dots ? "the numbers, and green dots plus blue dots to count" : "numbers, as usual",
     knob(dots, "add-dots", "Addition as dots", () => model.set("addDots", !dots))));
+  // SUBTRACTION AS DOTS (Andy, 2026-09-05): the same idea, taking away. The
+  // numbers stay on the screen either way; the dots are underneath them.
+  const sdots = model.get("subDots");
+  focus.append(setRow("Subtraction as dots", sdots ? "the numbers, and the taken ones crossed out" : "numbers, as usual",
+    knob(sdots, "sub-dots", "Subtraction as dots", () => model.set("subDots", !sdots))));
   const strands = model.get("strands");
   if (strands.div && !strands.mul) {
     focus.append(el("p", { class: "note warn", text:
