@@ -1130,6 +1130,17 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.21.4 - The session is one screen on a short phone.** Measuring
+      the dots found the ordinary problem screen 726px tall in a 664px
+      phone: the page scrolled and the keypad ended 4px past the glass,
+      with the dots on or off. Two causes. The 58px of bottom padding that
+      keeps content clear of the fixed build stamp is pointless on a screen
+      that cannot scroll, so the session keeps the safe area and nothing
+      else. And under 700px of height the session tightens its gaps and
+      sets its keys at 58px, still well over the 44px tap floor, with the
+      stage taking the slack. The core probe now starts a real session at
+      664 and 844 pixels tall, dots on and off, and asserts no scroll, the
+      keypad inside the glass, and the keys over the floor.
 - [x] **0.21.3 - Stairs to ride down, and the numbers stay with the dots.**
       Three of Andy's. THE STEPS: a rail set that climbs now sometimes ends
       in a bare staircase with no handrail, ridden down in six real steps

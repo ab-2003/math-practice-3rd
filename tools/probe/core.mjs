@@ -434,6 +434,38 @@ await step("7 + 7 rolls back as fill the ten: seven green, three orange ticks, a
   }
 });
 
+await step("the ordinary problem screen fits a short phone, with the dots on or off", async () => {
+  // Andy, 2026-09-05: on a 664px phone the keypad ended 4px past the glass,
+  // and the page scrolled. The session may never scroll: it is one screen.
+  for (const vp of [{ width: 390, height: 664 }, { width: 390, height: 844 }]) {
+    for (const dots of [false, true]) {
+      const ctxS = await page.context().browser().newContext({ viewport: vp });
+      const ps = await ctxS.newPage();
+      await ps.goto(page.url().split("?")[0].replace(/\/[^/]*$/, "/"), { waitUntil: "networkidle" });
+      await ps.waitForSelector('[data-probe="start"]');
+      await ps.evaluate((d) => {
+        const m = window.__app.meta();
+        m.animations = false; m.addDots = d; m.subDots = d;
+        m.strands = { add: true, sub: true, mul: false, div: false };
+        m.missing = { add: false, sub: false, mul: false, div: false, pct: 0 };
+      }, dots);
+      await ps.click('[data-probe="start"]');
+      await ps.waitForSelector('[data-probe="problem"]');
+      await ps.waitForTimeout(200);
+      const r = await ps.evaluate(() => {
+        const kp = document.querySelector(".keypad").getBoundingClientRect();
+        const key = document.querySelector(".key").getBoundingClientRect();
+        return { scroll: document.documentElement.scrollHeight > innerHeight + 1, keypad: kp.bottom, vh: innerHeight, key: key.height };
+      });
+      const where = `${vp.width}x${vp.height} dots=${dots}`;
+      must(!r.scroll, `${where}: the session screen scrolls`);
+      must(r.keypad <= r.vh, `${where}: the keypad ends at ${Math.round(r.keypad)} of ${r.vh}`);
+      must(r.key >= 44, `${where}: the keys are ${Math.round(r.key)}px, under the tap floor`);
+      await ctxS.close();
+    }
+  }
+});
+
 await step("every corrective kind fits a portrait phone and a landscape tablet with no scroll, division as boxed numbered groups", async () => {
   // Andy's phone (2026-09-03): "Scrolling showed up in division corrective
   // ... dotted line with rounded corners around each group with superscript
