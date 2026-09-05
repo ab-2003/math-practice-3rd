@@ -120,6 +120,11 @@ export const homeScreen = (app: App): HTMLElement => {
   const bar = el("div", { class: "topbar" });
   const wallet = coinChip(app.meta.coins);
   bar.append(wallet);
+  // THE DAILY TOKENS, beside the coins (Andy, 2026-09-05): two currencies,
+  // side by side, so the pocket is readable at a glance. The hexagon keeps
+  // them apart from the warm coin diamond, as it does everywhere else.
+  bar.append(el("div", { class: "coins token-chip", "data-probe": "token-chip", title: "Daily Tokens" },
+    tokenIcon("chip-token-ico"), el("span", { class: "chip-n", text: String(app.meta.tokens) })));
   // More than one rider on this iPad: whose coins these are, and the way to
   // the picker. With one rider the bar stays clean.
   if (app.registry.profiles.length > 1) {
@@ -130,7 +135,12 @@ export const homeScreen = (app: App): HTMLElement => {
   bar.append(el("div", { class: "grow" }));
   let streakPill: HTMLElement | null = null;
   if (app.meta.streak > 1) {
-    streakPill = el("span", { class: `pill${app.meta.streak >= 7 ? " streak-hot" : ""}`, "data-probe": "streak-pill", text: `${app.meta.streak} day streak` });
+    // Two labels, one row: the phone bar has the coins, the tokens and three
+    // buttons to fit beside this (Andy's phone, 2026-09-05, when the token
+    // chip arrived and pushed the grown-ups button off the edge).
+    streakPill = el("span", { class: `pill streak-pill${app.meta.streak >= 7 ? " streak-hot" : ""}`, "data-probe": "streak-pill" },
+      el("span", { class: "long", text: `${app.meta.streak} day streak` }),
+      el("span", { class: "short", text: `${app.meta.streak}d` }));
     bar.append(streakPill);
   }
   // Two kid controls, side by side: sound, and the trick animations.

@@ -509,12 +509,22 @@ await step("on a phone and a landscape tablet the home screen fits without a scr
         const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
         const hit = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
         const badge = rect('[data-probe="daily-badge"]');
+        const bar = document.querySelector(".topbar");
+        const gear = rect('[data-probe="grownups"]');
+        const tok = document.querySelector('[data-probe="token-chip"]');
         return { shop: rect('[data-probe="collection"]').bottom, vh: innerHeight, mon: rect(".home-creature")?.width ?? 0,
-          badgeOnHero: hit(badge, rect(".hero .sub")) || hit(badge, rect(".hero .mon-name")) || hit(badge, rect(".hero h1")) };
+          badgeOnHero: hit(badge, rect(".hero .sub")) || hit(badge, rect(".hero .mon-name")) || hit(badge, rect(".hero h1")),
+          barOver: bar.scrollWidth > bar.clientWidth + 1, gearRight: gear ? gear.right : 0, vw: innerWidth,
+          tokens: tok ? tok.textContent : null };
       });
       must(r.shop <= r.vh, `${name}: the shop button ends at ${Math.round(r.shop)} on a ${vp.width}x${r.vh} screen`);
       must(!r.badgeOnHero, `${name}: the DONE stamp sits on the hero at ${vp.width}x${vp.height}`);
       must(r.mon >= minMonster, `${name}: the monster is ${Math.round(r.mon)}px wide at ${vp.width}x${vp.height}, wanted ${minMonster}+`);
+      // The bar carries the coins AND the Daily Tokens now (Andy,
+      // 2026-09-05): nothing may be pushed off the right edge.
+      must(!r.barOver, `${name}: the top bar overflows at ${vp.width}x${vp.height}`);
+      must(r.gearRight > 0 && r.gearRight <= r.vw, `${name}: the grown-ups button ends at ${Math.round(r.gearRight)} of ${r.vw}`);
+      must(r.tokens !== null, `${name}: no Daily Token count on the home bar`);
     }
     await ctxP.close();
   }

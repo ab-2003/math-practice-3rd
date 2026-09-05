@@ -90,6 +90,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 
 .coins { font-weight: 900; font-size: 22px; color: var(--warm); display: flex; align-items: center; gap: 6px; }
 .pill { border: 4px solid var(--ink); border-radius: 999px; padding: 6px 14px; background: var(--panel-2); font-weight: 900; font-size: 15px; }
+/* The Daily Token pocket, beside the coins on the home bar. Cyan, hexagon,
+   never the coins' warm diamond (Andy, 2026-09-05). */
+.coins.token-chip { color: var(--cyan); gap: 4px; }
+.chip-token-ico { width: 24px; height: 24px; display: block; }
 
 /* ---------- home ---------- */
 
@@ -333,13 +337,22 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 @media (max-width: 700px) {
   .session-bar .grow { flex-basis: 100%; order: 9; }
 }
-.extra-tag .short { display: none; }
+.extra-tag .short, .streak-pill .short { display: none; }
 @media (max-width: 560px) {
   .topbar .btn.small { font-size: 13px; padding: 6px 10px; min-height: 44px; min-width: 44px; }
   .line-cell { max-width: 54px; }
   .trick-name { font-size: 13px; letter-spacing: -0.01em; }
   .extra-tag .long { display: none; }
   .extra-tag .short { display: inline; }
+  /* The home bar carries two currencies now: tighter gaps, and the streak
+     says "3d" rather than "3 day streak". On a phone narrower than Andy's
+     it WRAPS rather than clipping the grown-ups button off the edge. */
+  .topbar { gap: 8px; flex-wrap: wrap; row-gap: 6px; }
+  .streak-pill .long { display: none; }
+  .streak-pill .short { display: inline; }
+  .streak-pill { padding: 6px 10px; }
+  .coins { font-size: 20px; }
+  .chip-token-ico { width: 21px; height: 21px; }
 }
 
 @media (min-width: 900px) and (orientation: landscape) {

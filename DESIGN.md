@@ -1130,6 +1130,16 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.21.1 - The token pocket on the home bar.** Andy: show the Daily
+      Token count beside the coin balance, upper left, for the kid. A cyan
+      hexagon chip next to the warm coin diamond, so the two currencies
+      never read alike. It made the phone bar overflow and pushed the
+      grown-ups button off the edge, so on a phone the streak pill says
+      "3d" instead of "3 day streak", the gaps and chips tighten, and the
+      bar wraps rather than clips on anything narrower. The core probe now
+      measures the bar for overflow and the grown-ups button for the edge,
+      in every home state, and the park probe checks the chip counts the
+      pocket and follows it.
 - [x] **0.21.0 - Extra Daily Tokens.** Andy: "earn up to N extra daily
       tokens by completing M more problems", on by default, N of 1, and M
       starting at the parent's own daily problem count, so by default a

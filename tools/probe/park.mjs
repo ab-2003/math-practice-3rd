@@ -86,6 +86,21 @@ await step("the parent dials default to 7 minutes and 3 tokens a day, and a grow
   const m = await meta();
   must(m.tokens === 1 && m.parkUnlocked === true, `giving a token gave tokens=${m.tokens} unlocked=${m.parkUnlocked}`);
   must(((await page.textContent('[data-probe="token-count"]')) ?? "").includes("1 Daily Token"), "the card does not count the token");
+  // The pocket is readable from the home screen, beside the coins (Andy,
+  // 2026-09-05), and it moves when the pocket does.
+  await goHome(page);
+  must((await page.textContent('[data-probe="token-chip"]')) === "1", `the home token chip reads "${await page.textContent('[data-probe="token-chip"]')}"`);
+  const side = await page.evaluate(() => {
+    const coins = document.querySelector(".topbar .coins:not(.token-chip)").getBoundingClientRect();
+    const tok = document.querySelector('[data-probe="token-chip"]').getBoundingClientRect();
+    return { after: tok.left >= coins.right - 1, sameRow: Math.abs(tok.top - coins.top) < 8, hex: !!document.querySelector('[data-probe="token-chip"] svg') };
+  });
+  must(side.after && side.sameRow, "the token chip does not sit beside the coins");
+  must(side.hex, "the token chip has no token icon");
+  await page.evaluate(() => { const m = window.__app.meta(); m.tokens = 3; window.__app.go("home"); });
+  await page.waitForTimeout(200);
+  must((await page.textContent('[data-probe="token-chip"]')) === "3", "the home token chip does not follow the pocket");
+  await page.evaluate(() => { const m = window.__app.meta(); m.tokens = 1; window.__app.go("home"); });
 });
 
 await step("the first token lights the door, which pulses until the park is opened once", async () => {
