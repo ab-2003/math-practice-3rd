@@ -1649,6 +1649,13 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .db-token { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--cyan); color: var(--ink); font-weight: 900; font-size: clamp(15px, 3vw, 22px); letter-spacing: 0.05em; animation: pop 600ms ease-out 700ms both; }
 .token-drop-ico { width: 30px; height: 30px; }
 .token-line { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--cyan); }
+/* AN EXTRA TOKEN (Andy, 2026-09-05): shorter than the day's own fanfare and
+   led by the token itself, so the two moments never read alike. */
+.daily-banner.extra-token { animation-duration: 1700ms; }
+.extra-token .db-token { margin-top: 0; animation: pop 500ms ease-out both; }
+.extra-token .db-token-big { font-size: clamp(17px, 3.4vw, 26px); padding: 8px 20px; }
+.extra-token .db-sub { color: var(--cyan); }
+@media (prefers-reduced-motion: reduce) { .extra-token .db-token { animation-duration: 1ms; } }
 
 .park-screen { display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
 .park-screen .park-stage { cursor: pointer; }

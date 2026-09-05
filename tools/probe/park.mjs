@@ -57,6 +57,27 @@ await step("the parent dials default to 7 minutes and 3 tokens a day, and a grow
   must((await meta()).parkMinutes === 8, "the minutes did not reach meta");
   await page.click('[data-probe="park-minutes-minus"]');
   await page.waitForTimeout(300);
+  // EXTRA TOKENS (Andy, 2026-09-05): on, one more, and M starts at the
+  // day's own goal, which is 40 by default.
+  must((await page.textContent('[data-probe="extra-token-max"]')) === "1", "extra tokens does not default to one");
+  must((await page.textContent('[data-probe="extra-token-every"]')) === "40", "the extra token does not default to a day's worth of problems");
+  must(await page.$('[data-probe="extra-tokens-on"].on') !== null, "extra tokens are not on by default");
+  await page.click('[data-probe="extra-token-max-plus"]');
+  await page.waitForTimeout(300);
+  await page.click('[data-probe="extra-token-every-minus"]');
+  await page.waitForTimeout(300);
+  let dialed = await meta();
+  must(dialed.extraTokenMax === 2 && dialed.extraTokenEvery === 35, `the extra dials read N=${dialed.extraTokenMax} M=${dialed.extraTokenEvery}`);
+  await page.click('[data-probe="extra-tokens-on"]');
+  await page.waitForTimeout(300);
+  dialed = await meta();
+  must(dialed.extraTokensOn === false, "the extra tokens switch did not turn off");
+  // The dials move on their own: turning the offer off leaves N and M alone.
+  must(dialed.extraTokenMax === 2 && dialed.extraTokenEvery === 35, "switching off moved the other dials");
+  await page.click('[data-probe="extra-tokens-on"]');
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { const m = window.__app.meta(); m.extraTokenMax = 1; m.extraTokenEvery = m.dailyGoal; });
+  await page.evaluate(() => window.__app.save());
   const card = (await page.textContent('[data-probe="token-card"]')) ?? "";
   must(!/test|alpha/i.test(card), `the token card still talks about testing: ${card.slice(0, 80)}`);
   must(await page.$('[data-probe="reopen-park"][disabled]') !== null, "Reopen is offered with nothing spent today");
@@ -299,6 +320,74 @@ await step("the minutes dial sets the clock, and the stage fits an iPad on its s
   must(fit.bottom <= fit.vh, `the stage runs off a landscape iPad (${fit.bottom} > ${fit.vh})`);
   must(fit.h > 200, `the stage is tiny on a landscape iPad (${fit.h}px)`);
   await ctx2.close();
+});
+
+await step("past the day's work, every M more landings drops another token, up to N", async () => {
+  // Andy, 2026-09-05: "earn up to N extra daily tokens by completing M more
+  // problems". Here: two extras, one every two landings.
+  await goHome(page);
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.animations = false;
+    m.strands = { add: true, sub: false, mul: false, div: false };
+    m.missing = { add: false, sub: false, mul: false, div: false, pct: 0 };
+    // The day's work is done and its token already dropped.
+    m.dailyGoal = 3; m.doseDay = window.__app.day(); m.doseCount = 3;
+    m.tokens = 1; m.tokenDay = window.__app.day(); m.tokensToday = 1;
+    m.extraTokensOn = true; m.extraTokenMax = 2; m.extraTokenEvery = 2;
+  });
+  // No reload from here: a goal of 3 would come back as 10, the floor the
+  // loader clamps to.
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  await answerN(page, 1);
+  must(await page.$('[data-probe="extra-token"]') === null, "an extra token dropped a landing early");
+  must((await meta()).tokens === 1, "an extra token was banked early");
+  await answerN(page, 1);
+  await page.waitForSelector('[data-probe="extra-token"]', { timeout: 6000 });
+  must(((await page.textContent('[data-probe="extra-token"]')) ?? "").includes("2 more for another"), "the extra token does not say what the next one costs");
+  must((await meta()).tokens === 2, "the extra token did not reach the pocket");
+  await page.waitForSelector('[data-probe="extra-token"]', { state: "detached", timeout: 6000 });
+  // The second extra is the last one: it says so instead of asking for more.
+  await answerN(page, 2);
+  await page.waitForSelector('[data-probe="extra-token"]', { timeout: 6000 });
+  must(((await page.textContent('[data-probe="extra-token"]')) ?? "").includes("every token today"), "the last extra token still asks for more");
+  const after = await meta();
+  must(after.tokens === 3 && after.tokensToday === 3, `after both extras tokens=${after.tokens} today=${after.tokensToday}`);
+  await page.waitForSelector('[data-probe="extra-token"]', { state: "detached", timeout: 6000 });
+  // Past the cap, nothing more drops however long the run goes.
+  await answerN(page, 4);
+  must(await page.$('[data-probe="extra-token"]') === null, "a token dropped past the cap");
+  must((await meta()).tokens === 3, "tokens kept coming past the cap");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await escapeAll(page);
+});
+
+await step("switched off, the day's work drops one token and that is the day", async () => {
+  await goHome(page);
+  await page.evaluate(() => {
+    const m = window.__app.meta();
+    m.dailyGoal = 3; m.doseDay = window.__app.day(); m.doseCount = 3;
+    m.tokens = 1; m.tokenDay = window.__app.day(); m.tokensToday = 1;
+    m.extraTokensOn = false; m.extraTokenMax = 2; m.extraTokenEvery = 2;
+  });
+  await page.click('[data-probe="start"]');
+  await page.waitForSelector('[data-probe="problem"]');
+  await answerN(page, 6);
+  must(await page.$('[data-probe="extra-token"]') === null, "an extra token dropped with the offer switched off");
+  must((await meta()).tokens === 1, "tokens grew with the offer switched off");
+  await page.waitForSelector(".keypad:not(.asleep)", { timeout: 8000 });
+  await page.click('[data-probe="quit"]');
+  await page.waitForSelector(".sheet");
+  await page.click(".sheet .btn.go");
+  await page.waitForTimeout(400);
+  await escapeAll(page);
+  await page.evaluate(() => { const m = window.__app.meta(); m.dailyGoal = 40; m.doseDay = null; m.doseCount = 0; m.extraTokensOn = true; m.extraTokenMax = 1; m.extraTokenEvery = 40; m.tokens = 0; m.tokenDay = null; m.tokensToday = 0; });
+  await page.evaluate(() => window.__app.save());
 });
 
 await step("the token drops with the day's work, once, and the run's story says so", async () => {

@@ -504,16 +504,26 @@ export const chainLabel = (chain: readonly ChainItem[]): string => chain.map((c)
 // Tokens: earned once a day, spent one at a time, capped per day.
 // ---------------------------------------------------------------------------
 
-export const PARK_DEFAULTS = { minutes: 7, tokensPerDay: 3 } as const;
+export const PARK_DEFAULTS = { minutes: 7, tokensPerDay: 3, extraMax: 1, extraEvery: 40 } as const;
 
 export interface ParkMeta {
   tokens: number;
   tokenDay: number | null;
+  /** How many of today's tokens have already dropped. The day's work drops
+   *  the first; the extras (below) drop after it. */
+  tokensToday: number;
   parkDay: number | null;
   parkSpent: number;
   parkMinutes: number;
   parkTokensPerDay: number;
   parkUnlocked: boolean;
+  /** EXTRA TOKENS (Andy, 2026-09-05): "earn up to N extra daily tokens by
+   *  completing M more problems". On by default, one extra, and M starts as
+   *  the day's own goal, so by default a second token costs another full
+   *  day's worth of landings. The three dials move independently. */
+  extraTokensOn: boolean;
+  extraTokenMax: number;
+  extraTokenEvery: number;
 }
 
 export const spentToday = (m: ParkMeta, day: number): number => (m.parkDay === day ? m.parkSpent : 0);
@@ -528,13 +538,41 @@ export const parkGate = (m: ParkMeta, day: number): ParkGate => {
   return { ok: true, leftToday: left };
 };
 
-/** The day's dose is done: one token, once a day. Returns whether it dropped. */
-export const awardDailyToken = (m: ParkMeta, day: number): boolean => {
-  if (m.tokenDay === day) return false;
+/**
+ * What today's LANDINGS have earned: one token for finishing the day's
+ * work, then one more for every `extraTokenEvery` landings past the goal,
+ * up to `extraTokenMax` extras. Nothing at all before the work is done.
+ */
+export const tokensEarned = (landed: number, goal: number, m: ParkMeta): number => {
+  if (goal <= 0 || landed < goal) return 0;
+  if (!m.extraTokensOn || m.extraTokenMax <= 0 || m.extraTokenEvery <= 0) return 1;
+  return 1 + Math.min(m.extraTokenMax, Math.floor((landed - goal) / m.extraTokenEvery));
+};
+
+/**
+ * Drop whatever today's landings have earned and not yet been given, and
+ * say how many dropped. Idempotent: calling it again with the same landings
+ * drops nothing, so it is safe on every answer.
+ */
+export const awardTokens = (m: ParkMeta, day: number, landed: number, goal: number): number => {
+  const given = m.tokenDay === day ? m.tokensToday : 0;
+  const drop = Math.max(0, tokensEarned(landed, goal, m) - given);
+  if (drop === 0) return 0;
   m.tokenDay = day;
-  m.tokens += 1;
+  m.tokensToday = given + drop;
+  m.tokens += drop;
   m.parkUnlocked = true;
-  return true;
+  return drop;
+};
+
+/** How many landings until the next token, or null when there is no next
+ *  one today. For the words on the screen, never for the award itself. */
+export const landingsToNextToken = (landed: number, goal: number, m: ParkMeta): number | null => {
+  if (landed < goal) return goal - landed;
+  if (!m.extraTokensOn || m.extraTokenMax <= 0 || m.extraTokenEvery <= 0) return null;
+  const got = Math.floor((landed - goal) / m.extraTokenEvery);
+  if (got >= m.extraTokenMax) return null;
+  return m.extraTokenEvery - ((landed - goal) % m.extraTokenEvery);
 };
 
 /** Spend one. The caller has passed the gate and the confirm. */

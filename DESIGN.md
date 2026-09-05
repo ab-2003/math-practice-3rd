@@ -1130,6 +1130,18 @@ zero image requests.
       tabs shrink on a phone so no label escapes. And the
       number to type on the corrective screen stands apart: the theme's
       blue, underlined, a size up.
+- [x] **0.21.0 - Extra Daily Tokens.** Andy: "earn up to N extra daily
+      tokens by completing M more problems", on by default, N of 1, and M
+      starting at the parent's own daily problem count, so by default a
+      second token costs another full day's worth of landings. Three dials
+      on the Skate Park card, all synced and all independent: the switch,
+      how many more a day, and how many landings each one costs. The token
+      model moved from "one a day" to "what today's landings have earned":
+      `tokensEarned` and `awardTokens` in core/park.ts, with `tokensToday`
+      so a long run catches up in one drop and never pays twice. Each
+      extra lands with its own short banner, led by the token itself and
+      saying how many more for the next one, or that the day is complete.
+      Probed both ways, and the switch proved by mutation.
 - [x] **0.20.11 - The daily streak, earned by finishing and paid at home.**
       Andy: "completing the day's work is how you earn the next day in the
       streak", worth 20 coins for any streak over one day, with a ceremony

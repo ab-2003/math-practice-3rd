@@ -87,7 +87,7 @@ const hooks = (page: Page) => ({
   pushNow: () => page.evaluate(() => (window as unknown as Hooks).__cloud.pushNow()),
   running: () => page.evaluate(() => {
     const m = (window as unknown as Hooks).__app.meta();
-    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], addDots: m["addDots"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedOn: m["elapsedOn"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"], parkMinutes: m["parkMinutes"], parkTokensPerDay: m["parkTokensPerDay"], dayLimitMinutes: m["dayLimitMinutes"] } as Record<SyncKey, unknown>;
+    return { strands: m["strands"], caps: m["caps"], missing: m["missing"], addDots: m["addDots"], dailyGoal: m["dailyGoal"], speedLimit: m["speedLimit"], elapsedOn: m["elapsedOn"], elapsedLevel: m["elapsedLevel"], elapsedAnalog: m["elapsedAnalog"], parkMinutes: m["parkMinutes"], parkTokensPerDay: m["parkTokensPerDay"], extraTokenMax: m["extraTokenMax"], extraTokenEvery: m["extraTokenEvery"], extraTokensOn: m["extraTokensOn"], dayLimitMinutes: m["dayLimitMinutes"] } as Record<SyncKey, unknown>;
   }),
   deviceId: () => page.evaluate(() => localStorage.getItem("tl-device-id")),
 });
@@ -163,6 +163,9 @@ const doorSet = async (d: Device, key: SyncKey): Promise<void> => {
     case "elapsedAnalog": await p.click('[data-probe="elapsed-analog"]'); break;
     case "parkMinutes": await p.click('[data-probe="park-minutes-plus"]'); break;
     case "parkTokensPerDay": await p.click('[data-probe="park-tokens-minus"]'); break;
+    case "extraTokenMax": await p.click('[data-probe="extra-token-max-plus"]'); break;
+    case "extraTokenEvery": await p.click('[data-probe="extra-token-every-minus"]'); break;
+    case "extraTokensOn": await p.click('[data-probe="extra-tokens-on"]'); break;
     case "dayLimitMinutes": await p.click('[data-probe="day-limit"]'); break;
   }
   await p.waitForTimeout(400);
@@ -172,14 +175,16 @@ const doorExpect: Record<SyncKey, unknown> = {
   strands: { add: true, sub: true, mul: true, div: false },
   missing: { add: true, sub: false, mul: false, div: false, pct: 20 },
   caps: { add: 10, sub: null, mul: null, div: null },
-  addDots: true, dailyGoal: 35, speedLimit: 9, elapsedOn: false, elapsedLevel: 2, elapsedAnalog: true, parkMinutes: 8, parkTokensPerDay: 2, dayLimitMinutes: 30,
+  addDots: true, dailyGoal: 35, speedLimit: 9, elapsedOn: false, elapsedLevel: 2, elapsedAnalog: true, parkMinutes: 8, parkTokensPerDay: 2,
+  extraTokenMax: 2, extraTokenEvery: 35, extraTokensOn: false, dayLimitMinutes: 30,
 };
 /** A second, different value per field, for the rider's own changes. */
 const riderValues: Record<SyncKey, unknown> = {
   strands: { add: true, sub: false, mul: true, div: false },
   missing: { add: true, sub: true, mul: false, div: false, pct: 30 },
   caps: { add: 12, sub: 10, mul: null, div: null },
-  addDots: false, dailyGoal: 55, speedLimit: 4, elapsedOn: true, elapsedLevel: 3, elapsedAnalog: false, parkMinutes: 12, parkTokensPerDay: 5, dayLimitMinutes: 45,
+  addDots: false, dailyGoal: 55, speedLimit: 4, elapsedOn: true, elapsedLevel: 3, elapsedAnalog: false, parkMinutes: 12, parkTokensPerDay: 5,
+  extraTokenMax: 4, extraTokenEvery: 20, extraTokensOn: true, dayLimitMinutes: 45,
 };
 
 // =============================================================================

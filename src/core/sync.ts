@@ -22,7 +22,7 @@ import type { Caps, Strands } from "./types";
 // elapsedOn sits AFTER the level and the clock faces on purpose: the door's
 // controls for those step aside when the round is off, and loop-eye walks
 // the door's controls in this order.
-export const SYNCED_KEYS = ["strands", "caps", "missing", "addDots", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "elapsedOn", "parkMinutes", "parkTokensPerDay", "dayLimitMinutes"] as const;
+export const SYNCED_KEYS = ["strands", "caps", "missing", "addDots", "dailyGoal", "speedLimit", "elapsedLevel", "elapsedAnalog", "elapsedOn", "parkMinutes", "parkTokensPerDay", "extraTokenMax", "extraTokenEvery", "extraTokensOn", "dayLimitMinutes"] as const;
 export type SyncKey = typeof SYNCED_KEYS[number];
 
 export interface MissingLike { add: boolean; sub: boolean; mul: boolean; div: boolean; pct: number }
@@ -42,6 +42,11 @@ export interface SyncedSettings {
   /** THE SKATE PARK: minutes one Daily Token buys, and tokens a day. */
   parkMinutes: number;
   parkTokensPerDay: number;
+  /** EXTRA TOKENS (Andy, 2026-09-05): how many more a day may be earned,
+   *  and how many landings past the day's work each one costs. */
+  extraTokenMax: number;
+  extraTokenEvery: number;
+  extraTokensOn: boolean;
   /** THE DAY'S GAME TIME (Andy, 2026-09-03): minutes of game a day, every
    *  screen but the grown-ups'; 0 is off, and on is never under 15. */
   dayLimitMinutes: number;
@@ -125,6 +130,9 @@ export const validValue = (k: SyncKey, v: unknown): boolean => {
     case "elapsedAnalog": return typeof v === "boolean";
     case "parkMinutes": return typeof v === "number" && Number.isInteger(v) && v >= 2 && v <= 20;
     case "parkTokensPerDay": return typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 8;
+    case "extraTokenMax": return typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 5;
+    case "extraTokenEvery": return typeof v === "number" && Number.isInteger(v) && v >= 5 && v <= 80;
+    case "extraTokensOn": return typeof v === "boolean";
     case "dayLimitMinutes": return typeof v === "number" && Number.isInteger(v) && (v === 0 || (v >= 15 && v <= 180));
   }
 };
@@ -153,7 +161,9 @@ export const fieldsToApply = (
 export const settingsOf = (meta: SyncedSettings): SyncedSettings => ({
   strands: meta.strands, caps: meta.caps, missing: meta.missing, addDots: meta.addDots, dailyGoal: meta.dailyGoal,
   speedLimit: meta.speedLimit, elapsedOn: meta.elapsedOn, elapsedLevel: meta.elapsedLevel, elapsedAnalog: meta.elapsedAnalog,
-  parkMinutes: meta.parkMinutes, parkTokensPerDay: meta.parkTokensPerDay, dayLimitMinutes: meta.dayLimitMinutes,
+  parkMinutes: meta.parkMinutes, parkTokensPerDay: meta.parkTokensPerDay,
+  extraTokenMax: meta.extraTokenMax, extraTokenEvery: meta.extraTokenEvery, extraTokensOn: meta.extraTokensOn,
+  dayLimitMinutes: meta.dayLimitMinutes,
 });
 
 /** Fields the grown-ups' door has set that the rider's device is not yet
@@ -188,6 +198,9 @@ export const describeField = (k: SyncKey, v: unknown): string => {
     case "elapsedAnalog": return (v as boolean) ? "analog clock faces on" : "analog clock faces off";
     case "parkMinutes": return `${v as number} park minutes per token`;
     case "parkTokensPerDay": return `${v as number} park ${(v as number) === 1 ? "token" : "tokens"} a day`;
+    case "extraTokenMax": return `up to ${v as number} extra ${(v as number) === 1 ? "token" : "tokens"} a day`;
+    case "extraTokenEvery": return `${v as number} more problems per extra token`;
+    case "extraTokensOn": return (v as boolean) ? "extra tokens on" : "extra tokens off";
     case "dayLimitMinutes": return (v as number) === 0 ? "no daily time limit" : `${v as number} minutes of game a day`;
   }
 };

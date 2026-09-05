@@ -236,6 +236,24 @@ export const settingsCards = (model: SettingsModel): HTMLElement[] => {
     stepper(String(perDay), "park-tokens",
       () => model.set("parkTokensPerDay", Math.max(1, perDay - 1)),
       () => model.set("parkTokensPerDay", Math.min(8, perDay + 1)))));
+  // EXTRA TOKENS (Andy, 2026-09-05): "earn up to N extra daily tokens by
+  // completing M more problems". Both dials stay on the card whether the
+  // switch is on or off, so the offer can be read before it is taken.
+  const exMax = model.get("extraTokenMax");
+  const exEvery = model.get("extraTokenEvery");
+  const exOn = model.get("extraTokensOn");
+  park.append(setRow("Extra tokens", exOn
+    ? `${exMax} more a day at most, one for every ${exEvery} problems landed past the day's work`
+    : "off: the day's work drops one token and that is the day",
+    knob(exOn, "extra-tokens-on", "Extra tokens", () => model.set("extraTokensOn", !exOn))));
+  park.append(setRow("Extra tokens at most", "how many more may be earned in a day",
+    stepper(String(exMax), "extra-token-max",
+      () => model.set("extraTokenMax", Math.max(1, exMax - 1)),
+      () => model.set("extraTokenMax", Math.min(5, exMax + 1)))));
+  park.append(setRow("Problems for each", "landed past the day's work, for one more token",
+    stepper(String(exEvery), "extra-token-every",
+      () => model.set("extraTokenEvery", Math.max(5, exEvery - 5)),
+      () => model.set("extraTokenEvery", Math.min(80, exEvery + 5)))));
   cards.push(park);
 
   const bonus = el("div", { class: "card", "data-probe": "bonus-card" });

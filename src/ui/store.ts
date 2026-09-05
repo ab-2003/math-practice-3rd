@@ -230,10 +230,16 @@ export interface Meta {
    *  the park's own scoreboard; it earns no coins. */
   tokens: number;
   tokenDay: number | null;
+  tokensToday: number;
   parkDay: number | null;
   parkSpent: number;
   parkMinutes: number;
   parkTokensPerDay: number;
+  /** EXTRA TOKENS (Andy, 2026-09-05): up to N more a day, one for every M
+   *  landings past the day's work. On, one, and M = the day's goal. */
+  extraTokensOn: boolean;
+  extraTokenMax: number;
+  extraTokenEvery: number;
   parkUnlocked: boolean;
   parkSeen: boolean;
   parkBest: number;
@@ -259,8 +265,9 @@ export const freshMeta = (): Meta => ({
   elapsedOn: true,
   elapsedLevel: 1,
   elapsedAnalog: false,
-  tokens: 0, tokenDay: null, parkDay: null, parkSpent: 0,
+  tokens: 0, tokenDay: null, tokensToday: 0, parkDay: null, parkSpent: 0,
   parkMinutes: PARK_DEFAULTS.minutes, parkTokensPerDay: PARK_DEFAULTS.tokensPerDay,
+  extraTokensOn: true, extraTokenMax: PARK_DEFAULTS.extraMax, extraTokenEvery: PARK_DEFAULTS.extraEvery,
   parkUnlocked: false, parkSeen: false, parkBest: 0, parkBestChain: 0,
   lastColdDay: null,
   settingsStamps: {},
@@ -301,6 +308,12 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   boardsOwned: raw.boardsOwned ?? [],
   boardOf: raw.boardOf ?? {},
   tokens: Math.max(0, raw.tokens ?? 0),
+  tokensToday: Math.max(0, raw.tokensToday ?? (raw.tokenDay === undefined || raw.tokenDay === null ? 0 : 1)),
+  extraTokensOn: raw.extraTokensOn ?? true,
+  extraTokenMax: Math.max(1, Math.min(5, raw.extraTokenMax ?? PARK_DEFAULTS.extraMax)),
+  // M starts as the day's own goal, which is what "the same number of
+  // problems as the daily count" means for a rider whose goal is not 40.
+  extraTokenEvery: Math.max(5, Math.min(80, raw.extraTokenEvery ?? raw.dailyGoal ?? PARK_DEFAULTS.extraEvery)),
   streakDay: raw.streakDay ?? null,
   streakOwed: Math.max(0, raw.streakOwed ?? 0),
   parkMinutes: Math.max(2, Math.min(20, raw.parkMinutes ?? PARK_DEFAULTS.minutes)),

@@ -22,7 +22,7 @@ import {
 import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { canAffordAny, riderVoice } from "../core/creatures";
-import { awardDailyToken } from "../core/park";
+import { awardTokens, landingsToNextToken } from "../core/park";
 import { dayOver } from "./day-limit";
 import { tokenIcon, icoPause } from "./icons";
 import { presentFact, type Presented } from "../core/present";
@@ -135,9 +135,9 @@ export const sessionScreen = (app: App): HTMLElement => {
       const b = el("div", { class: "daily-banner", "data-probe": "daily-banner" },
         el("div", { class: "db-big", text: "TODAY'S WORK DONE!" }),
         el("div", { class: "db-sub", text: "everything from here is extra credit" }));
-      // THE DAILY TOKEN (0.19.0): one per day, the moment the dose is met.
-      // The first one ever lights the Skate Park button on the home screen.
-      if (awardDailyToken(app.meta, app.day)) {
+      // THE DAILY TOKEN (0.19.0): the day's work drops one, the moment the
+      // dose is met. The first one ever lights the Skate Park at home.
+      if (awardTokens(app.meta, app.day, doseNow(), app.meta.dailyGoal) > 0) {
         tokenDropped = true;
         void app.save();
         window.setTimeout(() => sfx.token(), 650);
@@ -147,6 +147,27 @@ export const sessionScreen = (app: App): HTMLElement => {
       let fin = false;
       const done = (): void => { if (fin) return; fin = true; b.remove(); resolve(); };
       const t = window.setTimeout(done, 2100);
+      b.addEventListener("animationend", (e) => {
+        if (e.target !== b) return;
+        window.clearTimeout(t); done();
+      });
+    });
+
+  /**
+   * AN EXTRA TOKEN (Andy, 2026-09-05): past the day's work, every M more
+   * landings drops another, up to the parent's N. Its own short banner, so
+   * it never reads as the day's own fanfare a second time.
+   */
+  const showExtraToken = (toNext: number | null): Promise<void> =>
+    new Promise((resolve) => {
+      const b = el("div", { class: "daily-banner extra-token", "data-probe": "extra-token" },
+        el("div", { class: "db-token db-token-big" }, tokenIcon("token-drop-ico"), el("span", { text: "+1 DAILY TOKEN" })),
+        el("div", { class: "db-sub", text: toNext === null ? "that is every token today. Nice riding." : `${toNext} more for another` }));
+      window.setTimeout(() => sfx.token(), 120);
+      left.append(b);
+      let fin = false;
+      const done = (): void => { if (fin) return; fin = true; b.remove(); resolve(); };
+      const t = window.setTimeout(done, 1700);
       b.addEventListener("animationend", (e) => {
         if (e.target !== b) return;
         window.clearTimeout(t); done();
@@ -368,6 +389,14 @@ export const sessionScreen = (app: App): HTMLElement => {
         }
         sfx.dailyJingle();
         await showDailyDone();
+      } else if (doseCelebrated) {
+        // Past the day's work: the extra tokens, one every M landings.
+        const drop = awardTokens(app.meta, app.day, doseNow(), app.meta.dailyGoal);
+        if (drop > 0) {
+          tokenDropped = true;
+          void app.save();
+          await showExtraToken(landingsToNextToken(doseNow(), app.meta.dailyGoal, app.meta));
+        }
       }
       if (endsLine) {
         // THE LINE IS AN EVENT. With animations on, his creature rides the

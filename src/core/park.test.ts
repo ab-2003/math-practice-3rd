@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  awardDailyToken, BASE_SPEED, chainLabel, G, KICK_VY, LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX,
+  awardTokens, tokensEarned, landingsToNextToken, BASE_SPEED, chainLabel, G, KICK_VY, LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX,
   PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, railLength, release, RIDER_X, riderX, spendToken, spentToday, surfaceY, trickFor, update,
   type Obstacle, type ParkEvent, type ParkMeta, type ParkState,
 } from "./park";
@@ -398,16 +398,64 @@ describe("the clock", () => {
 });
 
 describe("tokens", () => {
-  const fresh = (): ParkMeta => ({ tokens: 0, tokenDay: null, parkDay: null, parkSpent: 0, parkMinutes: 7, parkTokensPerDay: 3, parkUnlocked: false });
+  const fresh = (over: Partial<ParkMeta> = {}): ParkMeta => ({
+    tokens: 0, tokenDay: null, tokensToday: 0, parkDay: null, parkSpent: 0, parkMinutes: 7, parkTokensPerDay: 3,
+    parkUnlocked: false, extraTokensOn: true, extraTokenMax: 1, extraTokenEvery: 40, ...over,
+  });
 
-  it("drops one token per day, and unlocks the park the first time", () => {
+  it("drops one token for the day's work, and unlocks the park the first time", () => {
     const m = fresh();
-    expect(awardDailyToken(m, 10)).toBe(true);
-    expect(awardDailyToken(m, 10)).toBe(false);
+    expect(awardTokens(m, 10, 39, 40)).toBe(0);      // the work is not done
+    expect(awardTokens(m, 10, 40, 40)).toBe(1);
+    expect(awardTokens(m, 10, 40, 40)).toBe(0);      // and only the once
     expect(m.tokens).toBe(1);
     expect(m.parkUnlocked).toBe(true);
-    expect(awardDailyToken(m, 11)).toBe(true);
+    expect(awardTokens(m, 11, 40, 40)).toBe(1);      // a new day, a new token
     expect(m.tokens).toBe(2);
+    expect(m.tokensToday).toBe(1);
+  });
+
+  it("earns one more for every M landings past the day's work, up to N", () => {
+    // Andy, 2026-09-05: "earn up to N extra daily tokens by completing M
+    // more problems". The default is one more, at another full day's worth.
+    const m = fresh();
+    expect(tokensEarned(39, 40, m)).toBe(0);
+    expect(tokensEarned(40, 40, m)).toBe(1);
+    expect(tokensEarned(79, 40, m)).toBe(1);
+    expect(tokensEarned(80, 40, m)).toBe(2);
+    expect(tokensEarned(200, 40, m)).toBe(2);        // capped at one extra
+    const three = fresh({ extraTokenMax: 3, extraTokenEvery: 10 });
+    expect(tokensEarned(50, 40, three)).toBe(2);
+    expect(tokensEarned(69, 40, three)).toBe(3);
+    expect(tokensEarned(70, 40, three)).toBe(4);
+    expect(tokensEarned(1000, 40, three)).toBe(4);
+  });
+
+  it("drops the extras as they are earned, once each, and never when switched off", () => {
+    const m = fresh({ extraTokenMax: 2, extraTokenEvery: 10 });
+    expect(awardTokens(m, 10, 40, 40)).toBe(1);
+    expect(awardTokens(m, 10, 49, 40)).toBe(0);
+    expect(awardTokens(m, 10, 50, 40)).toBe(1);
+    expect(awardTokens(m, 10, 60, 40)).toBe(1);
+    expect(awardTokens(m, 10, 90, 40)).toBe(0);      // both extras already given
+    expect(m.tokens).toBe(3);
+    expect(m.tokensToday).toBe(3);
+    // A long run after a reload catches up in one drop, never twice.
+    const back = fresh({ extraTokenMax: 2, extraTokenEvery: 10 });
+    expect(awardTokens(back, 10, 60, 40)).toBe(3);
+    expect(awardTokens(back, 10, 60, 40)).toBe(0);
+    const off = fresh({ extraTokensOn: false });
+    expect(awardTokens(off, 10, 40, 40)).toBe(1);
+    expect(awardTokens(off, 10, 400, 40)).toBe(0);
+  });
+
+  it("says how many landings the next token is away, and when there is no next one", () => {
+    const m = fresh({ extraTokenMax: 1, extraTokenEvery: 10 });
+    expect(landingsToNextToken(35, 40, m)).toBe(5);   // the day's work itself
+    expect(landingsToNextToken(40, 40, m)).toBe(10);
+    expect(landingsToNextToken(45, 40, m)).toBe(5);
+    expect(landingsToNextToken(50, 40, m)).toBeNull(); // the one extra is in
+    expect(landingsToNextToken(50, 40, fresh({ extraTokensOn: false }))).toBeNull();
   });
 
   it("gates on tokens first, then on the day's cap, which resets with the day", () => {

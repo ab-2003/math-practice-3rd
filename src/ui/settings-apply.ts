@@ -69,6 +69,12 @@ export const applySetting = <K extends SyncKey>(
     app.meta.parkMinutes = value as number;
   } else if (key === "parkTokensPerDay") {
     app.meta.parkTokensPerDay = value as number;
+  } else if (key === "extraTokenMax") {
+    app.meta.extraTokenMax = value as number;
+  } else if (key === "extraTokenEvery") {
+    app.meta.extraTokenEvery = value as number;
+  } else if (key === "extraTokensOn") {
+    app.meta.extraTokensOn = value as boolean;
   } else if (key === "dayLimitMinutes") {
     app.meta.dayLimitMinutes = value as number;
   }
