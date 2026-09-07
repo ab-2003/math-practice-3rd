@@ -20,6 +20,16 @@ const swipe = async (dx, dy) => {
   const x = b.x + b.width * 0.6, y = b.y + b.height * 0.6;
   await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + dx, y + dy, { steps: 4 }); await page.mouse.up();
 };
+/** Tick until the rider is on a hump and within `within` units of its lip. */
+const rollTo = (within) => page.evaluate((w) => {
+  const s = window.__park.state();
+  for (let i = 0; i < 900; i++) {
+    window.__park.tick(1 / 60);
+    const o = s.rider.pipeOn;
+    if (s.rider.mode === "roll" && o !== null && Math.abs(s.scroll + 130 - window.__park.lip(o)) <= w) return { rolled: true, mode: s.rider.mode, y: s.rider.y };
+  }
+  return { rolled: false, mode: s.rider.mode, y: s.rider.y };
+}, within);
 /** A flat line for the physics steps: the laid-down obstacles go, and no more come. */
 const flatLine = () => page.evaluate(() => { const s = window.__park.state(); s.obstacles = []; s.nextX = 1e12; });
 /** Through the gate and the tutorial (if it shows) into a live run, then hold the clock. */
@@ -129,7 +139,7 @@ await step("Drop in spends the token, runs the tutorial once, and starts the clo
   await page.waitForSelector('[data-probe="park-tutorial"]', { timeout: 4000 });
   let cards = 0;
   while (await page.$('[data-probe="park-tutorial"]') !== null && cards < 8) { cards += 1; await page.click(".sheet .row .btn.go"); await page.waitForTimeout(150); }
-  must(cards === 4, `the tutorial ran ${cards} cards, wanted 4`);
+  must(cards === 5, `the tutorial ran ${cards} cards, wanted 5`);
   await page.waitForSelector('[data-probe="park-stage"]', { timeout: 4000 });
   const m = await meta();
   must(m.tokens === 0 && m.parkSpent === 1 && m.parkDay === window_day(m) && m.parkSeen === true, `after entering: ${JSON.stringify({ tokens: m.tokens, spent: m.parkSpent, seen: m.parkSeen })}`);
@@ -248,6 +258,80 @@ await step("the half pipe launches big air off the top rail, and the handrail sl
   const after = await park();
   must(slid, "the rider never slid the handrail");
   must(after.rider.mode === "ground" && after.score > before, `after the stairs: ${after.rider.mode}, score ${before} -> ${after.score}`);
+});
+
+await step("the hump rolls up, pops at the lip with a free trick, and carries a rail to grind", async () => {
+  // Andy, 2026-09-07: "an inside out half pipe ... up the parabola, across
+  // the (variable length) flat top, down the symmetrical parabola", with a
+  // tap at the lip that pops and throws in a trick.
+  await flatLine();
+  await page.evaluate(() => {
+    const s = window.__park.state();
+    s.rider.mode = "ground"; s.rider.y = 0; s.rider.vy = 0; s.rider.trick = null; s.rider.pipeOn = null; s.chain = [];
+    s.obstacles.push({ id: 9101, kind: "hump", x: s.scroll + 220, w: 600, h: 80, used: false });
+  });
+  await tick(0.05);
+  must(await page.$('[data-probe="park-stage"] .park-hump .hump-art') !== null, "the hump is not drawn");
+  must(await page.$('[data-probe="park-stage"] .park-hump .pop-zone') !== null, "the hump's lip window is not drawn");
+  // Roll up the bank, by hand, until the rider is inside the pop window.
+  const up = await rollTo(25);
+  must(up.rolled, `the rider never rolled onto the hump (mode ${up.mode})`);
+  must(up.y > 60, `the rider is not up on the deck (y ${up.y})`);
+  must(await page.$('[data-probe="park-stage"] .park-hump.live') !== null, "the lip does not light while he is on the hump");
+  must(((await page.textContent(".park-pops")) ?? "").includes("TAP AT THE LIP"), "the first hump of a run does not say what the lit lip is for");
+  const before = await park();
+  await tap();
+  const after = await park();
+  must(after.rider.mode === "air" && after.rider.vy === 880, `the tap at the lip did not pop (${after.rider.mode}, vy ${after.rider.vy})`);
+  must(after.rider.trick !== null, "the pop threw in no trick");
+  must(((await page.textContent(".park-pops")) ?? "").includes("PERFECT POP"), "the pop is not called out on screen");
+  await tick(2.5);
+  const done = await park();
+  must(done.bails === before.bails, `the free trick bailed (${before.bails} -> ${done.bails})`);
+  must(done.tricksLanded === before.tricksLanded + 1, `the free trick did not land (${before.tricksLanded} -> ${done.tricksLanded})`);
+  must(done.score > before.score, `the popped trick paid nothing (${before.score} -> ${done.score})`);
+
+  // And the rail let into the flat top: it stands on the deck, and it grinds.
+  await tick(2);
+  await flatLine();
+  await page.evaluate(() => {
+    const s = window.__park.state();
+    const x = s.scroll + 220;
+    s.rider.mode = "ground"; s.rider.y = 0; s.rider.vy = 0; s.rider.trick = null; s.rider.pipeOn = null; s.chain = [];
+    s.speed = 250; // the base line, so the timing here is the mechanic, not a frame race
+    s.obstacles.push({ id: 9102, kind: "hump", x, w: 900, h: 80, used: false });
+    s.obstacles.push({ id: 9103, kind: "rail", x: x + 375, w: 150, h: 114, base: 80, used: false });
+  });
+  await tick(0.05);
+  const legs = await page.$$eval('[data-probe="park-stage"] .park-rail .rail-leg', (ns) => ns.map((n) => n.style.bottom));
+  must(legs.length === 2 && legs.every((b) => b !== "" && b !== "0px"), `the perched rail's legs run to the ground: ${JSON.stringify(legs)}`);
+  const near = await page.evaluate(() => {
+    const s = window.__park.state();
+    const rail = s.obstacles.find((o) => o.id === 9103);
+    for (let i = 0; i < 900; i++) {
+      window.__park.tick(1 / 60);
+      // On the deck, past the pop window, with room to come down on the rail.
+      if (s.rider.mode === "roll" && s.rider.y > 78 && rail.x - (s.scroll + 130) <= 0.5 * s.speed) return { ok: true, mode: s.rider.mode };
+      if (s.rider.mode === "bail") return { ok: false, mode: "bail" };
+    }
+    return { ok: false, mode: s.rider.mode };
+  });
+  must(near.ok, `never reached the ollie point for the rail on the deck (${near.mode})`);
+  await tap();
+  const rode = await page.evaluate(() => {
+    const s = window.__park.state();
+    let ground = false;
+    for (let i = 0; i < 600; i++) {
+      window.__park.tick(1 / 60);
+      if (s.rider.mode === "grind") ground = true;
+      if (s.rider.mode === "bail") return { grind: ground, bailed: true, score: s.score };
+      if (ground && s.rider.mode === "roll") return { grind: true, bailed: false, score: s.score };
+    }
+    return { grind: ground, bailed: false, score: s.score };
+  });
+  must(rode.grind && !rode.bailed, `the rail on the deck did not grind (${JSON.stringify(rode)})`);
+  const back = await park();
+  must(back.rider.y > 70, `he came off the rail below the deck (y ${back.rider.y})`);
 });
 
 await step("the ? button replays the tutorial and pauses the clock", async () => {

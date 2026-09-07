@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  awardTokens, tokensEarned, landingsToNextToken, BASE_SPEED, chainLabel, G, KICK_VY, LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX,
-  PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, railLength, release, RIDER_X, riderX, spendToken, spentToday, surfaceY, trickFor, update,
+  awardTokens, tokensEarned, landingsToNextToken, BASE_SPEED, chainLabel, G, HUMP_POP_VY, HUMP_POP_X, HUMP_RAMP, humpLip, KICK_VY,
+  LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX, PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, railLength, release, RIDER_X,
+  riderX, spendToken, spentToday, surfaceY, terrainFactor, trickFor, update,
   type Obstacle, type ParkEvent, type ParkMeta, type ParkState,
 } from "./park";
 
@@ -352,6 +353,148 @@ describe("the line", () => {
     }
   });
 
+  // THE HUMP (Andy, 2026-09-07): "an inside out half pipe ... up the
+  // parabola, across the (variable length) flat top, down the symmetrical
+  // parabola", with a pop to time at the lip.
+  it("shapes the hump as the pipe turned inside out: banks tangent to the ground, a flat top between them", () => {
+    const s = flat();
+    const o = plant(s, "hump", 200, 2 * HUMP_RAMP + 240, 80);
+    expect(surfaceY(o, o.x)).toBeCloseTo(0, 5);
+    expect(surfaceY(o, o.x + o.w)).toBeCloseTo(0, 5);
+    expect(surfaceY(o, humpLip(o))).toBeCloseTo(80, 5);
+    // The flat top is the width that is not the two banks, and it is flat.
+    for (const u of [HUMP_RAMP, HUMP_RAMP + 120, o.w - HUMP_RAMP]) expect(surfaceY(o, o.x + u)).toBeCloseTo(80, 5);
+    // The two banks mirror each other, and both climb without a step in them.
+    for (let u = 0; u <= HUMP_RAMP; u += 10) expect(surfaceY(o, o.x + u)).toBeCloseTo(surfaceY(o, o.x + o.w - u), 5);
+    let last = -1;
+    for (let u = 0; u <= HUMP_RAMP; u += 5) { const y = surfaceY(o, o.x + u); expect(y).toBeGreaterThan(last); last = y; }
+    // Tangent at the foot and at the lip: nothing on it is a corner.
+    expect(surfaceY(o, o.x + 2)).toBeLessThan(1);
+    expect(surfaceY(o, humpLip(o) - 4)).toBeGreaterThan(79.5);
+  });
+
+  it("rolls up the hump, drags on the climb, hurries on the drop, and rolls off the far side", () => {
+    const s = flat();
+    const o = plant(s, "hump", 60, 2 * HUMP_RAMP + 200, 80);
+    runUntil(s, () => s.rider.mode === "roll", 3);
+    expect(s.rider.mode).toBe("roll");
+    // The line slows going up, runs true across the top, and hurries down.
+    const at = (x: number): number => { const c = { ...s, scroll: x - RIDER_X }; return terrainFactor(c as ParkState); };
+    expect(at(o.x + HUMP_RAMP / 2)).toBeLessThan(0.85);
+    expect(at(o.x + HUMP_RAMP + 100)).toBe(1);
+    expect(at(o.x + o.w - HUMP_RAMP / 2)).toBeGreaterThan(1.15);
+    // And the ride itself: up to the deck, across it, back to the ground.
+    let top = 0;
+    runUntil(s, () => { top = Math.max(top, s.rider.y); return s.rider.mode === "ground"; }, 8);
+    expect(top).toBeCloseTo(80, 1);
+    expect(s.rider.mode).toBe("ground");
+    expect(s.rider.y).toBe(0);
+    expect(s.bails).toBe(0);
+  });
+
+  it("pops off the lip on a timed tap, and the trick it throws in always lands", () => {
+    const picked = new Set<string>();
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = newRun(7, seed);
+      s.nextX = 1e9;
+      const o = plant(s, "hump", 60, 2 * HUMP_RAMP + 260, 80);
+      const lip = humpLip(o);
+      runUntil(s, () => s.rider.mode === "roll" && riderX(s) >= lip - HUMP_POP_X / 2, 4);
+      expect(s.rider.mode, `seed ${seed}`).toBe("roll");
+      const ev = tap(s);
+      const popped = ev.find((e) => e.kind === "pop");
+      expect(popped, `seed ${seed}`).toBeDefined();
+      if (popped?.kind === "pop") picked.add(popped.trick.name);
+      expect(kinds(ev)).toEqual(["ollie", "pop", "trick"]);
+      expect(s.rider.vy).toBe(HUMP_POP_VY);
+      const rest = runUntil(s, (e) => e.some((x) => x.kind === "bank" || x.kind === "bail"), 5);
+      expect(kinds(rest), `seed ${seed}`).not.toContain("bail");
+      expect(kinds(rest), `seed ${seed}`).toContain("trickDone");
+      const banked = rest.find((e) => e.kind === "bank");
+      expect(banked?.kind === "bank" && banked.chain.length, `seed ${seed}`).toBe(1);
+      expect(s.tricksLanded, `seed ${seed}`).toBe(1);
+    }
+    // It really is a random one of the four, not the same every time.
+    expect(picked.size).toBeGreaterThan(1);
+  });
+
+  it("is a plain ollie when the tap misses the lip, and the pop is not a swipe", () => {
+    const s = flat();
+    const o = plant(s, "hump", 60, 2 * HUMP_RAMP + 400, 80);
+    runUntil(s, () => s.rider.mode === "roll" && riderX(s) > humpLip(o) + HUMP_POP_X + 40, 5);
+    expect(s.rider.mode).toBe("roll");
+    const ev = tap(s);
+    expect(kinds(ev)).toEqual(["ollie"]);
+    expect(s.rider.vy).toBe(OLLIE_VY);
+    // A swipe at the lip is the ordinary swipe: an ollie into that trick.
+    const q = flat();
+    const p = plant(q, "hump", 60, 2 * HUMP_RAMP + 260, 80);
+    runUntil(q, () => q.rider.mode === "roll" && riderX(q) >= humpLip(p) - 10, 4);
+    const ev2: ParkEvent[] = [];
+    press(q); release(q, "left", ev2);
+    expect(kinds(ev2)).toEqual(["ollie", "trick"]);
+    expect(q.rider.vy).toBe(OLLIE_VY);
+  });
+
+  it("lets a rail into the flat top: grind it with an ollie, or ride into it and bail", () => {
+    const build = (): { s: ParkState; rail: Obstacle } => {
+      const s = flat();
+      const h = plant(s, "hump", 60, 2 * HUMP_RAMP + 300, 80);
+      const rail: Obstacle = { id: 998, kind: "rail", x: h.x + HUMP_RAMP + 75, w: 150, h: 80 + 34, base: 80, used: false };
+      s.obstacles.push(rail);
+      return { s, rail };
+    };
+    // Ignored, it is a wall like every other rail.
+    const a = build();
+    const hit = runUntil(a.s, (e) => e.some((x) => x.kind === "bail"), 6);
+    expect(kinds(hit)).toContain("bail");
+    // Ollied at the right moment, it is a grind, and the grind banks.
+    const b = build();
+    runUntil(b.s, () => b.s.rider.mode === "roll" && b.rail.x - riderX(b.s) <= 0.62 * b.s.speed, 5);
+    expect(b.s.rider.mode).toBe("roll");
+    tap(b.s);
+    const ev = runUntil(b.s, (e) => e.some((x) => x.kind === "grind" || x.kind === "bail"), 3);
+    expect(kinds(ev)).toContain("grind");
+    expect(kinds(ev)).not.toContain("bail");
+    const rest = runUntil(b.s, (e) => e.some((x) => x.kind === "bank" || x.kind === "bail"), 6);
+    expect(kinds(rest)).not.toContain("bail");
+    const banked = rest.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.chain.map((c) => c.name)).toEqual(["GRIND"]);
+    // And he comes off it back onto the hump, not through it.
+    expect(b.s.rider.y).toBeGreaterThan(70);
+  });
+
+  it("lays humps down the line, some of them with a rail let into the top", () => {
+    const lines: Obstacle[][] = [];
+    for (let seed = 1; seed <= 30; seed++) {
+      const s = newRun(7, seed);
+      s.elapsed = 60;
+      const seen: Obstacle[] = [];
+      for (let t = 0; t < 20; t += STEP) {
+        update(s, STEP);
+        for (const o of s.obstacles) if (!seen.some((x) => x.id === o.id)) seen.push({ ...o });
+      }
+      lines.push(seen);
+    }
+    const humps = lines.flat().filter((o) => o.kind === "hump");
+    expect(humps.length).toBeGreaterThan(4);
+    // The flat top varies in length, which was the point of it.
+    const flats = humps.map((o) => o.w - 2 * HUMP_RAMP);
+    expect(Math.min(...flats)).toBeGreaterThan(80);
+    expect(Math.max(...flats) - Math.min(...flats)).toBeGreaterThan(100);
+    // Some of them carry one rail, standing on the deck, inside the top.
+    const perched = lines.flatMap((line) => line.filter((o) => o.kind === "rail" && o.base !== undefined).map((r) => ({ r, line })));
+    expect(perched.length).toBeGreaterThan(0);
+    for (const { r, line } of perched) {
+      const under = line.find((h) => h.kind === "hump" && h.x < r.x && h.x + h.w > r.x + r.w);
+      expect(under).toBeDefined();
+      expect(r.base).toBe(under!.h);
+      expect(r.h).toBe(under!.h + 34);
+      expect(r.x).toBeGreaterThanOrEqual(under!.x + HUMP_RAMP);
+      expect(r.x + r.w).toBeLessThanOrEqual(under!.x + under!.w - HUMP_RAMP);
+    }
+  });
+
   it("a kicker launches without a tap, and high enough for a backflip", () => {
     const s = flat();
     plant(s, "kicker", 30, 84, 44);
@@ -401,7 +544,9 @@ describe("the line", () => {
     }
     expect(seen.length).toBeGreaterThan(20);
     expect(new Set(seen.map((o) => o.kind)).size).toBeGreaterThanOrEqual(4);
-    const sorted = [...seen].sort((x, y) => x.x - y.x);
+    // A rail standing on a hump's deck is the one thing that sits INSIDE
+    // another piece; everything else is laid end to end.
+    const sorted = [...seen].filter((o) => o.base === undefined).sort((x, y) => x.x - y.x);
     for (let i = 1; i < sorted.length; i++) expect(sorted[i]!.x).toBeGreaterThanOrEqual(sorted[i - 1]!.x + sorted[i - 1]!.w);
     // Everything spawns ahead of the stage's right edge.
     for (const o of seen) expect(o.x).toBeGreaterThan(PARK_W - RIDER_X);

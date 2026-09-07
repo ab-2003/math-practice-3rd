@@ -21,8 +21,8 @@
 import { boardFor } from "../core/boards";
 import { helmetById } from "../core/gear";
 import {
-  BASE_SPEED, chainLabel, gateWords, HOLD_MS, newRun, PARK_H, PARK_TRICKS, PARK_W, parkGate, press, release,
-  RIDER_X, spendToken, spentToday, surfaceY, update, type Obstacle, type ParkEvent, type ParkState, type Swipe,
+  BASE_SPEED, chainLabel, gateWords, HOLD_MS, HUMP_POP_X, humpLip, newRun, PARK_H, PARK_TRICKS, PARK_W, parkGate, press, release,
+  RIDER_X, spendToken, spentToday, surfaceSlope, surfaceY, update, type Obstacle, type ParkEvent, type ParkState, type Swipe,
 } from "../core/park";
 import { svg } from "./dom";
 import type { App } from "./appstate";
@@ -56,6 +56,7 @@ const tutorial = (onDone: () => void): void => {
     { title: "Swipe in the air for a trick", body: "Up KICKFLIP · down NOSE GRAB · right 360 SPIN · left BACKFLIP. Swipe on the ground and you jump straight into it.", pic: (g) => g.append(gesture("swipe")) },
     { title: "Land it, or bail", body: "A trick takes time. Touch down before it is done and you bail. Longer tricks need bigger air: hold the ollie, or hit a kicker ramp.", pic: (g) => g.append(gesture("land")) },
     { title: "Rails and chains", body: "Ollie ONTO a rail to grind, tap to hop off. Every trick and grind before you touch flat ground joins one chain, and the chain pays its points TIMES its length.", pic: (g) => g.append(gesture("rail")) },
+    { title: "Pop off the hump", body: "A hump rolls up, along its flat top, and down the far side. TAP right as you reach the lit lip and you POP high, with a free trick thrown in. Sometimes there is a rail up there to grind.", pic: (g) => g.append(gesture("hump")) },
   ];
   let i = 0;
   const show = (): void => {
@@ -78,8 +79,8 @@ const tutorial = (onDone: () => void): void => {
   show();
 };
 
-/** Little ink pictograms for the tutorial: a finger, an arrow, a rail. */
-const gesture = (kind: "tap" | "swipe" | "land" | "rail"): HTMLElement => {
+/** Little ink pictograms for the tutorial: a finger, an arrow, a rail, a hump. */
+const gesture = (kind: "tap" | "swipe" | "land" | "rail" | "hump"): HTMLElement => {
   const wrap = el("div", { class: `tut-g tut-${kind}` });
   const finger = el("div", { class: "tut-finger" });
   if (kind === "tap") { wrap.append(finger, el("div", { class: "tut-ring" })); }
@@ -88,6 +89,8 @@ const gesture = (kind: "tap" | "swipe" | "land" | "rail"): HTMLElement => {
       el("div", { class: "tut-arrow left", text: "←" }), el("div", { class: "tut-arrow right", text: "→" }), finger);
   } else if (kind === "land") {
     wrap.append(el("div", { class: "tut-arc" }), el("div", { class: "tut-ground" }), el("div", { class: "tut-board" }));
+  } else if (kind === "hump") {
+    wrap.append(el("div", { class: "tut-ground" }), el("div", { class: "tut-bump" }, el("i", { class: "tut-lip" })), finger);
   } else {
     wrap.append(el("div", { class: "tut-railbar" }), el("div", { class: "tut-ground" }), el("div", { class: "tut-board on-rail" }));
   }
@@ -176,6 +179,9 @@ export const parkScreen = (app: App): HTMLElement => {
   let manual = false; // a probe drives the clock by hand
   let finished = false;
   let grindBeat = 0;
+  /** The first hump of a run says what the lit lip is for, once. */
+  let onHump = false;
+  let hinted = false;
   const nodes = new Map<number, HTMLElement>();
   const trickCls = PARK_TRICKS.map((t) => `pk-${t.id}`);
 
@@ -201,7 +207,33 @@ export const parkScreen = (app: App): HTMLElement => {
     if (o.kind === "gap") { n.style.height = `${px(30)}px`; }
     else { n.style.height = `${px(o.h)}px`; }
     if (o.kind === "rail") {
-      n.append(el("div", { class: "rail-bar" }), el("div", { class: "rail-leg l" }), el("div", { class: "rail-leg r" }));
+      const bar = el("div", { class: "rail-bar" });
+      const legs = [el("div", { class: "rail-leg l" }), el("div", { class: "rail-leg r" })];
+      // A rail let into a hump's top is the same rail: the bar keeps its own
+      // thickness and the legs stand on the deck, not away down on the ground.
+      if (o.base !== undefined) {
+        bar.style.height = `${px(9)}px`;
+        for (const g of legs) { g.style.top = `${px(8)}px`; g.style.bottom = `${px(o.base)}px`; }
+      }
+      n.append(bar, ...legs);
+    } else if (o.kind === "hump") {
+      // The bank, the deck, the far bank, sampled off the same curve the
+      // model rides, with the POP window lit along the lip.
+      const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "hump-art" });
+      const line = (from: number, to: number, n2: number): string => {
+        const pts: string[] = [];
+        for (let i = 0; i <= n2; i++) { const u = from + ((to - from) * i) / n2; pts.push(`${u.toFixed(1)} ${(o.h - surfaceY(o, o.x + u)).toFixed(1)}`); }
+        return `M${pts.join(" L")}`;
+      };
+      const back = line(0, o.w, 48);
+      g.append(svg("path", { d: `${back} L${o.w} ${o.h} L0 ${o.h} Z`, fill: "#232C3B", stroke: "#05070A", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      g.append(svg("path", { d: back, fill: "none", stroke: "#8A97A6", "stroke-width": 3, "vector-effect": "non-scaling-stroke" }));
+      const lipU = humpLip(o) - o.x;
+      g.append(svg("path", { d: line(lipU - HUMP_POP_X, lipU + HUMP_POP_X, 10), fill: "none", class: "pop-zone", stroke: "#B6FF3B", "stroke-width": 7, "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }));
+      n.append(g);
+      const mark = el("i", { class: "hump-mark" });
+      mark.style.left = `${px(lipU)}px`;
+      n.append(mark);
     } else if (o.kind === "pipe") {
       // The bowl, sampled from the same cosine the model rides.
       const g = svg("svg", { viewBox: `0 0 ${o.w} ${o.h}`, preserveAspectRatio: "none", class: "pipe-art" });
@@ -254,6 +286,7 @@ export const parkScreen = (app: App): HTMLElement => {
       let n = nodes.get(o.id);
       if (!n) { n = obstacleNode(o); nodes.set(o.id, n); world.append(n); }
       n.style.transform = `translateX(${px(o.x - st.scroll)}px)`;
+      if (o.kind === "hump") n.classList.toggle("live", st.rider.mode === "roll" && st.rider.pipeOn?.id === o.id);
     }
     for (const [id, n] of nodes) {
       if (!st.obstacles.some((o) => o.id === id)) { n.remove(); nodes.delete(id); }
@@ -273,12 +306,13 @@ export const parkScreen = (app: App): HTMLElement => {
       else if (r.trick.id === "spin") t = `rotateY(${360 * p}deg)`;
       else if (r.trick.id === "grab") t = `scale(0.94, 0.86) rotate(${-14 * Math.sin(p * Math.PI)}deg)`;
       else t = `rotate(${-8 * Math.sin(p * Math.PI)}deg)`;
-    } else if (r.mode === "pipe" || r.mode === "slide") {
-      const o = r.mode === "pipe" ? r.pipeOn : r.grindOn;
+    } else if (r.mode === "pipe" || r.mode === "roll" || r.mode === "slide") {
+      const o = r.mode === "slide" ? r.grindOn : r.pipeOn;
       if (o) {
-        const x = st.scroll + RIDER_X;
-        const slope = (surfaceY(o, x + 6) - surfaceY(o, x - 6)) / 12;
-        t = `rotate(${(-Math.atan(slope) * 180 / Math.PI).toFixed(1)}deg)`;
+        const slope = surfaceSlope(o, st.scroll + RIDER_X);
+        // Leaning with the curve, and crouched into it while a pop charges.
+        const c = r.holding ? Math.min(1, (r.holdT * 1000) / HOLD_MS) : 0;
+        t = `rotate(${(-Math.atan(slope) * 180 / Math.PI).toFixed(1)}deg)${c > 0 ? ` scale(${1 + c * 0.04}, ${1 - c * 0.14})` : ""}`;
       }
     } else if (r.holding && (r.mode === "ground" || r.mode === "grind")) {
       const c = Math.min(1, (r.holdT * 1000) / HOLD_MS);
@@ -290,6 +324,8 @@ export const parkScreen = (app: App): HTMLElement => {
     // The deck spins on its own for a kickflip.
     if (r.trick?.id === "kickflip") board.style.transform = `rotate(${360 * Math.min(1, r.trickT * 1000 / r.trick.ms)}deg)`;
     else board.style.transform = "";
+    if (r.mode === "roll" && !onHump && !hinted) { hinted = true; pop("TAP AT THE LIP!", "warm"); }
+    onHump = r.mode === "roll";
     riderEl.classList.toggle("grinding", r.mode === "grind" || r.mode === "slide");
     riderEl.classList.toggle("bailed", r.mode === "bail");
     riderEl.classList.toggle("charging", r.holding && r.mode !== "air");
@@ -330,6 +366,7 @@ export const parkScreen = (app: App): HTMLElement => {
         case "slide": sfx.grindTick(); grindBeat = 0; pop("RAIL SLIDE"); break;
         case "pipeIn": sfx.thud(); pop("DROP IN!"); break;
         case "pipeOut": sfx.launch(); pop("BIG AIR!", "warm"); break;
+        case "pop": sfx.launch(); pop("PERFECT POP!", "warm"); break;
         case "bail": sfx.crash(); pop(e.why === "gap" ? "SPLASH!" : "BAIL!", "hot"); puff.classList.remove("go"); void puff.offsetWidth; puff.classList.add("go"); break;
         case "bank": sfx.bank(e.mult); pop(`+${e.points}`, `bank m${Math.min(5, e.mult)}`); scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); break;
         case "timeUp": void end(); break;
@@ -480,6 +517,7 @@ export const parkScreen = (app: App): HTMLElement => {
     /** Stop the real clock so a probe can drive time by hand. */
     hold: () => { manual = true; cancelAnimationFrame(raf); },
     swipe: swipeOf,
+    lip: (o: Obstacle) => humpLip(o),
     end: () => { void end(); },
   };
   return root;

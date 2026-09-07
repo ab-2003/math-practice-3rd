@@ -1743,8 +1743,15 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .park-rail .rail-leg.l { left: 6%; } .park-rail .rail-leg.r { right: 6%; }
 .park-box { background: var(--orange); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
 .park-box .box-stripe { position: absolute; inset: 40% 0 auto 0; height: 22%; background: var(--ink); opacity: 0.55; }
-.park-pipe, .park-stairs, .park-steps { overflow: visible; }
-.park-pipe .pipe-art, .park-stairs .stairs-art, .park-steps .stairs-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.park-pipe, .park-stairs, .park-steps, .park-hump { overflow: visible; }
+.park-pipe .pipe-art, .park-stairs .stairs-art, .park-steps .stairs-art, .park-hump .hump-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* The hump's lip: the window to tap in, lit dim until he is on it. */
+.park-hump .pop-zone { opacity: 0.5; }
+.park-hump.live .pop-zone { opacity: 1; animation: hump-lip 460ms ease-in-out infinite alternate; }
+.park-hump .hump-mark { position: absolute; top: -24px; width: 0; height: 0; margin-left: -9px; border: 9px solid transparent; border-top: 12px solid var(--acid); opacity: 0.55; }
+.park-hump.live .hump-mark { opacity: 1; animation: hump-mark 460ms ease-in-out infinite alternate; }
+@keyframes hump-lip { from { stroke-width: 7; opacity: 0.7; } to { stroke-width: 11; opacity: 1; } }
+@keyframes hump-mark { from { transform: translateY(-3px); } to { transform: translateY(3px); } }
 .park-pipe .coping { position: absolute; top: -4px; width: 10px; height: 8px; border-radius: 4px; background: var(--dim); border: 2px solid var(--ink); }
 .park-pipe .coping.l { left: -5px; } .park-pipe .coping.r { right: -5px; }
 .park-kicker .kicker-face { position: absolute; inset: 0; background: var(--cyan); clip-path: polygon(0 100%, 100% 0, 100% 100%); }
@@ -1787,12 +1794,16 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .tut-ground, .tut-railbar { position: absolute; left: 10px; right: 10px; height: 4px; background: var(--line); bottom: 12px; }
 .tut-railbar { bottom: 50px; left: 90px; right: 30px; background: var(--panel-2); border: 3px solid var(--ink); height: 6px; border-radius: 3px; }
 .tut-arc { position: absolute; left: 30px; right: 30px; bottom: 16px; height: 70px; border: 3px dashed var(--acid); border-bottom: none; border-radius: 80px 80px 0 0; }
+.tut-hump .tut-bump { position: absolute; left: 34px; right: 34px; bottom: 16px; height: 56px; background: var(--panel-2); border: 3px solid var(--ink); border-bottom: none; border-radius: 44px 44px 0 0; }
+.tut-hump .tut-lip { position: absolute; left: 6px; top: -5px; width: 46px; height: 7px; border-radius: 4px; background: var(--acid); }
+.tut-hump .tut-finger { left: 62px; top: 34px; margin: 0; }
 .tut-board { position: absolute; left: 30px; bottom: 16px; width: 44px; height: 8px; background: var(--acid); border: 3px solid var(--ink); border-radius: 4px; animation: tut-land 2s ease-in-out infinite; }
 @keyframes tut-land { 0%, 10% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(75px, -60px) rotate(-360deg); } 90%, 100% { transform: translate(150px, 0) rotate(-360deg); } }
 .tut-board.on-rail { animation: tut-rail 2.4s ease-in-out infinite; }
 @keyframes tut-rail { 0%, 10% { transform: translate(0, 0); } 30% { transform: translate(70px, -42px); } 70% { transform: translate(130px, -42px); } 90%, 100% { transform: translate(170px, 0); } }
 @media (prefers-reduced-motion: reduce) {
-  .park-btn.park-new, .tut-finger, .tut-ring, .tut-board, .park-rider .board-trail { animation: none !important; }
+  .park-btn.park-new, .tut-finger, .tut-ring, .tut-board, .park-rider .board-trail,
+  .park-hump.live .pop-zone, .park-hump.live .hump-mark { animation: none !important; }
 }
 
 /* ---------- the home screen on a phone: no scroll to reach the shop ---------- */
