@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  awardTokens, tokensEarned, landingsToNextToken, BASE_SPEED, chainLabel, G, HUMP_POP_VY, HUMP_POP_X, HUMP_RAMP, humpLip, KICK_VY,
+  awardTokens, tokensEarned, landingsToNextToken, BASE_SPEED, chainLabel, G, humpHeight, HUMP_POP_VY, HUMP_POP_X, HUMP_RAMP, humpLip, KICK_VY,
   LAND_TOL, MAX_SPEED, newRun, OLLIE_VY, OLLIE_VY_MAX, PARK_TRICKS, PARK_W, parkGate, PIPE_VY, press, railLength, release, RIDER_X,
   riderX, spendToken, spentToday, surfaceY, terrainFactor, trickFor, update,
   type Obstacle, type ParkEvent, type ParkMeta, type ParkState,
@@ -392,6 +392,30 @@ describe("the line", () => {
     expect(s.bails).toBe(0);
   });
 
+  it("stands as tall as the half pipe now and then, and that bank leans hard on the line", () => {
+    // Andy, 2026-09-07: "sometimes make the inside out half pipe taller
+    // (height of regular half pipe)", which in this park is 124.
+    const heights = [];
+    for (let i = 0; i < 100; i++) heights.push(humpHeight(i / 100));
+    const tall = heights.filter((h) => h >= 110);
+    expect(Math.max(...heights)).toBeGreaterThanOrEqual(118);
+    expect(Math.max(...heights)).toBeLessThanOrEqual(124);
+    expect(Math.min(...heights)).toBeGreaterThan(70);
+    expect(tall.length / heights.length).toBeGreaterThan(0.2);
+    expect(tall.length / heights.length).toBeLessThan(0.4);
+    // A tall one is ridden the same way, and its bank saturates the drag.
+    const s = flat();
+    const o = plant(s, "hump", 60, 2 * HUMP_RAMP + 200, 124);
+    const at = (x: number): number => terrainFactor({ ...s, scroll: x - RIDER_X } as ParkState);
+    runUntil(s, () => s.rider.mode === "roll", 3);
+    expect(at(o.x + HUMP_RAMP / 2)).toBeCloseTo(0.68, 5);
+    expect(at(o.x + o.w - HUMP_RAMP / 2)).toBeCloseTo(1.32, 5);
+    let top = 0;
+    runUntil(s, () => { top = Math.max(top, s.rider.y); return s.rider.mode === "ground"; }, 10);
+    expect(top).toBeCloseTo(124, 1);
+    expect(s.bails).toBe(0);
+  });
+
   it("pops off the lip on a timed tap, and the trick it throws in always lands", () => {
     const picked = new Set<string>();
     for (let seed = 1; seed <= 12; seed++) {
@@ -482,6 +506,12 @@ describe("the line", () => {
     const flats = humps.map((o) => o.w - 2 * HUMP_RAMP);
     expect(Math.min(...flats)).toBeGreaterThan(80);
     expect(Math.max(...flats) - Math.min(...flats)).toBeGreaterThan(100);
+    // The height varies on its own roll, so a long hump is not always a
+    // tall one, and some of them stand as tall as the half pipe.
+    expect(humps.some((o) => o.h >= 112)).toBe(true);
+    expect(humps.some((o) => o.h <= 100)).toBe(true);
+    const long = humps.filter((o) => o.w - 2 * HUMP_RAMP > 300);
+    expect(long.some((o) => o.h <= 100)).toBe(true);
     // Some of them carry one rail, standing on the deck, inside the top.
     const perched = lines.flatMap((line) => line.filter((o) => o.kind === "rail" && o.base !== undefined).map((r) => ({ r, line })));
     expect(perched.length).toBeGreaterThan(0);

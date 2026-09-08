@@ -263,12 +263,13 @@ await step("the half pipe launches big air off the top rail, and the handrail sl
 await step("the hump rolls up, pops at the lip with a free trick, and carries a rail to grind", async () => {
   // Andy, 2026-09-07: "an inside out half pipe ... up the parabola, across
   // the (variable length) flat top, down the symmetrical parabola", with a
-  // tap at the lip that pops and throws in a trick.
+  // tap at the lip that pops and throws in a trick. This one is a TALL one,
+  // as high as the half pipe, which is the shape he asked for next.
   await flatLine();
   await page.evaluate(() => {
     const s = window.__park.state();
     s.rider.mode = "ground"; s.rider.y = 0; s.rider.vy = 0; s.rider.trick = null; s.rider.pipeOn = null; s.chain = [];
-    s.obstacles.push({ id: 9101, kind: "hump", x: s.scroll + 220, w: 600, h: 80, used: false });
+    s.obstacles.push({ id: 9101, kind: "hump", x: s.scroll + 220, w: 600, h: 124, used: false });
   });
   await tick(0.05);
   must(await page.$('[data-probe="park-stage"] .park-hump .hump-art') !== null, "the hump is not drawn");
@@ -276,7 +277,8 @@ await step("the hump rolls up, pops at the lip with a free trick, and carries a 
   // Roll up the bank, by hand, until the rider is inside the pop window.
   const up = await rollTo(25);
   must(up.rolled, `the rider never rolled onto the hump (mode ${up.mode})`);
-  must(up.y > 60, `the rider is not up on the deck (y ${up.y})`);
+  // Near the lip of a tall one: higher than any short hump's whole deck.
+  must(up.y > 110, `the rider is not up on the tall bank (y ${up.y})`);
   must(await page.$('[data-probe="park-stage"] .park-hump.live') !== null, "the lip does not light while he is on the hump");
   must(((await page.textContent(".park-pops")) ?? "").includes("TAP AT THE LIP"), "the first hump of a run does not say what the lit lip is for");
   const before = await park();

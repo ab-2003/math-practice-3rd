@@ -206,12 +206,17 @@ type Piece = { kind: ObstacleKind; dx: number; w: number; h: number; base?: numb
 export const humpLip = (o: Obstacle): number => o.x + Math.min(HUMP_RAMP, o.w / 2);
 /** One hump, with a flat top of `flat` units and a deck `h` high. */
 const hump = (flat: number, h: number): Piece => ({ kind: "hump", dx: 0, w: 2 * HUMP_RAMP + flat, h });
+/** A hump's deck height from a roll of its own: knee high mostly, and now
+ *  and then (Andy, 2026-09-07) as tall as the half pipe, which is a much
+ *  steeper bank up and a much faster one down. */
+export const humpHeight = (r: number): number =>
+  r < 0.28 ? Math.round(112 + r * 42) : Math.round(74 + ((r - 0.28) / 0.72) * 26);
 
 /** A flat rail's length from the roll `r` (0..1) and the difficulty `d`
  *  (0..1): 140 to 340 early, 360 to 560 once the line is fast. */
 export const railLength = (r: number, d: number): number => Math.round(140 + r * 200 + d * 220);
 
-const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Piece[] }> = [
+const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number, r2: number) => Piece[] }> = [
   // Flat rails vary a lot in length, and run longer as the line speeds up
   // (Andy, 2026-09-03): a short one early, a long grind later.
   { min: 0, make: (r, d) => [{ kind: "rail", dx: 0, w: railLength(r, d), h: 34 }] },
@@ -243,14 +248,14 @@ const PATTERNS: ReadonlyArray<{ min: number; make: (r: number, d: number) => Pie
   // THE HUMP (Andy, 2026-09-07): "an inside out half pipe ... up the
   // parabola, across the (variable length) flat top, down the symmetrical
   // parabola". The flat top runs from a hop's worth to a long cruise.
-  { min: 0.1, make: (r) => [hump(90 + r * 300, 74 + r * 24)] },
+  { min: 0.1, make: (r, _d, r2) => [hump(90 + r * 300, humpHeight(r2))] },
   // "Sometimes in the middle of the flat top there is a single rail to
   // grind". Its top runs long when a rail is up there, so there is deck
   // enough to pick a line: ollie onto the rail, or pop at the lip and fly
   // clean over it.
-  { min: 0.4, make: (r) => {
+  { min: 0.4, make: (r, _d, r2) => {
     const flat = 460 + r * 300;
-    const h = 78 + r * 22;
+    const h = humpHeight(r2);
     return [hump(flat, h), { kind: "rail", dx: HUMP_RAMP + flat / 2 - 75, w: 150, h: h + 34, base: h }];
   } },
 ];
@@ -259,7 +264,9 @@ const spawn = (s: ParkState): void => {
   const d = difficulty(s);
   const open = PATTERNS.filter((p) => p.min <= d);
   const pick = open[Math.floor(rng(s) * open.length)]!;
-  const pieces = pick.make(rng(s), d);
+  // Two rolls: one for the pattern's own shape, one for anything it wants
+  // to vary on its own (a hump's height against its length).
+  const pieces = pick.make(rng(s), d, rng(s));
   let end = s.nextX;
   for (const p of pieces) {
     const x = s.nextX + p.dx;
