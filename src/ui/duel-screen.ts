@@ -6,7 +6,9 @@
  * Three views. THE PICK: 10, 15 or 20 rounds, each with today's plays and
  * the won/lost record. THE REVEAL: the opponent, a random monster from the
  * roster in a random lid on a random deck (never his own), and a line of
- * good-sport trash talk, narrated when the device can. THE DUEL: the half
+ * good-sport trash talk, spoken in the rival's own recorded voice
+ * (core/voices.ts; the clip is fetched while he picks, so it plays the
+ * moment the reveal opens). THE DUEL: the half
  * pipe, a status strip (his score, the round, theirs), and THE DECK: his
  * hint on his runs; the problem, the meter and THE KEYPAD on the
  * computer's. The keypad is the session's own, the same three by four pad
@@ -31,8 +33,8 @@ import { boardFor, BOARDS, PLAIN_BOARD, type Board } from "../core/boards";
 import { ROSTER, type Creature } from "../core/creatures";
 import { HELMETS, helmetById, type Helmet } from "../core/gear";
 import {
-  ASK_MS, askClear, askKey, askSubmit, begin, courseFor, DUEL_H, DUEL_LENS, duelPlaysLeft, duelPlaysTotal, earnDuelToken, gesture, newDuel,
-  recordDuel, surfaceSlope, surfaceY, trashTalk, update, useDuelPlay, type DuelEvent, type DuelLen, type DuelState, type Skater, type Who,
+  ASK_MS, askClear, askKey, askSubmit, begin, courseFor, DUEL_H, DUEL_LENS, duelPlaysLeft, duelPlaysTotal, earnDuelToken, gesture, needSolved,
+  newDuel, recordDuel, surfaceSlope, surfaceY, trashTalk, update, useDuelPlay, type DuelEvent, type DuelLen, type DuelState, type Skater, type Who,
 } from "../core/duel";
 import { inPlay } from "../core/session";
 import { PARK_TRICKS } from "../core/park";
@@ -46,13 +48,15 @@ import { swipeOf } from "./park-screen";
 import { doseDone, resolveRider } from "./screens";
 import { sfx } from "./sfx";
 import { sheet } from "./sheet";
+import { voiceFor, voiceUrl, VOICES } from "../core/voices";
 
 /** The band under the flat, in design units. */
 const GROUND = 18;
 /** The skater's art, in design units of width. */
 const SKATER_W = 116;
-/** How long the winner dances before the screen goes home. */
-const WIN_MS = 4600;
+/** How long the winner dances before the screen goes home: the whole of
+ *  the chiptune (Andy: "make sure the dance happens for the whole jingle"). */
+const WIN_MS = 5400;
 
 interface Rig { creature: Creature; helmet: Helmet | undefined; board: Board; level: number; name: string }
 
@@ -79,15 +83,17 @@ const pickOpponent = (mine: Rig): Rig => {
   return { creature, helmet, board, level: 1, name: creature.name };
 };
 
-/** Say it out loud where the device can, unless the sound is off. */
-const narrate = (app: App, text: string): void => {
+/** The rival's recorded line, if its voice has been recorded: fetched now
+ *  so it is ready to play the moment the reveal opens. */
+const loadLine = (opp: Rig, line: string): { clip: HTMLAudioElement | null; slug: string } => {
+  const v = voiceFor(opp.creature.id);
+  const url = v === null ? null : voiceUrl(v, line);
+  if (url === null) return { clip: null, slug: "" };
   try {
-    if (app.meta.muted || typeof window.speechSynthesis === "undefined") return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.02; u.pitch = 1.15;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  } catch { /* no voice on this device */ }
+    const a = new Audio(url);
+    a.preload = "auto";
+    return { clip: a, slug: v!.slug };
+  } catch { return { clip: null, slug: "" }; }
 };
 
 const rigArt = (rig: Rig, cls: string): HTMLElement => {
@@ -119,11 +125,20 @@ export const duelScreen = (app: App): HTMLElement => {
   let s: DuelState | null = null;
   let len: DuelLen = 10;
   let opp: Rig = mine;
+  let line = "";
+  let voice: { clip: HTMLAudioElement | null; slug: string } = { clip: null, slug: "" };
   let finished = false;
+  const hush = (): void => { try { voice.clip?.pause(); } catch { /* nothing playing */ } };
 
   // ---- the pick ---------------------------------------------------------------
   const pickView = (): HTMLElement => {
     roundPill.hidden = true;
+    hush();
+    // The next rival and its line are chosen here, so the clip is loading
+    // while he reads the card.
+    opp = pickOpponent(mine);
+    line = trashTalk(Math.floor(Math.random() * 1e6));
+    voice = loadLine(opp, line);
     const card = el("div", { class: "card duel-pick reveal", "data-probe": "duel-pick" });
     card.append(duelIcon("duel-big"));
     card.append(el("h2", { text: "Pick your duel" }));
@@ -151,27 +166,27 @@ export const duelScreen = (app: App): HTMLElement => {
 
   // ---- the reveal -------------------------------------------------------------
   const revealView = (): HTMLElement => {
-    opp = pickOpponent(mine);
-    const line = trashTalk(Math.floor(Math.random() * 1e6));
     const card = el("div", { class: "card duel-reveal reveal", "data-probe": "duel-reveal" });
     card.append(el("h2", { text: `${opp.name} wants ${len} rounds` }));
     const face = el("div", { class: "duel-face", "data-probe": "duel-opponent", "data-mon": opp.creature.id, "data-helmet": opp.helmet?.id ?? "", "data-board": opp.board.id });
     face.append(rigArt(opp, "duel-face-rig"));
     card.append(face);
-    card.append(el("div", { class: "duel-bubble", "data-probe": "trash-talk", text: line }));
+    card.append(el("div", { class: "duel-bubble", "data-probe": "trash-talk", "data-voice": voice.slug, text: line }));
     card.append(el("p", { class: "mon-sub", text: `${opp.name} · ${opp.helmet?.name ?? "no lid"} · ${opp.board.name}` }));
     const row = el("div", { class: "row duel-row" });
     const not = el("button", { type: "button", class: "btn ghost big", "data-probe": "duel-not-now" }, el("span", { text: "Not now" }));
     const go = el("button", { type: "button", class: "btn go big", "data-probe": "duel-go" }, el("span", { text: "Drop in" }));
     on(not, "click", () => mount(body, pickView()));
     on(go, "click", () => {
+      hush();
       if (!useDuelPlay(app.meta, app.day, len)) { mount(body, pickView()); return; }
       void app.save();
       mount(body, duelView());
     });
     row.append(not, go);
     card.append(row);
-    narrate(app, line);
+    // Spoken on the tap that opened the card, which is the gesture iOS wants.
+    if (!app.meta.muted && voice.clip !== null) { try { voice.clip.currentTime = 0; void voice.clip.play().catch(() => undefined); } catch { /* no audio */ } }
     return card;
   };
 
@@ -207,9 +222,12 @@ export const duelScreen = (app: App): HTMLElement => {
     const status = el("div", { class: "duel-status", "data-probe": "duel-status" });
     const youScore = el("span", { class: "duel-score", "data-probe": "duel-you", text: "0" });
     const themScore = el("span", { class: "duel-score", "data-probe": "duel-them", text: "0" });
+    // Filled before the first layout, so the strip has its final height
+    // when the stage is measured (a late fill once cost the glass a pixel).
+    const solves = el("span", { class: "duel-solves", "data-probe": "duel-solves", text: `solved 0 · need ${needSolved(len)}` });
     status.append(
       el("div", { class: "duel-side you" }, el("b", { class: "duel-name", text: mine.name }), youScore),
-      el("div", { class: "duel-vs", text: "vs" }),
+      el("div", { class: "duel-mid" }, el("span", { class: "duel-vs", text: "vs" }), solves),
       el("div", { class: "duel-side them" }, themScore, el("b", { class: "duel-name", text: opp.name })),
     );
     const deck = el("div", { class: "duel-deck", "data-probe": "duel-deck" });
@@ -296,14 +314,18 @@ export const duelScreen = (app: App): HTMLElement => {
       n.style.bottom = `${px(GROUND + sk.y)}px`;
       let t = `scaleX(${sk.dir})`;
       if (sk.mode === "bail") {
-        const p = Math.min(1, (sk.bailT * 1000) / 900);
+        const p = Math.min(1, (sk.bailT * 1000) / (sk.shame ? 450 : 900));
         t += ` rotate(${-70 * Math.sin(p * Math.PI)}deg)`;
       } else if (sk.trick !== null) {
-        const p = Math.min(1, (sk.trickT * 1000) / sk.trick.ms);
-        if (sk.trick.id === "backflip") t += ` rotate(${-360 * p}deg)`;
-        else if (sk.trick.id === "spin") t += ` rotateY(${360 * p}deg)`;
+        // A stacked trick turns once more per stack: a 720 is two turns.
+        const p = Math.min(1, (sk.trickT * 1000) / sk.trickMs);
+        const turns = sk.stack;
+        if (sk.trick.id === "backflip") t += ` rotate(${-360 * turns * p}deg)`;
+        else if (sk.trick.id === "spin") t += ` rotateY(${360 * turns * p}deg)`;
         else if (sk.trick.id === "grab") t += ` scale(0.94, 0.86) rotate(${-14 * Math.sin(p * Math.PI)}deg)`;
         else t += ` rotate(${-8 * Math.sin(p * Math.PI)}deg)`;
+      } else if (sk.shame) {
+        // On foot, board in hand: no lean, a jog (the bob is CSS).
       } else if (sk.mode === "ride") {
         const slope = surfaceSlope(c, sk.x) * sk.dir;
         t += ` rotate(${(-Math.atan(slope) * 180 / Math.PI).toFixed(1)}deg)`;
@@ -312,7 +334,11 @@ export const duelScreen = (app: App): HTMLElement => {
       }
       flip.style.transform = t;
       const board = flip.querySelector<SVGElement>(".park-deck");
-      if (board) board.style.transform = sk.trick?.id === "kickflip" ? `rotate(${360 * Math.min(1, (sk.trickT * 1000) / sk.trick.ms)}deg)` : "";
+      if (board) {
+        board.style.transform = sk.shame && sk.mode !== "bail" ? "translate(-30%, -140%) rotate(-70deg)"
+          : sk.trick?.id === "kickflip" ? `rotate(${360 * sk.stack * Math.min(1, (sk.trickT * 1000) / sk.trickMs)}deg)` : "";
+      }
+      n.classList.toggle("shame", sk.shame && sk.mode !== "bail");
       n.classList.toggle("bailed", sk.mode === "bail");
       n.classList.toggle("active", s.phase === who);
       for (const cls of trickCls) n.classList.remove(cls);
@@ -339,6 +365,8 @@ export const duelScreen = (app: App): HTMLElement => {
       scene.style.transform = camY > 0 ? `translateY(${px(camY).toFixed(1)}px)` : "";
       youScore.textContent = String(s.yourScore);
       themScore.textContent = String(s.theirScore);
+      solves.textContent = `solved ${s.solved} · need ${needSolved(s.len)}`;
+      solves.classList.toggle("short", s.solved + (s.len - s.asked) < needSolved(s.len));
       const round = Math.min(s.len, Math.max(s.yourRuns, s.theirRuns) + (s.phase === "over" ? 0 : 1));
       roundPill.textContent = `Round ${round} of ${s.len}`;
       status.classList.toggle("you-up", s.phase === "you");
@@ -389,7 +417,7 @@ export const duelScreen = (app: App): HTMLElement => {
           case "ollie": sfx.pop(0); break;
           case "launch": sfx.launch(); break;
           case "trick": sfx.whoosh(e.trick.ms); break;
-          case "trickDone": pop(e.trick.name, "", x); break;
+          case "trickDone": pop(e.name, "", x); break;
           case "land": sfx.thud(); break;
           case "bail": sfx.crash(); pop("BAIL!", "hot", x); break;
           case "bank": if (e.who === "you") { sfx.bank(e.mult); pop(`+${e.points}`, `bank m${Math.min(5, e.mult)}`); } break;
@@ -398,12 +426,12 @@ export const duelScreen = (app: App): HTMLElement => {
           case "askSolved": sfx.askGood(); break;
           case "askMissed": sfx.askBad(); break;
           case "askOut": break;
-          case "over": void winner(e.winner, e.yours, e.theirs); break;
+          case "over": void winner(e.winner, e.yours, e.theirs, e.byRule ? `solved ${e.solved} of ${s.len}, needed ${e.need}` : null); break;
         }
       }
     };
 
-    const winner = async (who: Who, yours: number, theirs: number): Promise<void> => {
+    const winner = async (who: Who, yours: number, theirs: number, rule: string | null): Promise<void> => {
       if (finished) return;
       finished = true;
       cancelAnimationFrame(raf);
@@ -417,6 +445,7 @@ export const duelScreen = (app: App): HTMLElement => {
         el("div", { class: "duel-dancer" }, dancer),
         el("div", { class: "duel-win-sub", "data-probe": "duel-final", text: `${yours} to ${theirs}` }),
       );
+      if (rule !== null) win.append(el("div", { class: "duel-win-rule", "data-probe": "duel-rule", text: rule }));
       for (const [x, y, d] of [[10, 20, 0], [86, 14, 160], [22, 78, 300], [74, 84, 440], [50, 6, 560]] as const) {
         win.append(el("span", { class: "sb-spark", style: `left:${x}%;top:${y}%;animation-delay:${d}ms` }));
       }
@@ -469,6 +498,10 @@ export const duelScreen = (app: App): HTMLElement => {
       const ev: DuelEvent[] = [];
       begin(s, ev);
       draw();
+      // Once more with every strip filled, in case the first measure was
+      // taken against an emptier foot.
+      layout();
+      draw();
       react(ev);
       last = performance.now();
       raf = requestAnimationFrame(frame);
@@ -509,6 +542,8 @@ export const duelScreen = (app: App): HTMLElement => {
   mount(body, pickView());
   (window as unknown as Record<string, unknown>).__duelPick = {
     pick: (n: DuelLen) => { len = n; mount(body, revealView()); },
+    voices: () => VOICES.length,
+    clipUrl: (slug: string) => { const v = VOICES.find((x) => x.slug === slug); return v === undefined ? null : voiceUrl(v, line); },
   };
   return root;
 };

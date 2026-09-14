@@ -17,6 +17,29 @@
  * landing of his own: solving is the guarantee, skating is the margin.
  * 10, 15 or 20 rounds: two, three or four blocks each.
  *
+ * HIS TRICKS ALWAYS LAND (Andy, mid-build: "your tricks always succeed on
+ * your turn. Anything you attempt works ... You never bail on your tricks
+ * in the duel"). A trick still turning at touchdown finishes there and
+ * counts, his and the computer's alike: in a duel nobody bails for air.
+ * A quick second swipe the same way while a trick turns STACKS it: a 360
+ * becomes a 720, then a 1080; a kickflip a double, then a triple; worth
+ * 2.5 and 4.5 times the single. The ONLY bail is the messed-up computer,
+ * and that one is quick (Andy: "crashes roughly on the trick and then
+ * quickly runs up the ramp holding his board shamefully"): a solve makes
+ * its clock run HURRY times fast to the crash, and after a short tumble it
+ * runs to the far deck at SHAME_V, board in hand.
+ * Since a fast swiper could out-skate a fixed rival and make the maths
+ * moot, THE RIVAL RUBBER-BANDS: its planned run is worth about RIVAL_EDGE
+ * times his own average run (never under RIVAL_FLOOR), so the maths stays
+ * the decider and skating sets the scale and the margin.
+ *
+ * THE SIXTY PERCENT RULE (Andy): "if you do not get enough of the math
+ * problems done fast enough, you will lose the duel ... You have to get at
+ * least 60% of the questions correct in the timeframe in order to win."
+ * Guaranteed, and said out loud: the status strip counts the solves
+ * against the number needed, and under it at the end the duel is theirs
+ * whatever the scores say. Over it, the scores decide, a tie his.
+ *
  * WHAT IT NEVER DOES. No bonus questions, no dots, only digits; the facts
  * are exactly the parent's practice settings (the strands and caps). It
  * never touches the scheduler or the practice evidence: a timed answer
@@ -32,7 +55,7 @@
  * course `w` wide and `h` tall, the flat at y = 0, up positive.
  */
 
-import { BAIL_MS, G, LAND_TOL, MAX_MULT, OLLIE_VY, PARK_TRICKS, trickFor, type ChainItem, type ParkTrick, type Swipe } from "./park";
+import { BAIL_MS, G, MAX_MULT, OLLIE_VY, PARK_TRICKS, trickFor, type ChainItem, type ParkTrick, type Swipe } from "./park";
 import { RETRIEVED_MAX_MS } from "./config";
 import { DEFAULT_MISSING, presentFact, type Presented } from "./present";
 import type { Fact } from "./types";
@@ -64,6 +87,21 @@ export const GRIP = 0.34;
 export const DROP_DELAY = 0.9;
 /** The beat between one run's end and the next run's start. */
 export const REST = 0.7;
+/** A solved problem runs the computer's clock this much faster to its
+ *  crash, and its walk of shame up the wall goes this much faster again. */
+export const HURRY = 3;
+export const SHAME_V = 2.4;
+/** A trick swiped again the same way while it turns, up to this deep. */
+export const MAX_STACK = 3;
+/** Worth this much of the single: a 720 is 2.5 spins' pay, a 1080 4.5. */
+export const STACK_MULT: readonly number[] = [1, 2.5, 4.5];
+/** The rival plans a run worth about this much of his average run, and
+ *  never less than the floor, so solving is what decides the duel. */
+export const RIVAL_EDGE = 1.5;
+export const RIVAL_FLOOR = 500;
+/** He must solve this share of the problems in time, or the duel is theirs. */
+export const NEED_SHARE = 0.6;
+export const needSolved = (len: DuelLen): number => Math.ceil(len * NEED_SHARE);
 /** Where each skater stands on a deck, in from the stage's edge: his spot
  *  and the computer's differ so two on one deck do not stand in one place. */
 export const STAND_YOU = 64;
@@ -189,6 +227,9 @@ export interface Skater {
   mode: SkaterMode;
   trick: ParkTrick | null;
   trickT: number;
+  /** How deep the trick is stacked (1 = the single), and its whole length. */
+  stack: number;
+  trickMs: number;
   bailT: number;
   chain: ChainItem[];
   /** Into the pipe this run; out of the far lip this run. */
@@ -196,6 +237,8 @@ export interface Skater {
   launched: boolean;
   /** The lip air, where a clean landing with nothing in it still pays. */
   lipAir: boolean;
+  /** The messed-up computer, board in hand, running for the far deck. */
+  shame: boolean;
   runScore: number;
   /** The deck he stands on between runs: -1 left, 1 right. */
   side: -1 | 1;
@@ -208,12 +251,20 @@ const standAt = (who: Who, side: -1 | 1, c: Course): number => {
 
 const skater = (who: Who, side: -1 | 1, c: Course): Skater => ({
   x: standAt(who, side, c), y: c.top, vy: 0, vx: 0, dir: side < 0 ? 1 : -1, mode: "wait",
-  trick: null, trickT: 0, bailT: 0, chain: [], dropped: false, launched: false, lipAir: false, runScore: 0, side,
+  trick: null, trickT: 0, stack: 1, trickMs: 0, bailT: 0, chain: [], dropped: false, launched: false, lipAir: false, shame: false, runScore: 0, side,
 });
 
+/** A stacked trick's name: 360 SPIN, 720 SPIN, 1080 SPIN; DOUBLE KICKFLIP. */
+export const stackName = (t: ParkTrick, stack: number): string => {
+  if (t.id === "spin") return `${360 * stack} SPIN`;
+  return `${["", "DOUBLE ", "TRIPLE "][stack - 1] ?? ""}${t.name}`;
+};
+export const stackPoints = (t: ParkTrick, stack: number): number => Math.round(t.points * (STACK_MULT[stack - 1] ?? 1));
+
 /** What the computer means to do on a run: maybe a trick on the flat, and
- *  one or two out of the lip, chosen to fit the air it will have. */
-export interface CompPlan { flat: ParkTrick | null; lip: ParkTrick[]; flatDone: boolean; lipAt: number }
+ *  one or two out of the lip, stacked as deep as its target asks. */
+export interface Planned { trick: ParkTrick; stack: number }
+export interface CompPlan { flat: Planned | null; lip: Planned[]; flatDone: boolean; lipAt: number; target: number }
 
 export interface Ask {
   fact: Fact;
@@ -255,7 +306,7 @@ export type DuelEvent =
   | { kind: "ollie"; who: Who }
   | { kind: "launch"; who: Who }
   | { kind: "trick"; who: Who; trick: ParkTrick }
-  | { kind: "trickDone"; who: Who; trick: ParkTrick }
+  | { kind: "trickDone"; who: Who; trick: ParkTrick; name: string; points: number }
   | { kind: "land"; who: Who }
   | { kind: "bail"; who: Who }
   | { kind: "bank"; who: Who; points: number; mult: number; chain: ChainItem[] }
@@ -264,7 +315,7 @@ export type DuelEvent =
   | { kind: "askSolved" }
   | { kind: "askMissed" }
   | { kind: "askOut" }
-  | { kind: "over"; winner: Who; yours: number; theirs: number };
+  | { kind: "over"; winner: Who; yours: number; theirs: number; solved: number; need: number; byRule: boolean };
 
 /** The park's tiny seeded generator, so a seed lays the same duel. */
 const rng = (s: { seed: number }): number => {
@@ -316,19 +367,39 @@ const deal = (s: DuelState): Fact => {
   return s.pool[s.dealt++]!;
 };
 
-/** The lip air lasts this long: a trick, then as much of another as fits. */
-const lipAirS = (): number => (2 * LAUNCH_VY) / G;
+/** The rival's target for a run: about RIVAL_EDGE times his average run. */
+export const rivalTarget = (s: DuelState): number =>
+  Math.max(RIVAL_FLOOR, Math.round((s.yourRuns > 0 ? s.yourScore / s.yourRuns : 0) * RIVAL_EDGE));
+
+/** Every lip chain: one or two tricks, each stacked up to MAX_STACK, with
+ *  its value. Nobody bails for air in a duel, so nothing here has to fit. */
+const lipOptions = (): Array<{ lip: Planned[]; value: number }> => {
+  const out: Array<{ lip: Planned[]; value: number }> = [];
+  const singles: Planned[] = [];
+  for (const t of PARK_TRICKS) for (let k = 1; k <= MAX_STACK; k++) singles.push({ trick: t, stack: k });
+  for (const a of singles) {
+    out.push({ lip: [a], value: stackPoints(a.trick, a.stack) });
+    for (const b of singles) out.push({ lip: [a, b], value: (stackPoints(a.trick, a.stack) + stackPoints(b.trick, b.stack)) * 2 });
+  }
+  return out;
+};
 
 const planFor = (s: DuelState): CompPlan => {
+  const target = rivalTarget(s);
   // A short trick on the flat half the time: the ollie's air is small.
   const short = PARK_TRICKS.filter((t) => t.ms <= 480);
-  const flat = rng(s) < 0.5 ? short[Math.floor(rng(s) * short.length)]! : null;
-  const first = PARK_TRICKS[Math.floor(rng(s) * PARK_TRICKS.length)]!;
-  const room = lipAirS() * 1000 - first.ms;
-  // A second one only if it can be LAND_TOL done by touchdown.
-  const fits = PARK_TRICKS.filter((t) => t.ms * LAND_TOL <= room - 40);
-  const second = fits.length > 0 ? fits[Math.floor(rng(s) * fits.length)]! : null;
-  return { flat, lip: second ? [first, second] : [first], flatDone: false, lipAt: 0 };
+  const flat: Planned | null = rng(s) < 0.5 ? { trick: short[Math.floor(rng(s) * short.length)]!, stack: 1 } : null;
+  const flatValue = flat === null ? 0 : stackPoints(flat.trick, 1);
+  // The lip chain nearest the rest of the target, a random one among ties.
+  const options = lipOptions();
+  let best: Array<{ lip: Planned[]; value: number }> = [];
+  let gap = Infinity;
+  for (const o of options) {
+    const d = Math.abs(o.value + flatValue - target);
+    if (d < gap - 1e-9) { gap = d; best = [o]; } else if (Math.abs(d - gap) < 1e-9) best.push(o);
+  }
+  const pick = best[Math.floor(rng(s) * best.length)]!;
+  return { flat, lip: pick.lip, flatDone: false, lipAt: 0, target };
 };
 
 /** Start the duel: the first block is his, after a beat. */
@@ -345,7 +416,7 @@ const stage = (s: DuelState, who: Who, ev: DuelEvent[]): void => {
   sk.dir = sk.side < 0 ? 1 : -1;
   sk.y = c.top; sk.vy = 0; sk.vx = 0;
   sk.mode = "wait"; sk.trick = null; sk.trickT = 0; sk.bailT = 0; sk.chain = [];
-  sk.dropped = false; sk.launched = false; sk.lipAir = false; sk.runScore = 0;
+  sk.dropped = false; sk.launched = false; sk.lipAir = false; sk.shame = false; sk.runScore = 0;
   if (s.phase !== who) ev.push({ kind: "turn", who });
   s.phase = who;
   if (who === "them") {
@@ -369,19 +440,33 @@ const ollie = (sk: Skater, who: Who, vy: number, ev: DuelEvent[]): void => {
   ev.push({ kind: "ollie", who });
 };
 
-const startTrick = (sk: Skater, who: Who, t: ParkTrick, ev: DuelEvent[]): boolean => {
+const startTrick = (sk: Skater, who: Who, t: ParkTrick, ev: DuelEvent[], stack = 1): boolean => {
   if (sk.mode !== "air" || sk.trick !== null) return false;
   sk.trick = t;
   sk.trickT = 0;
+  sk.stack = stack;
+  sk.trickMs = t.ms * stack;
   ev.push({ kind: "trick", who, trick: t });
+  return true;
+};
+
+/** The same swipe again while the trick turns: one more turn on it. */
+const stackTrick = (sk: Skater, who: Who, ev: DuelEvent[]): boolean => {
+  if (sk.mode !== "air" || sk.trick === null || sk.stack >= MAX_STACK) return false;
+  sk.stack += 1;
+  sk.trickMs += sk.trick.ms;
+  ev.push({ kind: "trick", who, trick: sk.trick });
   return true;
 };
 
 const finishTrick = (sk: Skater, who: Who, ev: DuelEvent[]): void => {
   if (sk.trick === null) return;
-  sk.chain.push({ name: sk.trick.name, points: sk.trick.points });
-  ev.push({ kind: "trickDone", who, trick: sk.trick });
+  const name = stackName(sk.trick, sk.stack);
+  const points = stackPoints(sk.trick, sk.stack);
+  sk.chain.push({ name, points });
+  ev.push({ kind: "trickDone", who, trick: sk.trick, name, points });
   sk.trick = null;
+  sk.stack = 1;
 };
 
 const bail = (sk: Skater, who: Who, ev: DuelEvent[]): void => {
@@ -401,20 +486,24 @@ const bank = (s: DuelState, sk: Skater, who: Who, ev: DuelEvent[]): void => {
   sk.chain = [];
 };
 
-/** Touchdown: a trick still turning is a bail, a messed-up computer bails
- *  whatever it was doing, and a clean lip air with nothing in it pays a
- *  little. Then the chain banks. */
+/** Touchdown. A trick still turning finishes here and counts: nobody
+ *  bails for air in a duel. The messed-up computer bails whatever it was
+ *  doing, and from there it is on foot. A clean lip air with nothing in
+ *  it pays a little. Then the chain banks. */
 const land = (s: DuelState, sk: Skater, who: Who, ev: DuelEvent[]): void => {
   const c = s.course;
   sk.y = surfaceY(c, sk.x);
   sk.vy = 0;
   const messed = who === "them" && s.ask !== null && s.ask.state === "solved";
-  if (messed) { bail(sk, who, ev); return; }
-  if (sk.trick !== null) {
-    const progress = (sk.trickT * 1000) / sk.trick.ms;
-    if (progress < LAND_TOL) { bail(sk, who, ev); return; }
-    finishTrick(sk, who, ev);
+  if (messed) {
+    bail(sk, who, ev);
+    // Up and out: no more tricks, no launch, just the run for the deck.
+    sk.shame = true;
+    sk.launched = true;
+    sk.lipAir = false;
+    return;
   }
+  if (sk.trick !== null) finishTrick(sk, who, ev);
   if (sk.lipAir && sk.chain.length === 0) sk.chain.push({ name: "AIR", points: AIR_POINTS });
   sk.mode = "ride";
   sk.lipAir = false;
@@ -427,15 +516,15 @@ const stepSkater = (s: DuelState, sk: Skater, who: Who, dt: number, ev: DuelEven
   const plan = who === "them" ? s.plan : null;
   if (sk.mode === "ride") {
     const climb = surfaceSlope(c, sk.x) * sk.dir;
-    const k = Math.max(0.55, Math.min(1.5, 1 - GRIP * climb));
-    const v = RIDE_V * (who === "them" ? COMP_V : 1) * k * (onDeck(c, sk.x) ? 0.6 : 1);
+    const k = sk.shame ? 1 : Math.max(0.55, Math.min(1.5, 1 - GRIP * climb));
+    const v = RIDE_V * (who === "them" ? COMP_V : 1) * k * (onDeck(c, sk.x) ? 0.6 : 1) * (sk.shame ? SHAME_V : 1);
     sk.x += sk.dir * v * dt;
     if (!sk.dropped && !onDeck(c, sk.x)) { sk.dropped = true; ev.push({ kind: "dropIn", who }); }
     // The computer's trick on the flat, once, as it gets there.
     if (plan !== null && plan.flat !== null && !plan.flatDone && sk.dropped && !sk.launched && onFlat(c, sk.x)) {
       plan.flatDone = true;
       ollie(sk, who, OLLIE_VY, ev);
-      startTrick(sk, who, plan.flat, ev);
+      startTrick(sk, who, plan.flat.trick, ev, plan.flat.stack);
       return;
     }
     // Out of the far lip.
@@ -446,7 +535,7 @@ const stepSkater = (s: DuelState, sk: Skater, who: Who, dt: number, ev: DuelEven
       sk.x = sk.dir > 0 ? c.w - c.deck : c.deck;
       sk.mode = "air"; sk.y = c.top; sk.vy = LAUNCH_VY; sk.vx = DRIFT_V;
       ev.push({ kind: "launch", who });
-      if (plan !== null && plan.lip.length > 0) { plan.lipAt = 0; startTrick(sk, who, plan.lip[0]!, ev); }
+      if (plan !== null && plan.lip.length > 0) { plan.lipAt = 0; startTrick(sk, who, plan.lip[0]!.trick, ev, plan.lip[0]!.stack); }
       return;
     }
     // Landed on the far deck: roll to a stop, and the run is over.
@@ -467,10 +556,10 @@ const stepSkater = (s: DuelState, sk: Skater, who: Who, dt: number, ev: DuelEven
     sk.x += sk.dir * sk.vx * dt;
     if (sk.trick !== null) {
       sk.trickT += dt;
-      if (sk.trickT * 1000 >= sk.trick.ms) {
+      if (sk.trickT * 1000 >= sk.trickMs) {
         finishTrick(sk, who, ev);
         // The computer's second lip trick follows the first straight away.
-        if (plan !== null && sk.lipAir && plan.lipAt === 0 && plan.lip.length > 1) { plan.lipAt = 1; startTrick(sk, who, plan.lip[1]!, ev); }
+        if (plan !== null && sk.lipAir && plan.lipAt === 0 && plan.lip.length > 1) { plan.lipAt = 1; startTrick(sk, who, plan.lip[1]!.trick, ev, plan.lip[1]!.stack); }
       }
     }
     if (sk.vy <= 0 && sk.y <= surfaceY(c, sk.x)) land(s, sk, who, ev);
@@ -478,10 +567,11 @@ const stepSkater = (s: DuelState, sk: Skater, who: Who, dt: number, ev: DuelEven
   }
   if (sk.mode === "bail") {
     sk.bailT += dt;
-    // He slides on along the surface while he picks himself up.
+    // He slides on along the surface while he picks himself up; the
+    // messed-up computer is up again in half the time, and off on foot.
     sk.x += sk.dir * RIDE_V * 0.35 * dt;
     sk.y = surfaceY(c, sk.x);
-    if (sk.bailT * 1000 >= BAIL_MS) { sk.mode = "ride"; sk.lipAir = false; }
+    if (sk.bailT * 1000 >= BAIL_MS * (sk.shame ? 0.5 : 1)) { sk.mode = "ride"; sk.lipAir = false; }
     return;
   }
 };
@@ -519,7 +609,9 @@ export const update = (s: DuelState, dt: number): DuelEvent[] => {
   const who: Who = s.phase === "you" ? "you" : "them";
   const sk = who === "you" ? s.you : s.them;
   if (sk.mode === "wait") return ev;
-  stepSkater(s, sk, who, dt, ev);
+  // A solved problem hurries the computer to its crash and off the stage.
+  const hurry = who === "them" && s.ask !== null && s.ask.state === "solved" ? HURRY : 1;
+  stepSkater(s, sk, who, dt * hurry, ev);
   if (sk.mode === "done") {
     const messed = who === "them" && s.ask !== null && s.ask.state === "solved";
     if (who === "you") s.yourRuns += 1;
@@ -539,9 +631,12 @@ export const update = (s: DuelState, dt: number): DuelEvent[] => {
 
 const finish = (s: DuelState, ev: DuelEvent[]): void => {
   s.phase = "over";
-  // A tie is his: he is the one who showed up to practise.
-  s.winner = s.yourScore >= s.theirScore ? "you" : "them";
-  ev.push({ kind: "over", winner: s.winner, yours: s.yourScore, theirs: s.theirScore });
+  const need = needSolved(s.len);
+  // Under the share, the duel is theirs whatever the scores say. Over it
+  // the scores decide, and a tie is his: he is the one who showed up.
+  const byRule = s.solved < need;
+  s.winner = byRule ? "them" : s.yourScore >= s.theirScore ? "you" : "them";
+  ev.push({ kind: "over", winner: s.winner, yours: s.yourScore, theirs: s.theirScore, solved: s.solved, need, byRule });
 };
 
 // ---------------------------------------------------------------------------
@@ -549,7 +644,8 @@ const finish = (s: DuelState, ev: DuelEvent[]): void => {
 // ---------------------------------------------------------------------------
 
 /** A tap (null) or a swipe, on his run. On the flat a tap ollies and a
- *  swipe ollies into the trick; in the air a swipe is the trick. On the
+ *  swipe ollies into the trick; in the air a swipe is the trick, and the
+ *  same swipe again while it turns stacks it (a 720, a double). On the
  *  walls, nothing: the tricks live on the flat and out of the lip. */
 export const gesture = (s: DuelState, swipe: Swipe | null, ev: DuelEvent[]): void => {
   if (s.phase !== "you") return;
@@ -559,7 +655,10 @@ export const gesture = (s: DuelState, swipe: Swipe | null, ev: DuelEvent[]): voi
     if (swipe !== null) startTrick(sk, "you", trickFor(swipe), ev);
     return;
   }
-  if (sk.mode === "air" && swipe !== null) startTrick(sk, "you", trickFor(swipe), ev);
+  if (sk.mode !== "air" || swipe === null) return;
+  const t = trickFor(swipe);
+  if (sk.trick === null) startTrick(sk, "you", t, ev);
+  else if (sk.trick.id === t.id) stackTrick(sk, "you", ev);
 };
 
 const judge = (s: DuelState, ev: DuelEvent[]): void => {

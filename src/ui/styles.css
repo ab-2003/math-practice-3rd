@@ -1984,6 +1984,12 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .duel-score { font-size: clamp(22px, 4vw, 32px); font-weight: 900; color: var(--warm); text-shadow: 0 3px 0 var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
 .duel-status.you-up .you .duel-name, .duel-status.them-up .them .duel-name { color: var(--acid); }
 .duel-vs { font-size: 13px; font-weight: 900; color: var(--dim); letter-spacing: 0.08em; }
+.duel-mid { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: none; }
+.duel-solves { font-size: 13px; font-weight: 800; color: var(--cyan); letter-spacing: 0.04em; white-space: nowrap; }
+.duel-solves.short { color: var(--orange); }
+/* The messed-up computer on foot: board in hand, a jog up the wall. */
+.duel-skater.shame .park-creature { animation: duel-jog 220ms steps(2) infinite; }
+@keyframes duel-jog { from { transform: translateY(0); } to { transform: translateY(-6%); } }
 
 /* The deck: the hint, or the problem, the meter and THE SESSION'S OWN KEYPAD. */
 .duel-deck { flex: none; display: flex; flex-direction: column; justify-content: center; }
@@ -2015,7 +2021,10 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .duel-tricks { white-space: pre-line; }
 }
 
-.duel-win { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: radial-gradient(circle at 50% 45%, rgba(11, 13, 16, 0.55), rgba(11, 13, 16, 0.92)); animation: banner-in 400ms ease-out both; }
+/* The winner's overlay comes in and STAYS for the jingle (banner-in fades out at its end; this does not). */
+.duel-win { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: radial-gradient(circle at 50% 45%, rgba(11, 13, 16, 0.55), rgba(11, 13, 16, 0.92)); animation: duel-win-in 400ms ease-out both; }
+@keyframes duel-win-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+.duel-win-rule { font-size: clamp(14px, 2.4vw, 18px); font-weight: 800; color: var(--orange); }
 .duel-win-big { font-size: clamp(26px, 6vw, 48px); font-weight: 900; color: var(--warm); text-shadow: 0 4px 0 var(--ink); letter-spacing: 0.05em; }
 .duel-win-sub { font-size: clamp(16px, 3vw, 24px); font-weight: 900; color: var(--acid); }
 .duel-dancer { width: min(34vh, 220px); }
@@ -2050,4 +2059,4 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
   .duel-typed { min-height: 42px; }
   .duel-hint { padding: 2px 8px; gap: 2px; }
 }
-@media (prefers-reduced-motion: reduce) { .duel-dance, .duel-dance .park-deck, .duel-call.go { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .duel-dance, .duel-dance .park-deck, .duel-call.go, .duel-skater.shame .park-creature { animation: none !important; } }

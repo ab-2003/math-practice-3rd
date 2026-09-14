@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   AIR_POINTS, ASK_MS, askClear, askKey, askSubmit, begin, BLOCK, courseFor, DUEL_LENS, duelDayReset, duelPlaysLeft, duelPlaysTotal,
-  earnDuelToken, freshRecord, freshUsed, gesture, grantDuelToken, LAUNCH_VY, newDuel, nextWho, onFlat, recordDuel, surfaceSlope, surfaceY,
-  TRASH_TALK, trashTalk, update, useDuelPlay, type DuelEvent, type DuelLen, type DuelMeta, type DuelState,
+  earnDuelToken, freshRecord, freshUsed, gesture, grantDuelToken, LAUNCH_VY, MAX_STACK, needSolved, newDuel, nextWho, onFlat, recordDuel,
+  RIVAL_EDGE, RIVAL_FLOOR, rivalTarget, stackName, stackPoints, surfaceSlope, surfaceY, TRASH_TALK, trashTalk, update, useDuelPlay,
+  type DuelEvent, type DuelLen, type DuelMeta, type DuelState,
 } from "./duel";
+import { PARK_TRICKS, trickFor } from "./park";
 import { buildDeck } from "./facts";
 import { G, LAND_TOL } from "./park";
 import { RETRIEVED_MAX_MS } from "./config";
@@ -123,7 +125,7 @@ describe("a run", () => {
     expect(s.you.dir).toBe(-1);
   });
 
-  it("takes his tricks on the flat and out of the lip, chains two in the big air, and bails a late one", () => {
+  it("takes his tricks on the flat and out of the lip, chains two in the big air, and never bails a late one", () => {
     const s = newDuel(10, course, FACTS, 5);
     begin(s, []);
     // On the flat: a swipe ollies straight into a kickflip and lands it.
@@ -144,16 +146,51 @@ describe("a run", () => {
     expect(banked?.kind === "bank" && banked.chain.map((c) => c.name)).toEqual(["KICKFLIP", "NOSE GRAB"]);
     expect(banked?.kind === "bank" && banked.mult).toBe(2);
     expect(s.yourScore).toBe(100 + (100 + 150) * 2);
-    // A backflip started late in the air is still turning at touchdown.
+    // A backflip started late in the air is still turning at touchdown,
+    // and in a duel that is not a bail: it finishes there and counts
+    // (Andy: "you never bail on your tricks in the duel").
     runUntil(s, (e) => e.some((x) => x.kind === "runEnd"), 5);
     runUntil(s, (e) => e.some((x) => x.kind === "launch"), 6);
     for (let t = 0; t < 0.6; t += STEP) update(s, STEP);
     gesture(s, "left", []);
     const late = runUntil(s, (e) => e.some((x) => x.kind === "land" || x.kind === "bail"), 3);
-    expect(kinds(late)).toContain("bail");
-    // The bail does not end the run: he gets up and rolls to the deck's end.
-    const end = runUntil(s, (e) => e.some((x) => x.kind === "runEnd"), 5);
-    expect(kinds(end)).toContain("runEnd");
+    expect(kinds(late)).not.toContain("bail");
+    expect(kinds(late)).toContain("trickDone");
+    const bankedLate = late.find((e) => e.kind === "bank");
+    expect(bankedLate?.kind === "bank" && bankedLate.chain.map((c) => c.name)).toEqual(["BACKFLIP"]);
+    expect(s.you.mode).not.toBe("bail");
+  });
+
+  it("stacks a trick on a quick second swipe the same way: a 720, a 1080, a double kickflip, worth more", () => {
+    // Andy: "you can get some wild tricks if you swipe quickly like 720
+    // board spins".
+    expect(stackName(trickFor("right"), 1)).toBe("360 SPIN");
+    expect(stackName(trickFor("right"), 2)).toBe("720 SPIN");
+    expect(stackName(trickFor("right"), 3)).toBe("1080 SPIN");
+    expect(stackName(trickFor("up"), 2)).toBe("DOUBLE KICKFLIP");
+    expect(stackName(trickFor("left"), 3)).toBe("TRIPLE BACKFLIP");
+    expect(stackPoints(trickFor("right"), 2)).toBe(500);
+    expect(stackPoints(trickFor("right"), 3)).toBe(900);
+    expect(MAX_STACK).toBe(3);
+    const s = newDuel(10, course, FACTS, 5);
+    begin(s, []);
+    runUntil(s, (e) => e.some((x) => x.kind === "launch"), 6);
+    gesture(s, "right", []);
+    update(s, STEP);
+    gesture(s, "right", []);   // quick: a 720
+    update(s, STEP);
+    gesture(s, "right", []);   // a 1080
+    gesture(s, "right", []);   // and no deeper
+    expect(s.you.stack).toBe(3);
+    expect(s.you.trickMs).toBe(trickFor("right").ms * 3);
+    // A different swipe while it turns does nothing; the spin is the trick.
+    gesture(s, "up", []);
+    expect(s.you.trick?.id).toBe("spin");
+    const lip = runUntil(s, (e) => e.some((x) => x.kind === "bank"), 4);
+    const done = lip.find((e) => e.kind === "trickDone");
+    expect(done?.kind === "trickDone" && done.name).toBe("1080 SPIN");
+    const banked = lip.find((e) => e.kind === "bank");
+    expect(banked?.kind === "bank" && banked.points).toBe(900);
   });
 
   it("does nothing for a tap on the walls, or on the computer's turn", () => {
@@ -322,6 +359,77 @@ describe("the computer", () => {
       expect(t.theirScore, `seed ${seed}`).toBe(0);
     }
     expect(found).toBe(true);
+  });
+
+  it("plans each run to about RIVAL_EDGE times his average run, never under the floor", () => {
+    const s = newDuel(10, course, FACTS, 8);
+    expect(rivalTarget(s)).toBe(RIVAL_FLOOR);
+    s.yourRuns = 5; s.yourScore = 5 * 800;
+    expect(rivalTarget(s)).toBe(Math.round(800 * RIVAL_EDGE));
+    s.yourScore = 5 * 100;
+    expect(rivalTarget(s)).toBe(RIVAL_FLOOR);
+    // Let it land unmessed runs against a strong skater and see them pay near the target.
+    const big = newDuel(10, course, FACTS, 8);
+    begin(big, []);
+    runUntil(big, (e) => e.some((x) => x.kind === "ask"), 60, () => {
+      if (big.phase === "you" && big.you.mode === "air" && big.you.lipAir && big.you.trick === null) gesture(big, "left", []);
+    });
+    const avg = big.yourScore / big.yourRuns;
+    expect(avg).toBeGreaterThan(300);
+    const target = big.plan?.target ?? 0;
+    expect(target).toBe(Math.max(RIVAL_FLOOR, Math.round(avg * RIVAL_EDGE)));
+    runUntil(big, (e) => e.some((x) => x.kind === "runEnd"), 15);
+    expect(big.theirScore).toBeGreaterThan(target * 0.6);
+    expect(big.theirScore).toBeLessThan(target * 1.6);
+    // The tricks it stacks fit the air, or it would bail its own plan.
+    for (const p of big.plan?.lip ?? []) expect(p.stack).toBeLessThanOrEqual(MAX_STACK);
+    void PARK_TRICKS;
+  });
+
+  it("crashes fast once the problem is solved, and runs up the wall board in hand", () => {
+    // Andy: "He should crash out and return to the top very quickly, maybe
+    // one second or so ... crashes roughly on the trick and then quickly
+    // runs up the ramp holding his board shamefully".
+    const s = newDuel(10, course, FACTS, 11);
+    begin(s, []);
+    runUntil(s, (e) => e.some((x) => x.kind === "ask"), 60);
+    runUntil(s, () => s.them.dropped, 5);
+    solve(s, []);
+    let t = 0;
+    const run = runUntil(s, (e) => { t += STEP; return e.some((x) => x.kind === "runEnd"); }, 10);
+    expect(kinds(run)).toContain("bail");
+    expect(s.them.shame).toBe(true);
+    expect(t).toBeLessThan(2.2);
+    expect(s.them.mode).toBe("done");
+    // The next run starts clean, on its board.
+    runUntil(s, (e) => e.some((x) => x.kind === "ask"), 5);
+    expect(s.them.shame).toBe(false);
+  });
+
+  it("is theirs under sixty percent solved whatever the scores say, and said in the event", () => {
+    // Andy: "You have to get at least 60% of the questions correct in the
+    // timeframe in order to win."
+    expect(needSolved(10)).toBe(6);
+    expect(needSolved(15)).toBe(9);
+    expect(needSolved(20)).toBe(12);
+    // Solve five of ten and skate huge: still theirs.
+    const s = newDuel(10, course, FACTS, 3);
+    begin(s, []);
+    let asked = 0;
+    runUntil(s, (e) => e.some((x) => x.kind === "over"), 400, (ev) => {
+      if (s.phase === "you" && s.you.mode === "air" && s.you.lipAir && s.you.trick === null) gesture(s, "left", []);
+      if (ev.some((e) => e.kind === "ask")) { asked += 1; if (asked <= 5) solve(s, []); }
+    });
+    expect(s.solved).toBe(5);
+    expect(s.winner).toBe("them");
+    // Solve six of ten and never tap: the scores decide, and the rival
+    // scored on only four runs against a floor-level target.
+    const t = newDuel(10, course, FACTS, 3);
+    begin(t, []);
+    let n = 0;
+    runUntil(t, (e) => e.some((x) => x.kind === "over"), 400, (ev) => { if (ev.some((e) => e.kind === "ask")) { n += 1; if (n <= 6) solve(t, []); } });
+    expect(t.solved).toBe(6);
+    expect(t.winner).toBe(t.yourScore >= t.theirScore ? "you" : "them");
   });
 
   it("is beaten for certain by solving every problem, even by a rider who never taps", () => {

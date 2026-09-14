@@ -43,7 +43,10 @@ const precachePlugin = (): Plugin => ({
       }
     };
     walk(dist);
-    const assets = files.filter((f) => !/\/sw\.js$|_headers$|\.map$/.test(f));
+    // The rivals' voice clips (public/voice) are NOT precached: ninety
+    // small MP3s would triple the install, and a clip is only wanted at a
+    // reveal, where the browser's own cache keeps it once heard.
+    const assets = files.filter((f) => !/\/sw\.js$|_headers$|\.map$|^\.\/voice\//.test(f));
     const swPath = join(dist, "sw.js");
     const sw = readFileSync(swPath, "utf8")
       .replace("__PRECACHE__", JSON.stringify(assets.sort(), null, 2))

@@ -93,6 +93,16 @@ await step("the reveal picks an opponent that is not my rig, in a lid and on a d
   must(await page.$('[data-probe="duel-opponent"] .park-creature') !== null && await page.$('[data-probe="duel-opponent"] .park-deck') !== null, "the opponent is not drawn on its board");
   const talk = (await page.textContent('[data-probe="trash-talk"]')) ?? "";
   must(talk.length > 10 && !/[—–]/.test(talk), `the trash talk reads "${talk}"`);
+  // The line is the rival's own recorded voice once the clips exist: the
+  // bubble names the voice it plays, and that clip is a real file.
+  const slug = await page.getAttribute('[data-probe="trash-talk"]', "data-voice");
+  const clips = await page.evaluate(() => window.__duelPick.voices());
+  must(clips === 0 ? slug === "" : (slug ?? "") !== "", `the bubble names voice "${slug}" with ${clips} voices recorded`);
+  if (clips > 0) {
+    const url = await page.evaluate((sl) => window.__duelPick.clipUrl(sl), slug);
+    const res = await page.request.get(page.url().replace(/\/[^/]*$/, "") + url);
+    must(res.ok() && (res.headers()["content-type"] ?? "").includes("audio"), `the clip ${url} is not served as audio (${res.status()})`);
+  }
   // Not now keeps the play.
   await page.click('[data-probe="duel-not-now"]');
   await page.waitForSelector('[data-probe="duel-pick"]', { timeout: 4000 });
@@ -120,6 +130,18 @@ await step("Drop in spends the play, and his runs go there and back through the 
   must(await tickUntil("(s) => s.you.mode === 'done'", 6), "the run never ended");
   st = await duel();
   must(st.yourScore >= 100 && st.you.side === 1, `after the first run score=${st.yourScore} side=${st.you.side}`);
+  // His second run: a backflip started late in the lip air, and a quick
+  // second swipe on it. Neither bails; the double lands and pays.
+  must(await tickUntil("(s) => s.you.mode === 'air' && s.you.lipAir", 8), "he never launched on his second run");
+  await tick(0.5);
+  await swipe(-70, 0);
+  await swipe(-70, 0);
+  st = await duel();
+  must(st.you.trick !== null && st.you.trick.id === "backflip" && st.you.stack === 2, `two quick swipes left did not stack a double backflip (${JSON.stringify({ t: st.you.trick?.id, stack: st.you.stack })})`);
+  const before2 = st.yourScore;
+  must(await tickUntil("(s) => s.you.mode === 'done'", 6), "the second run never ended");
+  st = await duel();
+  must(st.you.mode !== "bail" && st.yourScore >= before2 + 750, `the late double backflip did not land and pay (${before2} -> ${st.yourScore})`);
   must(((await page.textContent('[data-probe="duel-you"]')) ?? "") === String(st.yourScore), "the status strip does not show his score");
   // The rest of his block, hands off: five runs end on the far side, then it is their turn.
   must(await tickUntil("(s) => s.phase === 'them'", 40), "the block never passed to the computer");
@@ -144,9 +166,22 @@ await step("the computer's turn: the problem shows over a draining meter, the re
   st = await duel();
   must(st.ask.state === "solved" && st.solved === 1, `after typing ${expected} the ask is ${st.ask.state}`);
   must(await page.$('[data-probe="duel-typed"].good') !== null, "a solve is not shown green");
-  must(await tickUntil("(s) => s.theirRuns === 1", 12), "their run never ended");
+  // Solved, the computer crashes fast and runs for the deck, board in hand.
+  const hurried = await page.evaluate(() => {
+    const s = window.__duel.state();
+    let t = 0; let seenShame = false; let shameOnScreen = false;
+    for (let i = 0; i < 1200 && s.theirRuns < 1; i++) {
+      window.__duel.tick(1 / 60); t += 1 / 60;
+      if (s.them.shame) { seenShame = true; if (document.querySelector('[data-probe="duel-them-rig"].shame')) shameOnScreen = true; }
+    }
+    return { t, seenShame, shameOnScreen, runs: s.theirRuns };
+  });
+  must(hurried.runs === 1, "their run never ended");
+  must(hurried.t < 2.6, `after the solve the computer took ${hurried.t.toFixed(1)}s to crash out and reach the deck`);
+  must(hurried.seenShame && hurried.shameOnScreen, `the walk of shame never showed (${JSON.stringify(hurried)})`);
   st = await duel();
   must(st.theirScore === 0, `a solved problem still let them score ${st.theirScore}`);
+  must(((await page.textContent('[data-probe="duel-solves"]')) ?? "").includes("solved 1 · need 6"), `the tally reads "${await page.textContent('[data-probe="duel-solves"]')}"`);
 });
 
 await step("a miss lets them land and score, and so does the meter running out", async () => {
@@ -177,11 +212,19 @@ await step("the duel ends with the winner's dance and the record, then the scree
   const st = await duel();
   const who = await page.getAttribute('[data-probe="duel-win"]', "data-winner");
   must(who === st.winner, `the dance is ${who}'s, the winner is ${st.winner}`);
+  // One solve of ten: under the sixty percent, the duel is theirs whatever
+  // the scores, and the overlay says so.
+  must(st.winner === "them" && st.solved === 1, `with ${st.solved} solved the winner is ${st.winner}`);
+  must(((await page.textContent('[data-probe="duel-rule"]')) ?? "").includes("solved 1 of 10, needed 6"), `the rule is not on the overlay: "${await page.textContent('[data-probe="duel-rule"]')}"`);
   must(((await page.textContent('[data-probe="duel-final"]')) ?? "") === `${st.yourScore} to ${st.theirScore}`, "the final score is not shown");
   must(await page.$('[data-probe="duel-win"] .duel-dance .park-creature') !== null, "the winner is not dancing on its board");
+  // The dance stays up for the whole jingle: still there four seconds on.
+  await page.waitForTimeout(4200);
+  must(await page.$('[data-probe="duel-win"]') !== null, "the winner's dance was gone before the jingle ended");
+  must(await page.evaluate(() => getComputedStyle(document.querySelector('[data-probe="duel-win"]')).opacity) === "1", "the winner's overlay faded out early");
   const m = await meta();
   const rec = m.duelRecord[10];
-  must((st.winner === "you" ? rec.won : rec.lost) === 1 && rec.won + rec.lost === 1, `the record reads ${JSON.stringify(rec)} for a ${st.winner} win`);
+  must(rec.lost === 1 && rec.won === 0, `the record reads ${JSON.stringify(rec)} for a loss by the rule`);
   await page.waitForSelector('[data-probe="start"]', { timeout: 8000 });
 });
 

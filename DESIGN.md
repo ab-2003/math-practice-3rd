@@ -1059,6 +1059,49 @@ pad; the probe measures a phone, a tablet on its side and a portrait
 tablet for no scroll, no overlap, twelve keys in three columns on the
 tap floor.
 
+**His tricks always land; only the messed-up rival falls (0.23.1).** Andy,
+after the first play: "your tricks always succeed on your turn. Anything
+you attempt works ... you can get some wild tricks if you swipe quickly
+like 720 board spins. You never bail on your tricks in the duel." A trick
+still turning at touchdown finishes there and counts, his and the
+computer's alike; a quick second swipe the same way STACKS a trick (a 360
+to a 720 to a 1080, a kickflip to a double to a triple; 2.5 and 4.5 times
+the single). The only bail is the messed-up computer's, and it is quick:
+"crashes roughly on the trick and then quickly runs up the ramp holding
+his board shamefully". A solve runs its clock HURRY times fast to the
+crash, the tumble is half length, and it jogs to the far deck at SHAME_V
+with the board in hand. Since a fast swiper could out-skate a fixed rival,
+the rival RUBBER-BANDS: each planned run is worth about RIVAL_EDGE (1.5)
+times his own average run, never under RIVAL_FLOOR, so skating sets the
+scale and the margin and the maths decides.
+
+**The sixty percent rule (0.23.1).** Andy: "if you do not get enough of
+the math problems done fast enough, you will lose the duel ... You have
+to get at least 60% of the questions correct in the timeframe in order to
+win." Guaranteed and said out loud: the status strip counts solves against
+the number needed (6 of 10, 9 of 15, 12 of 20), turns orange once the
+need is out of reach, and under it the duel is theirs whatever the scores,
+with the count on the winner's overlay. Over it the scores decide.
+
+**The rivals' voices (0.23.1).** Andy: "use my ElevenLabs for the narrator
+voice, the default AI voice is not good. Try to give some cheeky English
+accents to the enemies." The thirty lines are RECORDED ONCE by
+tools/voice-lines.ts through his account (the key in ~/.elevenlabs-api.key,
+never in the repo), with eleven_v3 and a [mischievously] tag (verified
+unspoken: the tagged clip is no longer than the plain one), in the four
+British premade voices (George, Alice, Daniel, Lily), and ship as static
+files under public/voice/<slug>/<n>.mp3, OUT of the service worker's
+precache (120 small MP3s would triple the install) with a week's
+Cache-Control. Each monster hashes to one voice for good. The clip is
+fetched while he reads the pick and played on the tap that opens the
+reveal (the gesture iOS wants); mute silences it; a missing clip is a
+silent bubble, never a machine voice. voices.test.ts holds every listed
+voice to all thirty clips on disk.
+
+**The winner's dance stays for the jingle (0.23.1).** The overlay had
+borrowed the park's banner-in animation, which fades OUT at its end; it
+has its own fade-in now and the screen waits the whole chiptune.
+
 **Tokens and the record.** Each day starts with one duel token; a token
 is one play of EACH length; one more comes with the day's work (in the
 DONE banner beside the Daily Token, and lazily wherever the day was
