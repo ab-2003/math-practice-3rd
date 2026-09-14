@@ -206,6 +206,26 @@ export const sfx = {
   launch: (): void => { env("sine", 200, 0, 0.3, 0.1, 620); noise(0, 0.2, 0.06, 1400); },
   /** Time's up in the park: a two-note horn, warm, not a buzzer. */
   horn: (): void => { env("triangle", 392, 0, 0.35, 0.14); env("triangle", 523, 0.3, 0.55, 0.15); },
+  /** HALF PIPE DUELS: a solve lands bright, a miss lands soft and low
+   *  (a game's tell, never the practice session's silence on a miss). */
+  askGood: (): void => { env("square", 880, 0, 0.09, 0.07); env("square", 1319, 0.08, 0.16, 0.08); },
+  askBad: (): void => { env("triangle", 220, 0, 0.18, 0.08, 165); },
+  /** The winner's dance: four seconds of chiptune, square lead over a
+   *  triangle bass, bouncing in C. Andy asked for "a little chiptune". */
+  duelWin: (): void => {
+    const b = 0.13; // one sixteenth
+    const lead = [
+      523, 659, 784, 1047, 784, 659, 523, 659, 784, 880, 988, 1047, 988, 880, 784, 0,
+      698, 880, 1047, 1319, 1047, 880, 698, 880, 784, 988, 1175, 1568, 1175, 988, 784, 0,
+    ];
+    lead.forEach((f, i) => { if (f > 0) env("square", f, i * b, b * 0.9, 0.06); });
+    const bass = [131, 131, 196, 196, 175, 175, 196, 196, 131, 131, 196, 196, 175, 175, 262, 262];
+    bass.forEach((f, i) => env("triangle", f, i * b * 2, b * 1.6, 0.09));
+    [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => noise(i * b * 2 + b, 0.05, 0.05, 6000));
+    // The finishing chord.
+    [523, 659, 784, 1047].forEach((f, i) => env("square", f, 32 * b + i * 0.03, 0.7, 0.06));
+    env("triangle", 131, 32 * b, 0.8, 0.1);
+  },
   /** A DAILY TOKEN dropping: three bright ticks and a shimmer. */
   token: (): void => {
     [988, 1319, 1976].forEach((f, i) => env("square", f, i * 0.08, 0.14, 0.07));

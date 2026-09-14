@@ -5,6 +5,7 @@
  * device's own business.
  */
 
+import { DUEL_LENS, duelPlaysLeft, grantDuelToken } from "../../core/duel";
 import { csv } from "../../core/report";
 import type { Response, SessionRecord } from "../../core/types";
 import type { App } from "../appstate";
@@ -83,6 +84,17 @@ export const settingsTab = (app: App, opts: SettingsOpts): HTMLElement => {
   on(reopen, "click", () => { app.meta.parkDay = app.day; app.meta.parkSpent = 0; void app.save().then(opts.rerender); });
   trow.append(grant, reopen);
   tokenCard.append(trow);
+  // HALF PIPE DUELS (0.23.0): the same hand on the duel tokens. Each token
+  // is one play of each length, today only; one comes with the day, one
+  // with the day's work, and a grown-up can give more.
+  const plays = DUEL_LENS.map((len) => `${duelPlaysLeft(app.meta, app.day, len)} of ${len}`).join(", ");
+  tokenCard.append(el("p", { class: "note", "data-probe": "duel-token-count", text:
+    `Duels: ${app.meta.duelTokens} duel ${app.meta.duelTokens === 1 ? "token" : "tokens"} today (plays left: ${plays} rounds). A duel token is one play of each length and lasts the day; one comes with each day, one more with the day's work.` }));
+  const drow = el("div", { class: "stepper", style: "flex-wrap:wrap" });
+  const grantDuel = el("button", { type: "button", class: "btn small alt", "data-probe": "grant-duel" }, el("span", { text: "Give a Duel Token" }));
+  on(grantDuel, "click", () => { grantDuelToken(app.meta, app.day); void app.save().then(opts.rerender); });
+  drow.append(grantDuel);
+  tokenCard.append(drow);
   wrap.append(tokenCard, bonus!);
 
 

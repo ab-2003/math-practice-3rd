@@ -8,8 +8,9 @@ import { progressBar } from "./charts";
 import { creatureSvg, helmetIcon } from "./creature-svg";
 import { el, on, svg } from "./dom";
 import { doseDone, speedAttemptsToday, speedKey } from "./day";
-import { tokenIcon } from "./icons";
+import { duelIcon, tokenIcon } from "./icons";
 import { parkGate, spentToday } from "../core/park";
+import { duelPlaysTotal, earnDuelToken } from "../core/duel";
 import { dayOver, limitOn, remainingMs } from "./day-limit";
 export { doseDone } from "./day"; // session-screen imports it from here
 import { sfx } from "./sfx";
@@ -252,22 +253,40 @@ export const homeScreen = (app: App): HTMLElement => {
   const park = el("button", {
     type: "button", class: `btn big park-btn${parkOpen ? " alt" : " ghost dim"}${parkOpen && gate.ok && !app.meta.parkSeen && !closed ? " park-new" : ""}`,
     "data-probe": "park-open", ...(closed ? { disabled: true } : {}),
-  }, tokenIcon("btn-ico token-btn"), el("span", { text: parkOpen
-    ? `Skate Park · ${app.meta.tokens} ${app.meta.tokens === 1 ? "token" : "tokens"}`
-    : "Skate Park" }));
+  }, tokenIcon("btn-ico token-btn"), el("span", { text: "Skate Park" }));
   if (parkOpen) {
     on(park, "click", () => app.go("park"));
     const plays = app.meta.parkTokensPerDay - spentToday(app.meta, app.day);
-    park.append(el("small", { class: "park-sub", "data-probe": "park-sub", text: gate.ok
-      ? `${plays} ${plays === 1 ? "play" : "plays"} left today`
-      : gate.why === "dayFull" ? "closed until tomorrow" : "finish today's tricks for a token" }));
+    // The pocket and the plays share the small line: the two doors sit
+    // side by side now (0.23.0), and a phone has half the width for each.
+    // A phone's half-width door gets the short line: the pocket is on the
+    // top bar already, beside the coins.
+    const pocket = `${app.meta.tokens} ${app.meta.tokens === 1 ? "token" : "tokens"}`;
+    const playsLine = gate.ok ? `${plays} ${plays === 1 ? "play" : "plays"} left` : gate.why === "dayFull" ? "closed until tomorrow" : "finish today's tricks for a token";
+    park.append(el("small", { class: "park-sub", "data-probe": "park-sub" },
+      el("span", { class: "long", text: gate.ok || gate.why === "dayFull" ? `${pocket} · ${playsLine}` : playsLine }),
+      el("span", { class: "short", text: playsLine })));
   } else {
     // One line for the name, one small line for how to light it: a two
     // line slab was the tallest thing on Andy's phone.
     park.append(el("small", { class: "park-sub", "data-probe": "park-sub", text: "earn a Daily Token" }));
     on(park, "click", () => sheet({ title: "The Skate Park", body: "Finish today's tricks and a Daily Token drops. A token opens the park: your monster, its board, its helmet, tricks down a line.", confirm: "OK" }));
   }
-  panel.append(park);
+  // HALF PIPE DUELS (0.23.0): the second door, beside the park's. Every
+  // day has a duel token; the day's work brings another.
+  if (done) { if (earnDuelToken(app.meta, app.day)) void app.save(); }
+  const duelPlays = duelPlaysTotal(app.meta, app.day);
+  const duel = el("button", {
+    type: "button", class: `btn big park-btn duel-btn${duelPlays > 0 ? " alt" : " ghost dim"}`,
+    "data-probe": "duel-open", ...(closed ? { disabled: true } : {}),
+  }, duelIcon("btn-ico duel-btn-ico"), el("span", {}, el("span", { class: "long", text: "Half Pipe Duel" }), el("span", { class: "short", text: "Duels" })));
+  duel.append(el("small", { class: "park-sub", "data-probe": "duel-sub", text: duelPlays > 0
+    ? `${duelPlays} ${duelPlays === 1 ? "play" : "plays"} left today`
+    : "finish today's tricks for a duel token" }));
+  on(duel, "click", () => app.go("duel"));
+  const doors = el("div", { class: "home-doors" });
+  doors.append(park, duel);
+  panel.append(doors);
 
   // Progress toward the next monster, always visible: the classic lever,
   // and it was simply missing.

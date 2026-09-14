@@ -1008,6 +1008,69 @@ spend, GIVES a token (a sick day, a reward), and REOPENS today's park
 once the cap is hit. It began as the alpha channel's testing card; Andy
 kept it as a parent power and asked for the testing language to go.
 
+## 9j. Half Pipe Duels: recall against a rival (0.23.0)
+
+Andy, 2026-09-14: "a new mode, Half Pipe Duels, that combines the fun of
+the Skate Park's free form tricks and the intended goal of fast fact
+recall ... Your skater battles against a computer opponent ... on the
+computer's turn, an arithmetic problem will pop up and you have (X)
+seconds to solve it (whatever the recall threshold is) ... If you solve
+correctly before the meter runs out, your opponent messes up their
+trick ... Mess them up enough and you're guaranteed to win."
+
+**The shape.** One half pipe, a U with a flat bottom and a deck at each
+lip, as wide as the glass and most of its height. Rounds come in BLOCKS
+of five. His block: five RUNS, each a drop in from one deck, across the
+flat (tap to ollie, swipe to ollie into a trick), up the far wall and OUT
+of the lip with LAUNCH_VY (air for a trick and most of another, swipe
+for each), a landing on the far deck; a run is a turn, the next goes back
+the other way, so a block ends on the other side. A clean lip air with
+nothing in it pays AIR_POINTS (50), so a run is never worth nothing. Then
+the computer's block: for each of ITS five runs a problem is on the glass
+first, the meter draining over ASK_MS (the session's RETRIEVED_MAX_MS
+plus 600ms for the hands, since the whole answer has to land), and it
+drops in DROP_DELAY later at COMP_V of his speed, which on the narrowest
+course still lands after the meter's end (a law in the unit tests). Its
+plan: maybe a short trick on the flat, one or two out of the lip, chosen
+to fit the air. SOLVED IN TIME, whenever in the run, and every landing of
+that run is a bail and the run counts for nothing. Missed, or the meter
+out, and it lands its plan. Ten, fifteen or twenty rounds: two, three or
+four blocks each. A tie is his.
+
+**What it never does.** Never a bonus question, never dots, only digits.
+The problems are exactly the parent's practice settings (`inPlay`: the
+strands and caps), dealt shuffled so none repeats before every other has
+been asked. It never touches the scheduler or the evidence: a timed
+answer under a draining meter is a game, not a measurement, and the two
+ledgers stay apart (SS2).
+
+**The keypad is the session's keypad.** Andy: "the number pad [must] look
+like the normal number pad ... It can't be a different format." The same
+three by four pad, the same keys; the answer submits itself at the
+right length so nobody hunts for enter under a meter, and enter still
+works. On a tablet on its side the deck (hint, or problem + meter + pad)
+stands BESIDE the pipe, so the pipe keeps the whole height and nothing
+moves when the turn changes; on a phone or a portrait tablet it sits
+under the pipe, the hint small on his runs and the pad rising for the
+computer's, the stage laid out again to what is left under the TURN call.
+The stage is DUEL_H design units tall and as wide as its box's aspect
+(clamped 1:1 to 2.2:1) makes it, always inside its box, never under the
+pad; the probe measures a phone, a tablet on its side and a portrait
+tablet for no scroll, no overlap, twelve keys in three columns on the
+tap floor.
+
+**Tokens and the record.** Each day starts with one duel token; a token
+is one play of EACH length; one more comes with the day's work (in the
+DONE banner beside the Daily Token, and lazily wherever the day was
+finished); a grown-up gives more from the token card. Tokens are the
+day's, they do not keep. The record is won/lost per length, and leaving
+a duel mid-way is a loss (the sheet says so). The opponent is any monster
+in the roster in any lid on any deck, none of them his, and it talks a
+line of good-sport trash first (thirty lines, unit-tested for no dashes
+and nothing mean), spoken by speechSynthesis where the device has it and
+the sound is on. The winner dances on its board to a four second chiptune
+(sfx.duelWin), then the screen goes home.
+
 ## Unit test law
 
 Every behaviour change lands with its test in the same commit, beside the code

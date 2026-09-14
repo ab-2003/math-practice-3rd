@@ -31,3 +31,13 @@ export const icoPause = (): SVGElement => {
   g.append(svg("rect", { x: 14, y: 3, width: 6, height: 18, rx: 2 }));
   return g;
 };
+
+/** HALF PIPE DUELS: two boards crossed, in the token's own cyan. */
+export const duelIcon = (cls = "duel-ico"): SVGElement => {
+  const g = svg("svg", { viewBox: "0 0 32 32", class: cls, "aria-hidden": "true" });
+  for (const rot of [-38, 38]) {
+    g.append(svg("rect", { x: 4, y: 13.5, width: 24, height: 5, rx: 2.5, fill: "#35E6FF", stroke: "#05070A", "stroke-width": 2, transform: `rotate(${rot} 16 16)` }));
+  }
+  g.append(svg("circle", { cx: 16, cy: 16, r: 3.2, fill: "#05070A" }));
+  return g;
+};

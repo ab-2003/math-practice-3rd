@@ -23,8 +23,9 @@ import { classify } from "../core/classify";
 import { makeElapsed, type ElapsedProblem } from "../core/elapsed";
 import { canAffordAny, riderVoice } from "../core/creatures";
 import { awardTokens, landingsToNextToken } from "../core/park";
+import { earnDuelToken } from "../core/duel";
 import { dayOver } from "./day-limit";
-import { tokenIcon, icoPause } from "./icons";
+import { duelIcon, icoPause, tokenIcon } from "./icons";
 import { presentFact, type Presented } from "../core/present";
 import {
   coldCheckDue, coldCheckIds, currentFactId, isColdItem, isFatigued, recordResponse, sessionIsOver, startSession,
@@ -139,9 +140,12 @@ export const sessionScreen = (app: App): HTMLElement => {
       // dose is met. The first one ever lights the Skate Park at home.
       if (awardTokens(app.meta, app.day, doseNow(), app.meta.dailyGoal) > 0) {
         tokenDropped = true;
+        // HALF PIPE DUELS (0.23.0): the day's work brings a duel token too.
+        earnDuelToken(app.meta, app.day);
         void app.save();
         window.setTimeout(() => sfx.token(), 650);
         b.append(el("div", { class: "db-token", "data-probe": "token-drop" }, tokenIcon("token-drop-ico"), el("span", { text: "+1 DAILY TOKEN" })));
+        b.append(el("div", { class: "db-token db-duel", "data-probe": "duel-token-drop" }, duelIcon("token-drop-ico"), el("span", { text: "+1 DUEL TOKEN" })));
       }
       left.append(b);
       let fin = false;

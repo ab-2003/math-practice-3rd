@@ -20,6 +20,7 @@
 
 import { DEFAULT_STRANDS } from "../core/config";
 import { PARK_DEFAULTS } from "../core/park";
+import { freshRecord, freshUsed, type DuelLen, type DuelTally } from "../core/duel";
 import { DEFAULT_MISSING, type MissingCfg } from "../core/present";
 import type { Stamp, SyncKey } from "../core/sync";
 import type { Caps, FactState, Response, SessionRecord, Strands } from "../core/types";
@@ -246,6 +247,14 @@ export interface Meta {
   parkSeen: boolean;
   parkBest: number;
   parkBestChain: number;
+  /** HALF PIPE DUELS (0.23.0): today's duel tokens (each one play of each
+   *  length), the plays used, the won/lost record per length, and the day
+   *  the day's work earned its token. See core/duel.ts. */
+  duelDay: number | null;
+  duelTokens: number;
+  duelUsed: Record<DuelLen, number>;
+  duelRecord: Record<DuelLen, DuelTally>;
+  duelWorkDay: number | null;
   /** The day of the last weekly cold check. See core/config COLD_CHECK. */
   lastColdDay: number | null;
   /** When and by which device each synced setting was last set, so the
@@ -271,6 +280,7 @@ export const freshMeta = (): Meta => ({
   parkMinutes: PARK_DEFAULTS.minutes, parkTokensPerDay: PARK_DEFAULTS.tokensPerDay,
   extraTokensOn: true, extraTokenMax: PARK_DEFAULTS.extraMax, extraTokenEvery: PARK_DEFAULTS.extraEvery,
   parkUnlocked: false, parkSeen: false, parkBest: 0, parkBestChain: 0,
+  duelDay: null, duelTokens: 0, duelUsed: freshUsed(), duelRecord: freshRecord(), duelWorkDay: null,
   lastColdDay: null,
   settingsStamps: {},
 });
@@ -321,6 +331,11 @@ export const hydrateMeta = (raw: Partial<Meta>): Meta => ({
   streakOwed: Math.max(0, raw.streakOwed ?? 0),
   parkMinutes: Math.max(2, Math.min(20, raw.parkMinutes ?? PARK_DEFAULTS.minutes)),
   parkTokensPerDay: Math.max(1, Math.min(8, raw.parkTokensPerDay ?? PARK_DEFAULTS.tokensPerDay)),
+  duelDay: raw.duelDay ?? null,
+  duelTokens: Math.max(0, raw.duelTokens ?? 0),
+  duelUsed: { ...freshUsed(), ...(raw.duelUsed ?? {}) },
+  duelRecord: { ...freshRecord(), ...(raw.duelRecord ?? {}) },
+  duelWorkDay: raw.duelWorkDay ?? null,
 });
 
 export const getMeta = async (): Promise<Meta> => {

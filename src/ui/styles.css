@@ -1943,3 +1943,111 @@ h3 { font-size: 17px; font-weight: 900; color: var(--dim); letter-spacing: 0.08e
 .left-line { text-align: center; }
 .btn[disabled], .card.stat[disabled] { opacity: 0.45; cursor: default; box-shadow: none; }
 .btn[disabled]:active, .card.stat[disabled]:active { transform: none; }
+
+/* ---------- HALF PIPE DUELS (0.23.0): the pick, the reveal, the pipe, the deck ---------- */
+.duel-screen { display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* Live, the duel is one screen that never scrolls: no stamp clearance, the stage takes the room. */
+.screen:has(.duel-live) { overflow: hidden; padding-bottom: calc(var(--pad-b) + 8px); }
+.duel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.duel-bar h2 { white-space: nowrap; }
+.duel-bar h2 .short { display: none; }
+.duel-round { font-size: 14px; white-space: nowrap; }
+.duel-pick, .duel-reveal { text-align: center; }
+.duel-big { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
+.duel-lens { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.duel-lens .btn.big { width: 100%; justify-content: center; }
+.duel-face { width: min(46vw, 220px); margin: 4px auto 14px; }
+.duel-face .park-flip, .duel-dancer .park-flip { display: flex; flex-direction: column; align-items: center; }
+.duel-face .park-creature, .duel-dancer .park-creature { width: 100%; height: auto; }
+.duel-face .park-deck, .duel-dancer .park-deck { width: 64%; margin-top: -12%; }
+.duel-bubble { position: relative; background: var(--panel-2); border: 4px solid var(--ink); border-radius: 16px; padding: 10px 14px; font-weight: 800; font-size: clamp(15px, 2.4vw, 19px); line-height: 1.3; margin: 0 auto 8px; max-width: 520px; }
+.duel-bubble::before { content: ""; position: absolute; top: -18px; left: 50%; margin-left: -9px; border: 9px solid transparent; border-bottom-color: var(--ink); border-top: 0; }
+.duel-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.duel-row .btn { flex: 1 1 140px; min-width: 0; }
+
+/* The live duel: the pipe and the status in one block, the deck in another. */
+.duel-live { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.duel-main { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.duel-arena { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: center; }
+.duel-stage { position: relative; overflow: hidden; margin: 0; flex: none; }
+.duel-pipe { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.duel-skater { position: absolute; transform: translateX(-50%); will-change: left, bottom; pointer-events: none; z-index: 2; }
+.duel-skater.active { z-index: 3; }
+.duel-skater .park-flip { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 82%; will-change: transform; }
+.duel-skater.bailed .park-creature { filter: saturate(0.7); }
+.duel-call { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; z-index: 5; pointer-events: none; }
+.duel-call.go { animation: banner-in 1100ms ease-out forwards; }
+.duel-status { flex: none; display: flex; align-items: center; gap: 10px; padding: 4px 10px; border: 4px solid var(--ink); border-radius: 14px; background: var(--panel); }
+.duel-side { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.duel-side.them { justify-content: flex-end; }
+.duel-name { font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.duel-score { font-size: clamp(22px, 4vw, 32px); font-weight: 900; color: var(--warm); text-shadow: 0 3px 0 var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+.duel-status.you-up .you .duel-name, .duel-status.them-up .them .duel-name { color: var(--acid); }
+.duel-vs { font-size: 13px; font-weight: 900; color: var(--dim); letter-spacing: 0.08em; }
+
+/* The deck: the hint, or the problem, the meter and THE SESSION'S OWN KEYPAD. */
+.duel-deck { flex: none; display: flex; flex-direction: column; justify-content: center; }
+.duel-hint { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; padding: 6px 12px; }
+.duel-hint-big { font-size: clamp(16px, 2.6vw, 22px); font-weight: 900; color: var(--acid); letter-spacing: 0.06em; }
+.duel-hint-sub { font-size: clamp(14px, 2.2vw, 17px); font-weight: 800; color: var(--dim); }
+.duel-tricks { font-size: 13px; font-weight: 800; color: var(--dim); letter-spacing: 0.03em; line-height: 1.5; }
+.duel-ask { display: none; flex-direction: column; gap: 8px; }
+.duel-ask.on { display: flex; }
+.duel-q { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: clamp(30px, 6vw, 48px); font-weight: 900; line-height: 1; min-height: 52px; font-variant-numeric: tabular-nums; }
+.duel-eq { color: var(--dim); }
+.duel-typed { min-width: 2.2ch; padding: 0 8px; border-bottom: 4px dashed var(--line); text-align: center; color: var(--text); min-height: 50px; display: inline-flex; align-items: center; justify-content: center; }
+.duel-typed.filled { border-bottom-style: solid; border-color: var(--acid); }
+.duel-typed.good { color: var(--acid); border-color: var(--acid); }
+.duel-typed.bad { color: var(--orange); border-color: var(--orange); }
+.duel-meter { margin: 0 auto; height: 10px; width: 100%; max-width: 460px; }
+.duel-meter .speed-fill { transition: none; }
+.duel-meter .speed-fill.low { background: var(--orange); }
+.duel-meter.done .speed-fill { opacity: 0.5; }
+/* The keypad keeps the session's own rules; a short screen gets the session's shorter keys. */
+@media (max-height: 700px) { .duel-ask .key { min-height: 58px; } }
+
+/* A tablet on its side: the deck stands beside the pipe, so the pipe keeps the
+   height and the pad its size, and nothing moves at the block change. */
+@media (min-width: 900px) and (max-height: 900px) {
+  .duel-live { flex-direction: row; align-items: stretch; gap: 14px; }
+  .duel-deck { width: min(42%, 460px); flex: none; }
+  .duel-hint { flex: 1; }
+  .duel-tricks { white-space: pre-line; }
+}
+
+.duel-win { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: radial-gradient(circle at 50% 45%, rgba(11, 13, 16, 0.55), rgba(11, 13, 16, 0.92)); animation: banner-in 400ms ease-out both; }
+.duel-win-big { font-size: clamp(26px, 6vw, 48px); font-weight: 900; color: var(--warm); text-shadow: 0 4px 0 var(--ink); letter-spacing: 0.05em; }
+.duel-win-sub { font-size: clamp(16px, 3vw, 24px); font-weight: 900; color: var(--acid); }
+.duel-dancer { width: min(34vh, 220px); }
+.duel-dance { animation: duel-dance 700ms ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes duel-dance {
+  0%, 100% { transform: translateY(0) rotate(-7deg); }
+  25% { transform: translateY(-18px) rotate(0deg) scale(1.05, 0.95); }
+  50% { transform: translateY(0) rotate(7deg); }
+  75% { transform: translateY(-18px) rotate(0deg) scale(0.95, 1.05); }
+}
+.duel-dance .park-deck { animation: duel-deck 700ms ease-in-out infinite; }
+@keyframes duel-deck { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+
+/* The two doors on the home screen share one row: a phone has no height for a third slab. */
+.home-doors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.home-doors .btn.big { min-width: 0; padding-left: 12px; padding-right: 12px; }
+.home-doors .park-sub { white-space: normal; }
+/* Each door has a long label and a short one; a phone's half-width door shows the short. */
+.home-doors .short { display: none; }
+.duel-btn-ico { width: 26px; height: 26px; }
+.duel-btn.dim .duel-btn-ico { filter: grayscale(1) brightness(0.8); }
+/* The DONE banner's second line: the duel token comes with the day's token. */
+.db-token.db-duel { background: var(--panel-2); color: var(--text); animation-delay: 950ms; }
+@media (max-width: 560px) {
+  .duel-bar h2 .long { display: none; }
+  .duel-bar h2 .short { display: inline; }
+  .home-doors .btn.big { font-size: 15px; padding: 8px 6px; gap: 6px; }
+  .home-doors .btn-ico { width: 22px; height: 22px; }
+  .home-doors .long { display: none; }
+  .home-doors .short { display: inline; }
+  .duel-q { font-size: 32px; min-height: 44px; }
+  .duel-typed { min-height: 42px; }
+  .duel-hint { padding: 2px 8px; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { .duel-dance, .duel-dance .park-deck, .duel-call.go { animation: none !important; } }

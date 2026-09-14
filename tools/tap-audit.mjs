@@ -31,6 +31,18 @@ for (const [name, viewport] of Object.entries(SHAPES)) {
     ["collection", async () => {
       await page.evaluate(() => { const m = window.__app.meta(); m.coins = 5000; m.owned = ["grindjaw", "voltmaw"]; window.__app.go("collection"); });
     }],
+    ["duel", async () => {
+      await page.evaluate(() => { const m = window.__app.meta(); m.owned = ["grindjaw"]; m.animations = false; window.__app.go("duel"); });
+      await page.waitForSelector('[data-probe="duel-pick"]');
+    }],
+    ["duel-live", async () => {
+      await page.click('[data-probe="duel-len-10"]');
+      await page.waitForSelector('[data-probe="duel-go"]');
+      await page.click('[data-probe="duel-go"]');
+      await page.waitForSelector('[data-probe="duel-stage"]');
+      await page.waitForFunction(() => window.__duel && window.__duel.state() !== null);
+      await page.evaluate(() => { window.__duel.hold(); const s = window.__duel.state(); for (let i = 0; i < 12000; i++) { window.__duel.tick(1 / 60); if (s.ask) break; } });
+    }],
     ["parent-door", async () => {
       await page.goto(BASE.replace(/\/$/, "") + "/parent/", { waitUntil: "networkidle" });
       await page.waitForSelector('[data-probe="parent-connect"]', { timeout: 8000 });
